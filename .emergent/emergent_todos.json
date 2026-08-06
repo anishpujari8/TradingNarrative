@@ -1,22 +1,22 @@
 [
   {
     "content": "Post attribution: landing pages per source (backend + UI)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Weekly digest autosend: Friday scheduler + admin toggle",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Lounge thread lock: endpoint + reply guard + UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "CSV export: /api/admin/traffic/export + download button",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test all four features",
-    "status": "pending"
+    "status": "completed"
   }
 ]

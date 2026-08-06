@@ -58,3 +58,10 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Traffic trends**: /api/admin/traffic now returns weekly 'trend' buckets + 'trend_series' (top 5 sources + Other); Admin Traffic tab shows a multi-line weekly chart.
 - **Pinned discussions**: Admin-only POST /api/community/threads/{tid}/pin toggle; pinned threads sort first with a Pinned badge; pin toggle button in thread detail.
 - Testing: iteration_6.json — backend 99.5% (183/184), frontend 100%, no regressions.
+
+## V2.3 Session Update (Attribution, Autosend, Lock, CSV)
+- **Post Attribution**: /api/admin/traffic returns 'landing_pages' (path × source × count); "Landing pages by source" table in Admin Traffic tab shows which content converts per channel.
+- **Weekly Digest Autosend**: Background loop auto-sends the weekly digest every Friday (UTC), once per ISO week, when the admin toggle is on (currently ON). Toggle in Admin → Newsletter; endpoints GET/POST /api/admin/newsletter/autosend. Sends remain MOCKED (email_logs).
+- **Lounge Thread Lock**: Admin-only POST /api/community/threads/{tid}/lock; locked threads stay readable but reject new replies (403); Locked badge + locked notice replace the reply composer.
+- **CSV Export**: GET /api/admin/traffic/export?days=N streams a CSV (sources, referrers, campaigns, landing pages); one-click "Export CSV" button in the Traffic tab.
+- Testing: iteration_7.json — backend 99.5% (208/209), frontend 100%, no regressions.
