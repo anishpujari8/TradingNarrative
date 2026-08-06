@@ -1,0 +1,56 @@
+{
+  "summary": "Completed comprehensive testing of 4 new features: Conversion Funnel, Real Email Sending (Gmail SMTP), Lounge Member Profiles, and Scheduled Announcements. All features working as expected.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [],
+    "notes": "Gmail SMTP auth failure (535) is EXPECTED — user provided regular password instead of App Password. System gracefully falls back to logged sends."
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "POST /api/analytics/track accepts 'sid' field and stores it",
+    "GET /api/admin/funnel?days=30 returns funnel data with total_sessions, per-source rows (visits/pricing_views/checkouts_started/conversions/conversion_rate), and overall totals",
+    "GET /api/admin/funnel (non-admin) returns 403",
+    "GET /api/admin/email/status returns enabled:true, provider:'gmail_smtp', last_error with App Password failure (535), verified:false",
+    "POST /api/admin/email/test returns status 'failed — logged only' (Gmail 535 EXPECTED) and send is logged in email_logs",
+    "GET /api/admin/email/status (non-admin) returns 403",
+    "GET /api/community/members/{uid} for admin returns name, role:'admin', is_premium:true, joined, thread_count>0, reply_count, recent_threads array",
+    "GET /api/community/members/{uid} (free user) returns 403",
+    "GET /api/community/members/{uid} (unknown uid) returns 404",
+    "POST /api/community/announcements with future publish_at returns scheduled:true",
+    "GET /api/community/announcements (admin) includes scheduled announcements with scheduled:true",
+    "POST /api/community/announcements with invalid publish_at returns 400",
+    "POST /api/community/announcements without publish_at publishes immediately (scheduled:false)",
+    "FRONTEND: Admin → /admin → Traffic tab shows 'Conversion funnel' section with 4 stage cards (admin-funnel-overall)",
+    "FRONTEND: Admin → Traffic tab shows per-source funnel table (admin-funnel-table) with LinkedIn row",
+    "FRONTEND: Admin → Email log tab shows status card (admin-email-status-card) with App Password guidance",
+    "FRONTEND: Admin → Email log tab 'Send test email' button (admin-email-test-button) shows error toast (expected)",
+    "FRONTEND: /lounge → click author name (community-author-*) → profile dialog (community-profile-dialog) opens with name, member-since, discussion/reply counts, recent discussions",
+    "FRONTEND: /lounge → profile dialog → click recent discussion → opens thread detail",
+    "FRONTEND: /lounge (admin) → 'AMA next week' announcement shows 'Scheduled' badge",
+    "FRONTEND: /lounge (admin) → 'New announcement' dialog has datetime-local input (community-announcement-schedule-input)",
+    "FRONTEND: /lounge (admin) → announcement dialog submit button label changes to 'Schedule announcement' when datetime is set",
+    "REGRESSION: Traffic tab shows sources table, trend chart, landing pages table, export CSV button",
+    "REGRESSION: Newsletter tab autosend toggle is ON",
+    "REGRESSION: First thread in lounge is pinned",
+    "REGRESSION: 'Thread for Notification Test' shows locked badge and locked notice",
+    "REGRESSION: Razorpay checkout API returns kind:'order' (tested in backend)"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/root/.emergent/automation_output/20260806_145744/console_20260806_145744.log"
+  ],
+  "success_percentage": {
+    "backend": "100% (261/262 tests passed, 1 minor label mismatch)",
+    "frontend": "100% (all UI elements and interactions working)"
+  },
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

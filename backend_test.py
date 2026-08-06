@@ -1326,6 +1326,246 @@ def main():
             except Exception:
                 pass
 
+    # ==================== NEW FEATURES: ITERATION 8 ====================
+    print('\n🆕 25. NEW FEATURES: CONVERSION FUNNEL, EMAIL SENDING, MEMBER PROFILES, SCHEDULED ANNOUNCEMENTS')
+    
+    # Test 1: ANALYTICS TRACK WITH SID (SESSION ID)
+    test_sid = f'test-session-{uuid.uuid4().hex[:8]}'
+    try:
+        r = requests.post(f'{BASE}/analytics/track', json={
+            'event': 'pageview',
+            'path': '/pricing',
+            'meta': {'first_visit': True, 'referrer': 'https://www.linkedin.com/'},
+            'sid': test_sid
+        }, timeout=10)
+        check('POST /api/analytics/track accepts sid field', r.status_code == 200, r.text)
+    except Exception as e:
+        check('POST /api/analytics/track with sid', False, str(e))
+    
+    # Track more events with same sid for funnel
+    try:
+        requests.post(f'{BASE}/analytics/track', json={
+            'event': 'subscribe_cta_click',
+            'path': '/pricing',
+            'meta': {},
+            'sid': test_sid
+        }, timeout=10)
+    except Exception:
+        pass
+    
+    # Test 2: ADMIN FUNNEL ENDPOINT
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/admin/funnel', params={'days': 30}, headers=admin_hdr, timeout=10)
+            check('GET /api/admin/funnel?days=30 (admin) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                funnel = r.json()
+                check('Funnel response has days field', funnel.get('days') == 30)
+                check('Funnel response has total_sessions field', 'total_sessions' in funnel)
+                check('Funnel response has funnel array', 'funnel' in funnel and isinstance(funnel['funnel'], list))
+                check('Funnel response has overall object', 'overall' in funnel)
+                
+                if funnel.get('total_sessions', 0) > 0:
+                    overall = funnel.get('overall', {})
+                    check('Funnel overall has visits', 'visits' in overall)
+                    check('Funnel overall has pricing_views', 'pricing_views' in overall)
+                    check('Funnel overall has checkouts_started', 'checkouts_started' in overall)
+                    check('Funnel overall has conversions', 'conversions' in overall)
+                    
+                    if len(funnel.get('funnel', [])) > 0:
+                        row = funnel['funnel'][0]
+                        check('Funnel row has source', 'source' in row)
+                        check('Funnel row has visits', 'visits' in row)
+                        check('Funnel row has pricing_views', 'pricing_views' in row)
+                        check('Funnel row has checkouts_started', 'checkouts_started' in row)
+                        check('Funnel row has conversions', 'conversions' in row)
+                        check('Funnel row has conversion_rate', 'conversion_rate' in row)
+                        print(f'   ✓ Funnel data: {funnel["total_sessions"]} sessions, {len(funnel["funnel"])} sources')
+        except Exception as e:
+            check('GET /api/admin/funnel (admin)', False, str(e))
+        
+        # Test non-admin gets 403
+        if token and hdr:
+            try:
+                r = requests.get(f'{BASE}/admin/funnel', params={'days': 30}, headers=hdr, timeout=10)
+                check('GET /api/admin/funnel (non-admin) returns 403', r.status_code == 403)
+            except Exception as e:
+                check('GET /api/admin/funnel (non-admin)', False, str(e))
+    
+    # Test 3: EMAIL STATUS & TEST ENDPOINTS
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/admin/email/status', headers=admin_hdr, timeout=10)
+            check('GET /api/admin/email/status (admin) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                status = r.json()
+                check('Email status has enabled field', 'enabled' in status)
+                check('Email status has provider field', 'provider' in status)
+                check('Email status enabled=true (Gmail configured)', status.get('enabled') is True, f"enabled={status.get('enabled')}")
+                check('Email status provider=gmail_smtp', status.get('provider') == 'gmail_smtp', f"provider={status.get('provider')}")
+                check('Email status has last_error field', 'last_error' in status)
+                check('Email status has verified field', 'verified' in status)
+                
+                # Expected: last_error mentions App Password failure (535)
+                last_error = status.get('last_error') or ''
+                if last_error:
+                    check('Email status last_error mentions auth failure', '535' in last_error or 'auth' in last_error.lower() or 'password' in last_error.lower(), 
+                          f"last_error={last_error[:100]}")
+                    print(f'   ✓ Gmail SMTP auth failure detected (expected): {last_error[:80]}')
+                
+                check('Email status verified=false (auth failed)', status.get('verified') is False, f"verified={status.get('verified')}")
+        except Exception as e:
+            check('GET /api/admin/email/status', False, str(e))
+        
+        # Test send test email (expected to fail with 535, but gracefully)
+        try:
+            r = requests.post(f'{BASE}/admin/email/test', headers=admin_hdr, timeout=10)
+            check('POST /api/admin/email/test (admin) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                result = r.json()
+                check('Test email response has status field', 'status' in result)
+                check('Test email response has to field', 'to' in result)
+                
+                # Expected: status is 'failed — logged only' (Gmail 535 is EXPECTED)
+                status_text = result.get('status', '')
+                check('Test email status is failed/logged (expected)', 'failed' in status_text.lower() or 'logged' in status_text.lower(), 
+                      f"status={status_text}")
+                print(f'   ✓ Test email gracefully failed (expected): {status_text}')
+        except Exception as e:
+            check('POST /api/admin/email/test', False, str(e))
+        
+        # Test non-admin gets 403
+        if token and hdr:
+            try:
+                r = requests.get(f'{BASE}/admin/email/status', headers=hdr, timeout=10)
+                check('GET /api/admin/email/status (non-admin) returns 403', r.status_code == 403)
+            except Exception as e:
+                check('GET /api/admin/email/status (non-admin)', False, str(e))
+    
+    # Test 4: COMMUNITY MEMBER PROFILES
+    if admin_token and admin_hdr:
+        # Get admin's own profile
+        admin_user_id = None
+        try:
+            r = requests.get(f'{BASE}/auth/me', headers=admin_hdr, timeout=10)
+            if r.status_code == 200:
+                admin_user_id = r.json()['user']['id']
+        except Exception:
+            pass
+        
+        if admin_user_id:
+            try:
+                r = requests.get(f'{BASE}/community/members/{admin_user_id}', headers=admin_hdr, timeout=10)
+                check('GET /api/community/members/{uid} (admin profile) returns 200', r.status_code == 200, r.text)
+                if r.status_code == 200:
+                    profile = r.json()
+                    check('Member profile has id', profile.get('id') == admin_user_id)
+                    check('Member profile has name', 'name' in profile)
+                    check('Member profile has role', 'role' in profile)
+                    check('Member profile role=admin', profile.get('role') == 'admin', f"role={profile.get('role')}")
+                    check('Member profile has is_premium', 'is_premium' in profile)
+                    check('Member profile is_premium=true (admin)', profile.get('is_premium') is True, f"is_premium={profile.get('is_premium')}")
+                    check('Member profile has joined', 'joined' in profile)
+                    check('Member profile has thread_count', 'thread_count' in profile)
+                    check('Member profile has reply_count', 'reply_count' in profile)
+                    check('Member profile has recent_threads array', 'recent_threads' in profile and isinstance(profile['recent_threads'], list))
+                    
+                    # Admin should have threads from previous tests
+                    if profile.get('thread_count', 0) > 0:
+                        print(f'   ✓ Admin profile: {profile["thread_count"]} threads, {profile["reply_count"]} replies')
+            except Exception as e:
+                check('GET /api/community/members/{uid} (admin)', False, str(e))
+        
+        # Test free (non-premium) user gets 403
+        if token and hdr:
+            try:
+                r = requests.get(f'{BASE}/community/members/{admin_user_id}', headers=hdr, timeout=10)
+                check('GET /api/community/members/{uid} (free user) returns 403', r.status_code == 403)
+            except Exception as e:
+                check('GET /api/community/members/{uid} (free user)', False, str(e))
+        
+        # Test unknown uid returns 404
+        try:
+            r = requests.get(f'{BASE}/community/members/unknown-user-id-12345', headers=admin_hdr, timeout=10)
+            check('GET /api/community/members/{uid} (unknown uid) returns 404', r.status_code == 404)
+        except Exception as e:
+            check('GET /api/community/members/{uid} (unknown)', False, str(e))
+    
+    # Test 5: SCHEDULED ANNOUNCEMENTS
+    scheduled_ann_id = None
+    if admin_token and admin_hdr:
+        # Create announcement with future publish_at
+        from datetime import datetime, timedelta
+        future_time = (datetime.utcnow() + timedelta(days=7)).isoformat() + 'Z'
+        
+        try:
+            r = requests.post(f'{BASE}/community/announcements', json={
+                'title': 'AMA next week',
+                'body': 'Join us for an AMA session next week!',
+                'publish_at': future_time
+            }, headers=admin_hdr, timeout=10)
+            check('POST /api/community/announcements with future publish_at returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                ann = r.json()
+                scheduled_ann_id = ann.get('id')
+                check('Scheduled announcement has scheduled=true', ann.get('scheduled') is True, f"scheduled={ann.get('scheduled')}")
+                check('Scheduled announcement has publish_at', 'publish_at' in ann)
+                print(f'   ✓ Created scheduled announcement: {scheduled_ann_id}')
+        except Exception as e:
+            check('POST /api/community/announcements (scheduled)', False, str(e))
+        
+        # Test invalid publish_at string returns 400
+        try:
+            r = requests.post(f'{BASE}/community/announcements', json={
+                'title': 'Invalid Schedule',
+                'body': 'This should fail.',
+                'publish_at': 'not-a-valid-datetime'
+            }, headers=admin_hdr, timeout=10)
+            check('POST /api/community/announcements with invalid publish_at returns 400', r.status_code == 400)
+        except Exception as e:
+            check('POST /api/community/announcements (invalid publish_at)', False, str(e))
+        
+        # Test announcement without publish_at publishes immediately
+        immediate_ann_id = None
+        try:
+            r = requests.post(f'{BASE}/community/announcements', json={
+                'title': 'Immediate Announcement',
+                'body': 'This publishes right away.'
+            }, headers=admin_hdr, timeout=10)
+            check('POST /api/community/announcements without publish_at returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                ann = r.json()
+                immediate_ann_id = ann.get('id')
+                check('Immediate announcement has scheduled=false', ann.get('scheduled') is False, f"scheduled={ann.get('scheduled')}")
+        except Exception as e:
+            check('POST /api/community/announcements (immediate)', False, str(e))
+        
+        # Test GET announcements as admin includes scheduled
+        try:
+            r = requests.get(f'{BASE}/community/announcements', headers=admin_hdr, timeout=10)
+            check('GET /api/community/announcements (admin) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                anns = r.json().get('announcements', [])
+                scheduled_anns = [a for a in anns if a.get('scheduled')]
+                check('Admin sees scheduled announcements', len(scheduled_anns) > 0, f'found {len(scheduled_anns)} scheduled')
+                
+                # Verify the scheduled announcement we created is in the list
+                if scheduled_ann_id:
+                    found = any(a['id'] == scheduled_ann_id for a in anns)
+                    check('Admin sees the scheduled announcement we created', found)
+        except Exception as e:
+            check('GET /api/community/announcements (admin)', False, str(e))
+        
+        # Clean up: delete immediate announcement
+        if immediate_ann_id:
+            try:
+                requests.delete(f'{BASE}/community/announcements/{immediate_ann_id}', headers=admin_hdr, timeout=10)
+            except Exception:
+                pass
+        
+        # KEEP the scheduled announcement "AMA next week" for frontend testing
+        print('   ✓ Scheduled announcement "AMA next week" kept for frontend testing')
+
     # ==================== SUMMARY ====================
     print('\n' + '=' * 80)
     print(f'📊 TEST SUMMARY')

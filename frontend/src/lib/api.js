@@ -43,6 +43,19 @@ export const CATEGORIES = [
 export const categoryLabel = (slug) =>
   CATEGORIES.find((c) => c.slug === slug)?.label || slug;
 
+const getSessionId = () => {
+  try {
+    let sid = sessionStorage.getItem("ttn_sid");
+    if (!sid) {
+      sid = (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      sessionStorage.setItem("ttn_sid", sid);
+    }
+    return sid;
+  } catch {
+    return null;
+  }
+};
+
 export const trackEvent = (event, path = "", meta = {}) => {
   try {
     // Traffic-source attribution: tag the first pageview of each browser session
@@ -56,7 +69,7 @@ export const trackEvent = (event, path = "", meta = {}) => {
       });
     }
   } catch { /* sessionStorage unavailable — track without attribution */ }
-  api.post("/analytics/track", { event, path, meta }).catch(() => {});
+  api.post("/analytics/track", { event, path, meta, sid: getSessionId() }).catch(() => {});
 };
 
 export const formatDate = (iso) => {

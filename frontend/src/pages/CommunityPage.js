@@ -15,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin, LockOpen } from "lucide-react";
+import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin, LockOpen, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -23,12 +23,20 @@ import { useAuth } from "@/context/AuthContext";
 
 const initials = (name) => (name || "M").slice(0, 2).toUpperCase();
 
-const AuthorLine = ({ author, date }) => (
+const AuthorLine = ({ author, date, onProfile }) => (
   <div className="flex items-center gap-2">
-    <Avatar className="h-6 w-6 border border-border">
-      <AvatarFallback className="bg-secondary text-[10px] font-medium">{initials(author?.name)}</AvatarFallback>
-    </Avatar>
-    <span className="text-xs font-medium">{author?.name}</span>
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onProfile?.(author); }}
+      className="flex items-center gap-2 rounded-md hover:bg-muted/60 px-1 -mx-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      data-testid={`community-author-${author?.id}`}
+      aria-label={`View ${author?.name}'s profile`}
+    >
+      <Avatar className="h-6 w-6 border border-border">
+        <AvatarFallback className="bg-secondary text-[10px] font-medium">{initials(author?.name)}</AvatarFallback>
+      </Avatar>
+      <span className="text-xs font-medium">{author?.name}</span>
+    </button>
     {author?.role === "admin" && (
       <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 text-[9px] px-1.5 py-0">Editor</Badge>
     )}
@@ -54,8 +62,11 @@ export default function CommunityPage() {
   const [posting, setPosting] = useState(false);
 
   const [annOpen, setAnnOpen] = useState(false);
-  const [annForm, setAnnForm] = useState({ title: "", body: "" });
+  const [annForm, setAnnForm] = useState({ title: "", body: "", publish_at: "" });
   const [annBusy, setAnnBusy] = useState(false);
+
+  const [profile, setProfile] = useState(null); // member profile data
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const [replyBody, setReplyBody] = useState("");
   const [replying, setReplying] = useState(false);
@@ -100,6 +111,19 @@ export default function CommunityPage() {
     }
   };
 
+  const openProfile = async (author) => {
+    if (!author?.id) return;
+    setProfile(null);
+    setProfileOpen(true);
+    try {
+      const res = await api.get(`/community/members/${author.id}`);
+      setProfile(res.data);
+    } catch {
+      setProfileOpen(false);
+      toast.error("Could not load that member's profile.");
+    }
+  };
+
   const createThread = async () => {
     if (threadForm.title.trim().length < 3) { toast.error("Give your discussion a title (3+ characters)."); return; }
     if (!threadForm.body.trim()) { toast.error("Write something to start the discussion."); return; }
@@ -122,10 +146,12 @@ export default function CommunityPage() {
     if (!annForm.body.trim()) { toast.error("Write the announcement body."); return; }
     setAnnBusy(true);
     try {
-      await api.post("/community/announcements", annForm);
-      toast.success("Announcement posted.");
+      const payload = { title: annForm.title, body: annForm.body };
+      if (annForm.publish_at) payload.publish_at = new Date(annForm.publish_at).toISOString();
+      const res = await api.post("/community/announcements", payload);
+      toast.success(res.data.scheduled ? "Announcement scheduled — it publishes automatically." : "Announcement posted.");
       setAnnOpen(false);
-      setAnnForm({ title: "", body: "" });
+      setAnnForm({ title: "", body: "", publish_at: "" });
       loadLounge();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Could not post the announcement.");
@@ -260,7 +286,7 @@ export default function CommunityPage() {
                   )}
                 </div>
               </div>
-              <div className="mt-3 mb-4"><AuthorLine author={t.author} date={t.created_at} /></div>
+              <div className="mt-3 mb-4"><AuthorLine author={t.author} date={t.created_at} onProfile={openProfile} /></div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{t.body}</p>
             </CardContent>
           </Card>
@@ -273,7 +299,7 @@ export default function CommunityPage() {
               <Card key={r.id} className="rounded-xl">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <AuthorLine author={r.author} date={r.created_at} />
+                    <AuthorLine author={r.author} date={r.created_at} onProfile={openProfile} />
                     {(isAdmin || r.author?.id === user.id) && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => setDeleteTarget({ type: "reply", id: r.id })} data-testid={`community-delete-reply-${r.id}`} aria-label="Delete reply">
                         <Trash2 className="h-3.5 w-3.5" />
@@ -314,6 +340,7 @@ export default function CommunityPage() {
         </div>
 
         <DeleteDialog target={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />
+        <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} profile={profile} onOpenThread={(tid) => { setProfileOpen(false); openThread(tid); }} />
       </div>
     );
   }
@@ -362,7 +389,14 @@ export default function CommunityPage() {
                 <Card key={a.id} className="rounded-xl border-accent/20">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-medium text-sm">{a.title}</h3>
+                      <h3 className="font-medium text-sm flex items-center gap-2">
+                        {a.title}
+                        {a.scheduled && (
+                          <Badge variant="secondary" className="gap-1 text-[9px] px-1.5 py-0" data-testid={`community-scheduled-badge-${a.id}`}>
+                            <CalendarClock className="h-3 w-3" /> Scheduled
+                          </Badge>
+                        )}
+                      </h3>
                       {isAdmin && (
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => setDeleteTarget({ type: "announcement", id: a.id })} data-testid={`community-delete-announcement-${a.id}`} aria-label="Delete announcement">
                           <Trash2 className="h-3.5 w-3.5" />
@@ -370,7 +404,9 @@ export default function CommunityPage() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 whitespace-pre-wrap">{a.body}</p>
-                    <p className="text-[10px] font-mono text-muted-foreground mt-2">{formatDate(a.created_at)}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground mt-2">
+                      {a.scheduled ? `publishes ${formatDate(a.publish_at)}` : formatDate(a.created_at)}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -423,7 +459,7 @@ export default function CommunityPage() {
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{t.body}</p>
                       <div className="flex items-center justify-between mt-3">
-                        <AuthorLine author={t.author} date={t.created_at} />
+                        <AuthorLine author={t.author} date={t.created_at} onProfile={openProfile} />
                         <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
                           <MessagesSquare className="h-3.5 w-3.5" /> {t.reply_count}
                         </span>
@@ -479,20 +515,98 @@ export default function CommunityPage() {
               <Label htmlFor="ann-body">Announcement</Label>
               <Textarea id="ann-body" rows={4} value={annForm.body} onChange={(e) => setAnnForm({ ...annForm, body: e.target.value })} data-testid="community-announcement-body-input" />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ann-publish">Schedule for later <span className="text-muted-foreground font-normal">(optional — leave empty to publish now)</span></Label>
+              <Input
+                id="ann-publish"
+                type="datetime-local"
+                value={annForm.publish_at}
+                onChange={(e) => setAnnForm({ ...annForm, publish_at: e.target.value })}
+                data-testid="community-announcement-schedule-input"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAnnOpen(false)}>Cancel</Button>
             <Button onClick={createAnnouncement} disabled={annBusy} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="community-announcement-submit">
-              {annBusy ? "Posting…" : "Post announcement"}
+              {annBusy ? "Posting…" : annForm.publish_at ? "Schedule announcement" : "Post announcement"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <DeleteDialog target={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} profile={profile} onOpenThread={(tid) => { setProfileOpen(false); openThread(tid); }} />
     </div>
   );
 }
+
+const ProfileDialog = ({ open, onOpenChange, profile, onOpenThread }) => (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="max-w-md" data-testid="community-profile-dialog">
+      {profile === null ? (
+        <div className="space-y-3 py-4">
+          <Skeleton className="h-14 w-14 rounded-full" />
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      ) : (
+        <>
+          <DialogHeader>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-14 w-14 border border-border">
+                <AvatarFallback className="bg-secondary text-lg font-medium">{initials(profile.name)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <DialogTitle className="font-serif text-2xl flex items-center gap-2" data-testid="community-profile-name">
+                  {profile.name}
+                  {profile.role === "admin" && (
+                    <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 text-[10px]">Editor</Badge>
+                  )}
+                  {profile.is_premium && profile.role !== "admin" && (
+                    <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 gap-1 text-[10px]"><Crown className="h-3 w-3" /> Premium</Badge>
+                  )}
+                </DialogTitle>
+                <DialogDescription data-testid="community-profile-joined">
+                  Member since {formatDate(profile.joined)}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border p-3 text-center">
+              <div className="text-xl font-semibold" data-testid="community-profile-thread-count">{profile.thread_count}</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Discussions</div>
+            </div>
+            <div className="rounded-lg border border-border p-3 text-center">
+              <div className="text-xl font-semibold" data-testid="community-profile-reply-count">{profile.reply_count}</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Replies</div>
+            </div>
+          </div>
+          {profile.recent_threads.length > 0 && (
+            <div>
+              <h4 className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Recent discussions</h4>
+              <div className="space-y-1.5" data-testid="community-profile-recent-threads">
+                {profile.recent_threads.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => onOpenThread(t.id)}
+                    className="w-full text-left text-sm rounded-lg border border-border px-3 py-2 hover:border-accent/40 transition-colors flex items-center justify-between gap-2"
+                  >
+                    <span className="line-clamp-1">{t.title}</span>
+                    <span className="text-xs font-mono text-muted-foreground flex items-center gap-1 shrink-0">
+                      <MessagesSquare className="h-3 w-3" /> {t.reply_count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </DialogContent>
+  </Dialog>
+);
 
 const DeleteDialog = ({ target, onCancel, onConfirm }) => (
   <AlertDialog open={!!target} onOpenChange={(o) => !o && onCancel()}>

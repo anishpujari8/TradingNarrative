@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, Legend, ResponsiveContainer } from "recharts";
-import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock } from "lucide-react";
+import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -70,6 +70,9 @@ export default function AdminPage() {
   const [trafficDays, setTrafficDays] = useState("30");
   const [exporting, setExporting] = useState(false);
   const [autosend, setAutosend] = useState(null);
+  const [funnel, setFunnel] = useState(null);
+  const [emailStatus, setEmailStatus] = useState(null);
+  const [testingEmail, setTestingEmail] = useState(false);
 
   const loadAll = useCallback(() => {
     api.get("/admin/analytics/stats").then((r) => setStats(r.data)).catch(() => {});
@@ -78,7 +81,28 @@ export default function AdminPage() {
     api.get("/admin/newsletter/issues").then((r) => setIssues(r.data.issues)).catch(() => setIssues([]));
     api.get("/admin/email-logs").then((r) => setEmailLogs(r.data.logs)).catch(() => setEmailLogs([]));
     api.get("/admin/newsletter/autosend").then((r) => setAutosend(r.data)).catch(() => {});
+    api.get("/admin/email/status").then((r) => setEmailStatus(r.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    api.get(`/admin/funnel?days=${trafficDays}`).then((r) => setFunnel(r.data)).catch(() => setFunnel({ funnel: [], overall: null }));
+  }, [user, trafficDays]);
+
+  const sendTestEmail = async () => {
+    setTestingEmail(true);
+    try {
+      const res = await api.post("/admin/email/test");
+      if (res.data.status.includes("gmail")) toast.success(`Test email delivered to ${res.data.to}.`);
+      else toast.error(`Send failed — ${res.data.last_error?.slice(0, 90) || "check credentials"}`);
+      api.get("/admin/email/status").then((r) => setEmailStatus(r.data)).catch(() => {});
+      loadAll();
+    } catch {
+      toast.error("Test email failed.");
+    } finally {
+      setTestingEmail(false);
+    }
+  };
 
   const toggleAutosend = async (enabled) => {
     try {
@@ -422,6 +446,72 @@ export default function AdminPage() {
                     )}
                   </CardContent>
                 </Card>
+                <Card className="rounded-xl lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="font-serif text-xl flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-accent" /> Conversion funnel
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {funnel === null ? (
+                      <Skeleton className="h-48" />
+                    ) : !funnel.overall || funnel.total_sessions === 0 ? (
+                      <p className="text-sm text-muted-foreground py-6" data-testid="admin-funnel-empty">
+                        The funnel fills in as new visitors browse — it links each session from arrival to checkout.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" data-testid="admin-funnel-overall">
+                          {[
+                            { label: "Arrived", value: funnel.overall.visits },
+                            { label: "Viewed pricing", value: funnel.overall.pricing_views },
+                            { label: "Started checkout", value: funnel.overall.checkouts_started },
+                            { label: "Went Premium", value: funnel.overall.conversions },
+                          ].map((s, i, arr) => {
+                            const max = arr[0].value || 1;
+                            return (
+                              <div key={s.label} className="rounded-lg border border-border p-3">
+                                <div className="text-2xl font-semibold">{s.value}</div>
+                                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">{s.label}</div>
+                                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                  <div className="h-full bg-accent rounded-full" style={{ width: `${Math.max(4, (s.value / max) * 100)}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <Table data-testid="admin-funnel-table">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Source</TableHead>
+                              <TableHead className="text-right">Arrived</TableHead>
+                              <TableHead className="text-right">Pricing</TableHead>
+                              <TableHead className="text-right">Checkout</TableHead>
+                              <TableHead className="text-right">Premium</TableHead>
+                              <TableHead className="text-right">Conv.</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {funnel.funnel.map((r) => (
+                              <TableRow key={r.source} data-testid={`admin-funnel-row-${r.source.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+                                <TableCell className="font-medium text-sm">{r.source}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">{r.visits}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">{r.pricing_views}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">{r.checkouts_started}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">{r.conversions}</TableCell>
+                                <TableCell className="text-right">
+                                  <Badge variant={r.conversion_rate > 0 ? "default" : "secondary"} className={`font-mono text-[10px] ${r.conversion_rate > 0 ? "bg-accent/10 text-accent border-accent/30 hover:bg-accent/10" : ""}`}>
+                                    {r.conversion_rate}%
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </>
           )}
@@ -567,9 +657,37 @@ export default function AdminPage() {
 
         {/* EMAIL LOG */}
         <TabsContent value="emails">
+          <Card className="rounded-xl mb-6">
+            <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3" data-testid="admin-email-status-card">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  {emailStatus?.enabled && !emailStatus?.last_error
+                    ? <MailCheck className="h-4 w-4 text-accent" />
+                    : <MailWarning className="h-4 w-4 text-accent" />}
+                </div>
+                <div>
+                  <div className="text-sm font-medium">
+                    {emailStatus?.enabled ? `Gmail SMTP · ${emailStatus.from}` : "Email provider: MOCKED (logs only)"}
+                  </div>
+                  <div className="text-xs text-muted-foreground font-mono max-w-xl">
+                    {emailStatus?.last_error
+                      ? "Auth failed — Gmail needs an App Password (Google Account → Security → 2-Step Verification → App passwords), not your regular password. Falling back to logged sends."
+                      : emailStatus?.enabled && emailStatus?.verified
+                        ? `Real sending active · replies go to ${emailStatus.reply_to || "the Gmail inbox"}`
+                        : emailStatus?.enabled
+                          ? "Configured but not verified yet — press Send test email to confirm delivery"
+                          : "Add GMAIL_SMTP_USER + GMAIL_SMTP_PASSWORD to activate real sending"}
+                  </div>
+                </div>
+              </div>
+              <Button variant="outline" onClick={sendTestEmail} disabled={testingEmail || !emailStatus?.enabled} data-testid="admin-email-test-button">
+                <Send className="h-4 w-4 mr-2" /> {testingEmail ? "Sending…" : "Send test email"}
+              </Button>
+            </CardContent>
+          </Card>
           <Card className="rounded-xl">
             <CardHeader>
-              <CardTitle className="font-serif text-xl">Email log (mocked provider)</CardTitle>
+              <CardTitle className="font-serif text-xl">Email log</CardTitle>
             </CardHeader>
             <CardContent>
               {emailLogs === null ? (

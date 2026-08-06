@@ -292,15 +292,58 @@ def published_query():
     ]}
 
 
-async def log_email(to: str, subject: str, body: str, kind: str):
-    """MOCKED email provider adapter. Swap with Mailchimp/ConvertKit/Resend later."""
+GMAIL_SMTP_USER = os.environ.get('GMAIL_SMTP_USER', '')
+GMAIL_SMTP_PASSWORD = os.environ.get('GMAIL_SMTP_PASSWORD', '')
+EMAIL_FROM_NAME = os.environ.get('EMAIL_FROM_NAME', 'The Trading Narrative')
+EMAIL_REPLY_TO = os.environ.get('EMAIL_REPLY_TO', '')
+EMAIL_ENABLED = bool(GMAIL_SMTP_USER and GMAIL_SMTP_PASSWORD)
+EMAIL_LAST_ERROR = None  # set when an SMTP send fails, surfaced in admin
+
+
+def _smtp_send(to: str, subject: str, text: str, html: str = None):
+    """Blocking SMTP send — always call via asyncio.to_thread."""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = f'{EMAIL_FROM_NAME} <{GMAIL_SMTP_USER}>'
+    msg['To'] = to
+    if EMAIL_REPLY_TO:
+        msg['Reply-To'] = EMAIL_REPLY_TO
+    msg.attach(MIMEText(text or '', 'plain'))
+    if html:
+        msg.attach(MIMEText(html, 'html'))
+    with smtplib.SMTP('smtp.gmail.com', 587, timeout=20) as server:
+        server.starttls()
+        server.login(GMAIL_SMTP_USER, GMAIL_SMTP_PASSWORD)
+        server.sendmail(GMAIL_SMTP_USER, [to], msg.as_string())
+
+
+async def log_email(to: str, subject: str, body: str, kind: str, html: str = None):
+    """Email adapter: real Gmail SMTP when configured; falls back to mocked logging
+    on failure so digests/issues never crash the request."""
+    global EMAIL_LAST_ERROR
+    import asyncio
+    status = 'sent (mocked)'
+    provider = 'mock'
+    if EMAIL_ENABLED:
+        provider = 'gmail_smtp'
+        try:
+            await asyncio.to_thread(_smtp_send, to, subject, body, html)
+            status = 'sent (gmail)'
+            EMAIL_LAST_ERROR = None
+        except Exception as e:
+            err = str(e)[:200]
+            EMAIL_LAST_ERROR = err
+            status = 'failed — logged only'
+            logger.warning(f'Gmail SMTP send failed (falling back to log): {err}')
     entry = {
         'id': str(uuid.uuid4()), 'to': to, 'subject': subject, 'body': body,
-        'kind': kind, 'provider': os.environ.get('NEWSLETTER_PROVIDER', 'mock'),
-        'sent_at': iso(now_utc()), 'status': 'sent (mocked)',
+        'kind': kind, 'provider': provider,
+        'sent_at': iso(now_utc()), 'status': status,
     }
     await db.email_logs.insert_one(dict(entry))
-    logger.info(f"[MOCK EMAIL] to={to} subject='{subject}' kind={kind}")
     return entry
 
 
@@ -375,6 +418,7 @@ class TrackIn(BaseModel):
     event: str
     path: str = ''
     meta: dict = {}
+    sid: Optional[str] = None  # browser session id for funnel linking
 
 
 # ---------------------- auth ----------------------
@@ -1008,7 +1052,7 @@ async def track(body: TrackIn, request: Request, user=Depends(get_optional_user)
     doc = {
         'id': str(uuid.uuid4()), 'event': body.event, 'path': body.path,
         'meta': body.meta, 'user_id': user['id'] if user else None,
-        'created_at': iso(now_utc()),
+        'sid': body.sid, 'created_at': iso(now_utc()),
     }
     # Traffic source attribution — only on the first pageview of a browser session
     meta = body.meta or {}
@@ -1114,6 +1158,65 @@ async def admin_traffic_export(admin=Depends(get_admin_user), days: int = Query(
                     headers={'Content-Disposition': f'attachment; filename="{filename}"'})
 
 
+@api_router.get('/admin/funnel')
+async def admin_funnel(admin=Depends(get_admin_user), days: int = Query(30, le=365)):
+    """Conversion funnel per traffic source: arrived → viewed pricing → started checkout → went premium.
+    Linked via browser session ids; premium matched through the session's user_id."""
+    since = iso(now_utc() - timedelta(days=days))
+    # 1) attributed sessions: sid -> source
+    entries = await db.analytics.find(
+        {'source': {'$exists': True, '$ne': None}, 'sid': {'$nin': [None, '']},
+         'created_at': {'$gte': since}},
+        {'sid': 1, 'source': 1}).to_list(20000)
+    sid_source = {}
+    for e in entries:
+        sid_source.setdefault(e['sid'], e['source'])
+    sids = list(sid_source.keys())
+    if not sids:
+        return {'days': days, 'total_sessions': 0, 'funnel': [], 'overall': None}
+    # 2) all events for those sessions
+    events = await db.analytics.find(
+        {'sid': {'$in': sids}, 'created_at': {'$gte': since}},
+        {'sid': 1, 'event': 1, 'path': 1, 'user_id': 1}).to_list(100000)
+    sessions = {}
+    for ev in events:
+        s = sessions.setdefault(ev['sid'], {'pricing': False, 'cta': False, 'user_ids': set()})
+        if ev['event'] == 'pageview' and (ev.get('path') or '').startswith('/pricing'):
+            s['pricing'] = True
+        if ev['event'] == 'subscribe_cta_click':
+            s['cta'] = True
+        if ev.get('user_id'):
+            s['user_ids'].add(ev['user_id'])
+    # 3) which users converted (checkout completed) in the window
+    conv_events = await db.analytics.find(
+        {'event': 'checkout_complete', 'created_at': {'$gte': since}},
+        {'user_id': 1}).to_list(10000)
+    converted_users = {c['user_id'] for c in conv_events if c.get('user_id')}
+    # 4) aggregate per source
+    per_source = {}
+    for sid, src in sid_source.items():
+        s = sessions.get(sid, {'pricing': False, 'cta': False, 'user_ids': set()})
+        row = per_source.setdefault(src, {'source': src, 'visits': 0, 'pricing_views': 0,
+                                          'checkouts_started': 0, 'conversions': 0})
+        row['visits'] += 1
+        if s['pricing']:
+            row['pricing_views'] += 1
+        if s['cta']:
+            row['checkouts_started'] += 1
+        if s['user_ids'] & converted_users:
+            row['conversions'] += 1
+    funnel = sorted(per_source.values(), key=lambda r: -r['visits'])
+    for r in funnel:
+        r['conversion_rate'] = round(r['conversions'] * 100 / r['visits'], 1) if r['visits'] else 0
+    overall = {
+        'visits': sum(r['visits'] for r in funnel),
+        'pricing_views': sum(r['pricing_views'] for r in funnel),
+        'checkouts_started': sum(r['checkouts_started'] for r in funnel),
+        'conversions': sum(r['conversions'] for r in funnel),
+    }
+    return {'days': days, 'total_sessions': len(sids), 'funnel': funnel, 'overall': overall}
+
+
 # ---------------------- community lounge (premium members only) ----------------------
 
 async def get_premium_user(user=Depends(get_current_user)):
@@ -1125,6 +1228,7 @@ async def get_premium_user(user=Depends(get_current_user)):
 class AnnouncementIn(BaseModel):
     title: str
     body: str
+    publish_at: Optional[str] = None  # ISO datetime — schedule for later
 
 
 class CommunityThreadIn(BaseModel):
@@ -1144,7 +1248,16 @@ def community_author(user):
 @api_router.get('/community/announcements')
 async def community_announcements(user=Depends(get_premium_user)):
     items = await db.community_announcements.find({}).sort('created_at', -1).to_list(50)
-    return {'announcements': [clean(a) for a in items]}
+    now = iso(now_utc())
+    out = []
+    for a in items:
+        clean(a)
+        scheduled = bool(a.get('publish_at') and a['publish_at'] > now)
+        if scheduled and user.get('role') != 'admin':
+            continue  # members only see published announcements
+        a['scheduled'] = scheduled
+        out.append(a)
+    return {'announcements': out}
 
 
 @api_router.post('/community/announcements')
@@ -1154,10 +1267,22 @@ async def community_create_announcement(body: AnnouncementIn, admin=Depends(get_
         raise HTTPException(status_code=400, detail='Title must be 3-200 characters')
     if not (1 <= len(text) <= 5000):
         raise HTTPException(status_code=400, detail='Body must be 1-5000 characters')
+    publish_at = None
+    if body.publish_at:
+        try:
+            dt = datetime.fromisoformat(body.publish_at.replace('Z', '+00:00'))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            publish_at = iso(dt)
+        except Exception:
+            raise HTTPException(status_code=400, detail='Invalid publish_at datetime')
     item = {'id': str(uuid.uuid4()), 'title': title, 'body': text,
-            'author': community_author(admin), 'created_at': iso(now_utc())}
+            'author': community_author(admin), 'publish_at': publish_at,
+            'created_at': iso(now_utc())}
     await db.community_announcements.insert_one(dict(item))
-    return clean(item)
+    item = clean(item)
+    item['scheduled'] = bool(publish_at and publish_at > iso(now_utc()))
+    return item
 
 
 @api_router.delete('/community/announcements/{aid}')
@@ -1166,6 +1291,28 @@ async def community_delete_announcement(aid: str, admin=Depends(get_admin_user))
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail='Announcement not found')
     return {'ok': True}
+
+
+@api_router.get('/community/members/{uid}')
+async def community_member_profile(uid: str, user=Depends(get_premium_user)):
+    member = await db.users.find_one({'id': uid})
+    if not member:
+        raise HTTPException(status_code=404, detail='Member not found')
+    premium = await is_entitled(member)
+    thread_count = await db.community_threads.count_documents({'author.id': uid})
+    reply_count = await db.community_replies.count_documents({'author.id': uid})
+    recent = await db.community_threads.find({'author.id': uid}).sort('created_at', -1).limit(5).to_list(5)
+    return {
+        'id': member['id'],
+        'name': member.get('name') or member['email'].split('@')[0],
+        'role': member.get('role', 'user'),
+        'is_premium': premium,
+        'joined': member.get('created_at'),
+        'thread_count': thread_count,
+        'reply_count': reply_count,
+        'recent_threads': [{'id': t['id'], 'title': t['title'], 'created_at': t['created_at'],
+                            'reply_count': t.get('reply_count', 0)} for t in recent],
+    }
 
 
 @api_router.get('/community/threads')
@@ -1409,6 +1556,32 @@ async def admin_stats(admin=Depends(get_admin_user)):
     }
 
 
+@api_router.get('/admin/email/status')
+async def email_status(admin=Depends(get_admin_user)):
+    last_error = EMAIL_LAST_ERROR
+    verified = False
+    if EMAIL_ENABLED:
+        # reflect the most recent real send attempt (survives restarts)
+        last_real = await db.email_logs.find_one({'provider': 'gmail_smtp'}, sort=[('sent_at', -1)])
+        if last_real:
+            if last_real['status'].startswith('failed') and not last_error:
+                last_error = 'Last send attempt failed — Gmail requires an App Password.'
+            verified = last_real['status'] == 'sent (gmail)'
+    return {'enabled': EMAIL_ENABLED, 'provider': 'gmail_smtp' if EMAIL_ENABLED else 'mock',
+            'from': f'{EMAIL_FROM_NAME} <{GMAIL_SMTP_USER}>' if EMAIL_ENABLED else None,
+            'reply_to': EMAIL_REPLY_TO or None, 'last_error': last_error, 'verified': verified}
+
+
+@api_router.post('/admin/email/test')
+async def email_test(admin=Depends(get_admin_user)):
+    entry = await log_email(GMAIL_SMTP_USER or admin['email'],
+                            'Test email — The Trading Narrative',
+                            'If you are reading this, real email sending works.',
+                            'test',
+                            html='<p>If you are reading this, <strong>real email sending works</strong>. — The Trading Narrative</p>')
+    return {'status': entry['status'], 'to': entry['to'], 'last_error': EMAIL_LAST_ERROR}
+
+
 @api_router.get('/admin/email-logs')
 async def admin_email_logs(admin=Depends(get_admin_user), limit: int = Query(50, le=200)):
     logs = await db.email_logs.find({}).sort('sent_at', -1).limit(limit).to_list(limit)
@@ -1620,13 +1793,13 @@ async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
     subject = subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
     subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
     titles = ', '.join(p['title'] for p in posts[:5])
-    # MOCKED SEND
+    digest_html = build_digest_html(posts)
     for sub in subs:
-        await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest')
+        await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest', html=digest_html)
     issue = {
         'id': str(uuid.uuid4()), 'post_id': None, 'post_title': f'Weekly digest ({len(posts)} essays)',
         'kind': 'digest', 'subject': subject, 'recipients': len(subs),
-        'status': 'sent (mocked)' + (' · auto' if auto else ''),
+        'status': ('sent (gmail)' if EMAIL_ENABLED and not EMAIL_LAST_ERROR else 'sent (mocked)') + (' · auto' if auto else ''),
         'auto': auto, 'sent_at': iso(now_utc()),
     }
     await db.newsletter_issues.insert_one(dict(issue))
