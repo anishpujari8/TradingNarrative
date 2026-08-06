@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Check, X, Crown, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
-import { api, trackEvent } from "@/lib/api";
+import { api, trackEvent, getPreferredCurrency, setPreferredCurrency, formatINR } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const FEATURES = [
@@ -38,17 +38,92 @@ export default function PricingPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [mockMode, setMockMode] = useState(false);
   const [autoRenew, setAutoRenew] = useState(false);
+  const [currency, setCurrency] = useState(getPreferredCurrency());
+  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [rzpConfirm, setRzpConfirm] = useState(false);
+  const [rzpBusy, setRzpBusy] = useState(false);
+
+  const changeCurrency = (c) => {
+    setCurrency(c);
+    setPreferredCurrency(c);
+  };
 
   useEffect(() => {
     api.get("/billing/config").then((res) => {
       setMockMode(res.data.mock_mode);
       setAutoRenew(res.data.auto_renew);
+      setRazorpayEnabled(res.data.razorpay_enabled);
     }).catch(() => {});
   }, []);
 
   const plan = annual ? "annual" : "monthly";
-  const price = annual ? "$80" : "$8";
+  const isINR = currency === "inr";
+  const price = isINR ? (annual ? formatINR(1999) : formatINR(199)) : annual ? "$80" : "$8";
   const per = annual ? "/year" : "/month";
+  const monthlyEquiv = isINR ? formatINR(167) : "$6.67";
+
+  const razorpayCheckout = async () => {
+    setRedirecting(true);
+    try {
+      const res = await api.post("/billing/razorpay/checkout", { plan });
+      if (res.data.mock) {
+        setRzpConfirm(res.data);
+        setRedirecting(false);
+        return;
+      }
+      // REAL Razorpay checkout (activates once keys are configured)
+      await new Promise((resolve, reject) => {
+        if (window.Razorpay) return resolve();
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+      const rzp = new window.Razorpay({
+        key: res.data.razorpay_key_id,
+        amount: res.data.amount,
+        currency: res.data.currency,
+        order_id: res.data.order_id,
+        name: res.data.name,
+        description: res.data.description,
+        handler: async (resp) => {
+          try {
+            await api.post("/billing/razorpay/verify", {
+              order_id: res.data.order_id,
+              payment_id: resp.razorpay_payment_id,
+              signature: resp.razorpay_signature,
+            });
+            await refreshUser();
+            toast.success("Welcome to Premium! Every essay is now unlocked.");
+            navigate("/account");
+          } catch {
+            toast.error("Payment verification failed. Contact support.");
+          }
+        },
+        modal: { ondismiss: () => setRedirecting(false) },
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not start Razorpay checkout.");
+      setRedirecting(false);
+    }
+  };
+
+  const confirmRazorpayMock = async () => {
+    setRzpBusy(true);
+    try {
+      await api.post("/billing/razorpay/verify", { order_id: rzpConfirm.order_id });
+      await refreshUser();
+      setRzpConfirm(false);
+      toast.success("Welcome to Premium! Every essay is now unlocked.");
+      navigate("/account");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Checkout failed. Try again.");
+    } finally {
+      setRzpBusy(false);
+    }
+  };
 
   const startCheckout = async () => {
     trackEvent("subscribe_cta_click", "/pricing", { plan });
@@ -59,6 +134,10 @@ export default function PricingPage() {
     }
     if (user.is_premium) {
       toast.success("You're already Premium!");
+      return;
+    }
+    if (isINR) {
+      razorpayCheckout();
       return;
     }
     if (mockMode) {
@@ -112,6 +191,25 @@ export default function PricingPage() {
           <span className={`text-sm ${annual ? "font-semibold" : "text-muted-foreground"}`} data-testid="pricing-billing-annual">Annual</span>
           <Badge className="bg-accent/10 text-accent border border-accent/30 hover:bg-accent/10" data-testid="pricing-savings-badge">Save 17%</Badge>
         </div>
+
+        <div className="flex items-center justify-center gap-1 mt-4">
+          <div className="inline-flex border border-border rounded-full p-0.5 bg-card" data-testid="pricing-currency-toggle">
+            <button
+              onClick={() => changeCurrency("usd")}
+              className={`px-4 py-1.5 rounded-full text-xs font-mono transition-colors ${!isINR ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="pricing-currency-usd"
+            >
+              $ USD
+            </button>
+            <button
+              onClick={() => changeCurrency("inr")}
+              className={`px-4 py-1.5 rounded-full text-xs font-mono transition-colors ${isINR ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="pricing-currency-inr"
+            >
+              ₹ INR
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mt-10">
@@ -120,7 +218,7 @@ export default function PricingPage() {
           <CardHeader className="pb-2">
             <h3 className="font-serif text-2xl font-semibold">Free</h3>
             <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-semibold" data-testid="pricing-free-amount">$0</span>
+              <span className="text-4xl font-semibold" data-testid="pricing-free-amount">{isINR ? "₹0" : "$0"}</span>
               <span className="text-muted-foreground text-sm">forever</span>
             </div>
           </CardHeader>
@@ -150,7 +248,7 @@ export default function PricingPage() {
               <span className="text-4xl font-semibold" data-testid="pricing-premium-amount">{price}</span>
               <span className="text-muted-foreground text-sm">{per}</span>
             </div>
-            {annual && <p className="text-xs text-muted-foreground font-mono">That's $6.67/month</p>}
+            {annual && <p className="text-xs text-muted-foreground font-mono">That's {monthlyEquiv}/month</p>}
           </CardHeader>
           <CardContent>
             <ul className="space-y-3 text-sm mt-2">
@@ -176,9 +274,13 @@ export default function PricingPage() {
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-stripe-notice">
-                {autoRenew
-                  ? "Secure Stripe checkout · renews automatically · cancel anytime"
-                  : `Secure Stripe checkout · Test mode · ${annual ? "365" : "30"}-day pass · card 4242 4242 4242 4242`}
+                {isINR
+                  ? razorpayEnabled
+                    ? "UPI · cards · netbanking via Razorpay · cancel anytime"
+                    : "UPI · cards · netbanking via Razorpay · MOCKED until keys are added"
+                  : autoRenew
+                    ? "Secure Stripe checkout · renews automatically · cancel anytime"
+                    : `Secure Stripe checkout · Test mode · ${annual ? "365" : "30"}-day pass · card 4242 4242 4242 4242`}
               </p>
             )}
           </CardContent>
@@ -209,6 +311,32 @@ export default function PricingPage() {
           </Table>
         </div>
       </div>
+
+      {/* Razorpay mock checkout dialog */}
+      <Dialog open={!!rzpConfirm} onOpenChange={(o) => !o && setRzpConfirm(false)}>
+        <DialogContent data-testid="razorpay-mock-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Razorpay checkout (mocked)</DialogTitle>
+            <DialogDescription>
+              UPI, cards, and netbanking activate the moment Razorpay keys are added. For now this test checkout grants Premium instantly — no payment collected.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-muted/40 border border-border rounded-lg p-4 flex justify-between items-center">
+            <div>
+              <div className="font-medium">Premium — {annual ? "Annual" : "Monthly"} (INR)</div>
+              <div className="text-xs text-muted-foreground font-mono">{annual ? "365" : "30"}-day pass · cancel anytime</div>
+            </div>
+            <div className="text-2xl font-semibold">{price}<span className="text-sm text-muted-foreground">{per}</span></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRzpConfirm(false)}>Cancel</Button>
+            <Button onClick={confirmRazorpayMock} disabled={rzpBusy} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="razorpay-mock-confirm-button">
+              {rzpBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Activate Premium
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mock checkout dialog */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>

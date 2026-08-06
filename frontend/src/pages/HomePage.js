@@ -11,6 +11,7 @@ import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { api, CATEGORIES, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { ContinueReading } from "@/components/ContinueReading";
 
 const fadeUp = {
   initial: { opacity: 0, y: 14 },
@@ -155,6 +156,9 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* CONTINUE READING */}
+      <ContinueReading />
 
       {/* FOR YOU */}
       {recs?.posts?.length > 0 && (

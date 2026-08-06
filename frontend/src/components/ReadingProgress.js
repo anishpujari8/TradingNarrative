@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export const ReadingProgress = ({ targetRef, readTime }) => {
+export const ReadingProgress = ({ targetRef, readTime, slug }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -12,14 +12,38 @@ export const ReadingProgress = ({ targetRef, readTime }) => {
       const scrolled = Math.min(Math.max(-rect.top + window.innerHeight * 0.25, 0), Math.max(total, 1));
       setProgress(total > 0 ? Math.min(scrolled / total, 1) : 1);
     };
+    let saveTimer = null;
+    const persist = () => {
+      if (!slug) return;
+      try {
+        const el = targetRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const total = rect.height - window.innerHeight * 0.5;
+        const scrolled = Math.min(Math.max(-rect.top + window.innerHeight * 0.25, 0), Math.max(total, 1));
+        const p = total > 0 ? Math.min(scrolled / total, 1) : 1;
+        const map = JSON.parse(localStorage.getItem("ttn_progress") || "{}");
+        if (p >= 0.95) delete map[slug];
+        else if (p > 0.02) map[slug] = { p, t: Date.now() };
+        localStorage.setItem("ttn_progress", JSON.stringify(map));
+      } catch { /* ignore */ }
+    };
+    const onScrollPersist = () => {
+      if (saveTimer) return;
+      saveTimer = setTimeout(() => { saveTimer = null; persist(); }, 800);
+    };
+    window.addEventListener("scroll", onScrollPersist, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     onScroll();
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScrollPersist);
       window.removeEventListener("resize", onScroll);
+      if (saveTimer) clearTimeout(saveTimer);
+      persist();
     };
-  }, [targetRef]);
+  }, [targetRef, slug]);
 
   const minutesLeft = Math.max(1, Math.ceil((readTime || 1) * (1 - progress)));
   const showPill = progress > 0.03 && progress < 0.97;

@@ -1,26 +1,34 @@
 [
   {
-    "content": "Phase 1: Build backend core (auth, posts, server-side paywall, mock billing, newsletter, seed data)",
-    "status": "completed"
+    "content": "Finish in-progress: Notifications bell UI, Continue Reading strip + resume, Weekly Digest admin UI",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 1: POC test script (test_core.py) verifying paywall gating + subscription state transitions — fix until passing",
-    "status": "completed"
+    "content": "Get Razorpay integration playbook (placeholder/swap-ready structure)",
+    "status": "pending"
   },
   {
-    "content": "Phase 2: Get design guidelines from design_agent",
-    "status": "completed"
+    "content": "Relabel pillars: Tech & AI, Business & Finance, Personal Growth, Travel",
+    "status": "pending"
   },
   {
-    "content": "Phase 2: Build full frontend (Home, Article, Categories, Archive, Pricing, About, Auth, Account, Admin CMS, share bar, IG card, dark mode, SEO meta)",
-    "status": "completed"
+    "content": "Post tags: backend + seed + admin editor + display + archive filter",
+    "status": "pending"
   },
   {
-    "content": "Phase 2: All user stories covered in development",
-    "status": "completed"
+    "content": "INR pricing + currency auto-detect + toggle + MOCKED Razorpay checkout path",
+    "status": "pending"
   },
   {
-    "content": "Phase 2: End to End Testing using Testing Agent + fix all issues",
-    "status": "completed"
+    "content": "Email preferences in Account (category opt-ins, respected by mocked sends)",
+    "status": "pending"
+  },
+  {
+    "content": "Quote-card generator tab in share dialog",
+    "status": "pending"
+  },
+  {
+    "content": "End to End Testing using Testing Agent + fix all issues",
+    "status": "pending"
   }
 ]

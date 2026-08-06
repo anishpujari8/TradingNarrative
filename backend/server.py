@@ -42,6 +42,16 @@ IS_SHARED_STRIPE_KEY = 'sk_test_emergent' in STRIPE_API_KEY
 AUTO_RENEW = not IS_SHARED_STRIPE_KEY
 
 
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_ENABLED = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
+
+
+def razorpay_client():
+    import razorpay
+    return razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+
+
 def configure_stripe_sdk():
     stripe_sdk.api_key = STRIPE_API_KEY
     if IS_SHARED_STRIPE_KEY:
@@ -50,14 +60,16 @@ def configure_stripe_sdk():
 
 
 PLANS = {
-    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 8.00, 'currency': 'usd', 'interval': 'month', 'period_days': 30},
-    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 80.00, 'currency': 'usd', 'interval': 'year', 'period_days': 365},
+    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 8.00, 'currency': 'usd',
+                'amount_inr': 199.00, 'interval': 'month', 'period_days': 30},
+    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 80.00, 'currency': 'usd',
+               'amount_inr': 1999.00, 'interval': 'year', 'period_days': 365},
 }
 
 CATEGORIES = {
-    'tech-business': 'Tech & Business',
-    'finance': 'Finance',
-    'lifestyle': 'Lifestyle',
+    'tech-business': 'Tech & AI',
+    'finance': 'Business & Finance',
+    'lifestyle': 'Personal Growth',
     'travel': 'Travel',
 }
 
@@ -175,6 +187,7 @@ def post_summary(p):
         'category': p['category'], 'category_label': CATEGORIES.get(p['category'], p['category']),
         'tier': p.get('tier', 'free'), 'cover_image': p.get('cover_image', ''),
         'featured': p.get('featured', False), 'read_time': p.get('read_time', 3),
+        'tags': p.get('tags', []),
         'author': p.get('author', AUTHOR), 'published_at': p.get('published_at'),
         'status': p.get('status', 'published'), 'views': p.get('views', 0),
     }
@@ -256,6 +269,7 @@ class PostIn(BaseModel):
     tier: str = 'free'
     cover_image: str = ''
     content_blocks: List[str] = []
+    tags: List[str] = []
     featured: bool = False
     status: str = 'draft'  # draft | published | scheduled
     publish_at: Optional[str] = None
@@ -404,10 +418,15 @@ async def get_categories():
 @api_router.get('/posts')
 async def list_posts(category: Optional[str] = None, q: Optional[str] = None,
                      tier: Optional[str] = None, featured: Optional[bool] = None,
+                     slugs: Optional[str] = None, tag: Optional[str] = None,
                      limit: int = Query(50, le=100), skip: int = 0):
     query = published_query()
+    if tag:
+        query['tags'] = tag
     if category:
         query['category'] = category
+    if slugs:
+        query['slug'] = {'$in': [x for x in slugs.split(',') if x.strip()][:50]}
     if tier in ('free', 'premium'):
         query['tier'] = tier
     if featured is not None:
@@ -473,10 +492,12 @@ async def create_comment(slug: str, body: CommentIn, user=Depends(get_current_us
     if not entitled:
         raise HTTPException(status_code=403, detail='Comments are a Premium member perk. Upgrade to join the discussion.')
     parent_id = None
+    replied_to = None
     if body.parent_id:
         parent = await db.comments.find_one({'id': body.parent_id})
         if not parent or parent['post_id'] != post['id']:
             raise HTTPException(status_code=400, detail='Parent comment not found on this post')
+        replied_to = parent
         # flatten threads to 2 levels: replying to a reply attaches to its top-level parent
         parent_id = parent.get('parent_id') or parent['id']
     comment = {
@@ -487,7 +508,30 @@ async def create_comment(slug: str, body: CommentIn, user=Depends(get_current_us
         'body': body.body.strip(), 'created_at': iso(now_utc()),
     }
     await db.comments.insert_one(dict(comment))
+    # notify the author of the comment being replied to
+    if replied_to and replied_to['user_id'] != user['id']:
+        await db.notifications.insert_one({
+            'id': str(uuid.uuid4()), 'user_id': replied_to['user_id'], 'type': 'reply',
+            'actor_name': comment['user_name'], 'post_slug': slug, 'post_title': post['title'],
+            'preview': comment['body'][:140], 'comment_id': comment['id'],
+            'read': False, 'created_at': iso(now_utc()),
+        })
     return clean(comment)
+
+
+# ---------------------- notifications ----------------------
+
+@api_router.get('/notifications')
+async def get_notifications(user=Depends(get_current_user)):
+    notifs = await db.notifications.find({'user_id': user['id']}).sort('created_at', -1).limit(50).to_list(50)
+    unread = await db.notifications.count_documents({'user_id': user['id'], 'read': False})
+    return {'notifications': [clean(n) for n in notifs], 'unread': unread}
+
+
+@api_router.post('/notifications/mark-read')
+async def mark_notifications_read(user=Depends(get_current_user)):
+    await db.notifications.update_many({'user_id': user['id'], 'read': False}, {'$set': {'read': True}})
+    return {'ok': True}
 
 
 @api_router.delete('/comments/{comment_id}')
@@ -623,7 +667,8 @@ async def activate_premium_from_transaction(txn):
         'id': str(uuid.uuid4()), 'user_id': user['id'],
         'subscription_id': txn['session_id'],
         'number': f"TTN-{now_utc().strftime('%Y%m')}-{random.randint(1000, 9999)}",
-        'amount': plan['amount'], 'currency': plan['currency'], 'plan': plan_id,
+        'amount': txn.get('amount', plan['amount']),
+        'currency': txn.get('currency', plan['currency']), 'plan': plan_id,
         'status': 'paid', 'created_at': iso(now_utc()),
     }
     await db.invoices.insert_one(dict(invoice))
@@ -636,7 +681,9 @@ async def activate_premium_from_transaction(txn):
 
 @api_router.get('/billing/config')
 async def billing_config():
-    return {'mock_mode': MOCK_BILLING, 'auto_renew': AUTO_RENEW, 'plans': list(PLANS.values())}
+    return {'mock_mode': MOCK_BILLING, 'auto_renew': AUTO_RENEW,
+            'razorpay_enabled': RAZORPAY_ENABLED, 'razorpay_key_id': RAZORPAY_KEY_ID or None,
+            'plans': list(PLANS.values())}
 
 
 @api_router.post('/billing/checkout')
@@ -819,6 +866,38 @@ async def newsletter_subscribe(body: NewsletterIn):
     return {'ok': True, 'message': "You're in! Check your inbox for a welcome note.", 'already': False}
 
 
+class NewsletterPrefsIn(BaseModel):
+    subscribed: bool = True
+    categories: List[str] = []
+
+
+@api_router.get('/newsletter/my-preferences')
+async def my_newsletter_prefs(user=Depends(get_current_user)):
+    sub = await db.newsletter_subscribers.find_one({'email': user['email']})
+    if not sub:
+        return {'subscribed': False, 'categories': list(CATEGORIES.keys())}
+    return {'subscribed': sub.get('status') == 'subscribed',
+            'categories': sub.get('categories', list(CATEGORIES.keys()))}
+
+
+@api_router.post('/newsletter/my-preferences')
+async def set_newsletter_prefs(body: NewsletterPrefsIn, user=Depends(get_current_user)):
+    cats = [c for c in body.categories if c in CATEGORIES] or list(CATEGORIES.keys())
+    sub = await db.newsletter_subscribers.find_one({'email': user['email']})
+    if not sub:
+        await db.newsletter_subscribers.insert_one({
+            'id': str(uuid.uuid4()), 'email': user['email'], 'source': 'account',
+            'status': 'subscribed' if body.subscribed else 'unsubscribed',
+            'categories': cats, 'created_at': iso(now_utc()),
+        })
+    else:
+        await db.newsletter_subscribers.update_one({'email': user['email']}, {'$set': {
+            'status': 'subscribed' if body.subscribed else 'unsubscribed',
+            'categories': cats,
+        }})
+    return {'ok': True, 'subscribed': body.subscribed, 'categories': cats}
+
+
 # ---------------------- analytics ----------------------
 
 @api_router.post('/analytics/track')
@@ -870,7 +949,8 @@ async def admin_create_post(body: PostIn, admin=Depends(get_admin_user)):
     post = {
         'id': str(uuid.uuid4()), 'slug': slug, 'title': body.title, 'excerpt': body.excerpt,
         'category': body.category, 'tier': body.tier, 'cover_image': body.cover_image,
-        'content_blocks': body.content_blocks, 'featured': body.featured,
+        'content_blocks': body.content_blocks, 'tags': [t.strip() for t in body.tags if t.strip()][:10],
+        'featured': body.featured,
         'status': body.status, 'publish_at': body.publish_at,
         'published_at': iso(now_utc()) if body.status == 'published' else (body.publish_at or iso(now_utc())),
         'author': AUTHOR, 'read_time': read_time(body.content_blocks), 'views': 0,
@@ -890,6 +970,7 @@ async def admin_update_post(post_id: str, body: PostIn, admin=Depends(get_admin_
     updates = {
         'title': body.title, 'excerpt': body.excerpt, 'category': body.category,
         'tier': body.tier, 'cover_image': body.cover_image, 'content_blocks': body.content_blocks,
+        'tags': [t.strip() for t in body.tags if t.strip()][:10],
         'featured': body.featured, 'status': body.status, 'publish_at': body.publish_at,
         'read_time': read_time(body.content_blocks), 'updated_at': iso(now_utc()),
     }
@@ -920,6 +1001,8 @@ async def admin_send_issue(body: IssueIn, admin=Depends(get_admin_user)):
     if not post:
         raise HTTPException(status_code=404, detail='Post not found')
     subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
+    # respect per-category email preferences (missing prefs = all categories)
+    subs = [x for x in subs if post['category'] in x.get('categories', list(CATEGORIES.keys()))]
     subject = body.subject or f"New on The Trading Narrative: {post['title']}"
     post_url = f"{FRONTEND_URL}/post/{post['slug']}"
     # MOCKED SEND: log one email per subscriber
@@ -966,6 +1049,193 @@ async def admin_email_logs(admin=Depends(get_admin_user), limit: int = Query(50,
     return {'logs': [clean(l) for l in logs]}
 
 
+
+
+
+
+# ---------------------- Razorpay (INR / UPI) — MOCKED until keys provided ----------------------
+
+class RazorpayCheckoutIn(BaseModel):
+    plan: str
+
+
+class RazorpayVerifyIn(BaseModel):
+    order_id: str
+    payment_id: Optional[str] = None
+    signature: Optional[str] = None
+
+
+@api_router.post('/billing/razorpay/checkout')
+async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_user)):
+    if body.plan not in PLANS:
+        raise HTTPException(status_code=400, detail='Invalid plan')
+    existing = await db.subscriptions.find_one({'user_id': user['id'], 'status': 'active'})
+    if existing:
+        raise HTTPException(status_code=400, detail='You already have an active subscription')
+    plan = PLANS[body.plan]
+    amount_paise = int(round(plan['amount_inr'] * 100))
+    if RAZORPAY_ENABLED:
+        # REAL Razorpay order (activates when RAZORPAY_KEY_ID/SECRET are set)
+        try:
+            order = razorpay_client().order.create({
+                'amount': amount_paise, 'currency': 'INR', 'payment_capture': 1,
+                'receipt': f'ttn-{user["id"][:12]}-{body.plan}'[:40],
+                'notes': {'user_id': user['id'], 'plan': body.plan},
+            })
+        except Exception as e:
+            logger.error(f'Razorpay order creation failed: {e}')
+            raise HTTPException(status_code=502, detail='Could not start Razorpay checkout.')
+        order_id = order['id']
+        mock = False
+    else:
+        # MOCKED order — structure mirrors the real integration 1:1
+        order_id = f'order_mock_{uuid.uuid4().hex[:14]}'
+        mock = True
+    await db.payment_transactions.insert_one({
+        'session_id': order_id, 'user_id': user['id'], 'plan': body.plan,
+        'amount': plan['amount_inr'], 'currency': 'inr', 'provider': 'razorpay',
+        'auto_renew': False, 'mock': mock,
+        'status': 'initiated', 'payment_status': 'pending', 'activated': False,
+        'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
+    })
+    return {'ok': True, 'mock': mock, 'order_id': order_id,
+            'amount': amount_paise, 'currency': 'INR',
+            'razorpay_key_id': RAZORPAY_KEY_ID or None,
+            'name': 'The Trading Narrative',
+            'description': f"Premium — {plan['label']} (INR)"}
+
+
+@api_router.post('/billing/razorpay/verify')
+async def razorpay_verify(body: RazorpayVerifyIn, user=Depends(get_current_user)):
+    txn = await db.payment_transactions.find_one({'session_id': body.order_id, 'user_id': user['id']})
+    if not txn:
+        raise HTTPException(status_code=404, detail='Order not found')
+    if txn.get('payment_status') == 'paid':
+        return {'ok': True, 'already': True}
+    if txn.get('mock'):
+        # MOCKED: mark paid instantly (no gateway available without keys)
+        pass
+    else:
+        try:
+            razorpay_client().utility.verify_payment_signature({
+                'razorpay_order_id': body.order_id,
+                'razorpay_payment_id': body.payment_id,
+                'razorpay_signature': body.signature,
+            })
+        except Exception:
+            raise HTTPException(status_code=400, detail='Payment signature verification failed')
+    await db.payment_transactions.update_one(
+        {'session_id': body.order_id, 'payment_status': {'$ne': 'paid'}},
+        {'$set': {'status': 'completed', 'payment_status': 'paid',
+                  'razorpay_payment_id': body.payment_id, 'updated_at': iso(now_utc())}},
+    )
+    txn = await db.payment_transactions.find_one({'session_id': body.order_id})
+    await activate_premium_from_transaction(txn)
+    return {'ok': True, 'mock': bool(txn.get('mock'))}
+
+
+@api_router.post('/webhook/razorpay')
+async def razorpay_webhook(request: Request):
+    if not RAZORPAY_ENABLED:
+        return {'status': 'ignored (razorpay not configured)'}
+    payload = await request.body()
+    signature = request.headers.get('X-Razorpay-Signature', '')
+    secret = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
+    try:
+        razorpay_client().utility.verify_webhook_signature(payload.decode(), signature, secret)
+    except Exception:
+        raise HTTPException(status_code=400, detail='Invalid webhook signature')
+    import json as _json
+    event = _json.loads(payload)
+    if event.get('event') == 'payment.captured':
+        order_id = event['payload']['payment']['entity'].get('order_id')
+        if order_id:
+            await db.payment_transactions.update_one(
+                {'session_id': order_id, 'payment_status': {'$ne': 'paid'}},
+                {'$set': {'status': 'completed', 'payment_status': 'paid', 'updated_at': iso(now_utc())}},
+            )
+            txn = await db.payment_transactions.find_one({'session_id': order_id})
+            if txn:
+                await activate_premium_from_transaction(txn)
+    return {'status': 'ok'}
+
+
+# ---------------------- weekly digest ----------------------
+
+def build_digest_html(posts):
+    accent = '#1c8570'
+    items = ''
+    for p in posts:
+        items += f"""
+        <tr><td style="padding:0 0 28px 0;">
+          <img src="{p['cover_image']}" alt="" width="560" style="width:100%;max-width:560px;border-radius:10px;display:block;" />
+          <p style="margin:14px 0 4px;font-family:monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{accent};">{p['category_label']}{' &middot; PREMIUM' if p['tier'] == 'premium' else ''}</p>
+          <h2 style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;line-height:1.3;color:#14181f;">
+            <a href="{FRONTEND_URL}/post/{p['slug']}" style="color:#14181f;text-decoration:none;">{p['title']}</a>
+          </h2>
+          <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#555e6b;">{p['excerpt']}</p>
+          <a href="{FRONTEND_URL}/post/{p['slug']}" style="font-family:Arial,sans-serif;font-size:13px;color:{accent};font-weight:bold;text-decoration:none;">Read the essay ({p['read_time']} min) &rarr;</a>
+        </td></tr>"""
+    return f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f1ea;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;padding:36px;">
+        <tr><td style="padding-bottom:26px;border-bottom:1px solid #e8e4da;">
+          <span style="display:inline-block;width:10px;height:10px;background:{accent};"></span>
+          <span style="font-family:Georgia,serif;font-size:22px;font-weight:bold;color:#14181f;">&nbsp;The Trading Narrative</span>
+          <p style="margin:10px 0 0;font-family:monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a8577;">The week in narratives</p>
+        </td></tr>
+        <tr><td style="padding:26px 0 6px;">
+          <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#3a4150;margin:0 0 24px;">Here's everything published this week &mdash; the sharpest thinking on markets, tech, and living well.</p>
+        </td></tr>
+        {items}
+        <tr><td style="padding-top:8px;border-top:1px solid #e8e4da;">
+          <p style="font-family:Arial,sans-serif;font-size:12px;color:#8a8577;margin:16px 0 0;">You're receiving this because you subscribed to The Trading Narrative.<br/>
+          <a href="{FRONTEND_URL}" style="color:{accent};">Visit the site</a> &middot; <a href="{FRONTEND_URL}/pricing" style="color:{accent};">Go Premium</a></p>
+        </td></tr>
+      </table>
+    </td></tr></table></body></html>"""
+
+
+async def get_digest_posts():
+    week_ago = iso(now_utc() - timedelta(days=7))
+    posts = await db.posts.find({**published_query(), 'published_at': {'$gte': week_ago}}).sort('published_at', -1).to_list(20)
+    if not posts:
+        posts = await db.posts.find(published_query()).sort('published_at', -1).limit(5).to_list(5)
+    return [post_summary(clean(p)) for p in posts]
+
+
+@api_router.get('/admin/newsletter/digest-preview')
+async def digest_preview(admin=Depends(get_admin_user)):
+    posts = await get_digest_posts()
+    subject = f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+    return {'subject': subject, 'post_count': len(posts), 'posts': posts,
+            'html': build_digest_html(posts)}
+
+
+class DigestSendIn(BaseModel):
+    subject: Optional[str] = None
+
+
+@api_router.post('/admin/newsletter/send-digest')
+async def send_digest(body: DigestSendIn, admin=Depends(get_admin_user)):
+    posts = await get_digest_posts()
+    if not posts:
+        raise HTTPException(status_code=400, detail='No published posts to include')
+    subject = body.subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+    subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
+    titles = ', '.join(p['title'] for p in posts[:5])
+    # MOCKED SEND
+    for sub in subs:
+        await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest')
+    issue = {
+        'id': str(uuid.uuid4()), 'post_id': None, 'post_title': f'Weekly digest ({len(posts)} essays)',
+        'kind': 'digest', 'subject': subject, 'recipients': len(subs), 'status': 'sent (mocked)',
+        'sent_at': iso(now_utc()),
+    }
+    await db.newsletter_issues.insert_one(dict(issue))
+    return clean(issue)
+
+
 # ---------------------- SEO ----------------------
 
 @api_router.get('/sitemap.xml')
@@ -1006,6 +1276,7 @@ async def seed_database():
                 'id': str(uuid.uuid4()), 'slug': slugify(sp['title']), 'title': sp['title'],
                 'excerpt': sp['excerpt'], 'category': sp['category'], 'tier': sp['tier'],
                 'cover_image': sp['cover_image'], 'content_blocks': sp['content_blocks'],
+                'tags': sp.get('tags', []),
                 'featured': sp.get('featured', False), 'status': 'published', 'publish_at': None,
                 'published_at': iso(published), 'author': AUTHOR,
                 'read_time': read_time(sp['content_blocks']),
@@ -1014,6 +1285,13 @@ async def seed_database():
             }
             await db.posts.insert_one(post)
         logger.info(f'Seeded {len(SAMPLE_POSTS)} posts')
+    # backfill tags on already-seeded posts
+    for sp in SAMPLE_POSTS:
+        if sp.get('tags'):
+            await db.posts.update_one(
+                {'slug': slugify(sp['title']), 'tags': {'$exists': False}},
+                {'$set': {'tags': sp['tags']}},
+            )
 
 
 @app.on_event('startup')

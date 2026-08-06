@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,7 +41,7 @@ const loadImage = (src) =>
     img.src = src;
   });
 
-const drawCard = async (canvas, post, format) => {
+const drawCard = async (canvas, post, format, quoteText = "") => {
   const W = 1080;
   const H = format === "story" ? 1920 : 1080;
   canvas.width = W;
@@ -50,6 +51,38 @@ const drawCard = async (canvas, post, format) => {
   // background
   ctx.fillStyle = "#101623";
   ctx.fillRect(0, 0, W, H);
+
+  if (format === "quote") {
+    const pad = 90;
+    // giant quotation mark
+    ctx.font = "700 220px 'EB Garamond', Georgia, serif";
+    ctx.fillStyle = "#2ba08a";
+    ctx.fillText("\u201C", pad - 20, 250);
+    // quote text
+    ctx.font = "500 58px 'EB Garamond', Georgia, serif";
+    ctx.fillStyle = "#faf8f3";
+    const qlines = wrapText(ctx, quoteText || post.excerpt || post.title, W - pad * 2);
+    let qy = 360;
+    qlines.slice(0, 8).forEach((l) => {
+      ctx.fillText(l, pad, qy);
+      qy += 76;
+    });
+    // attribution
+    qy += 30;
+    ctx.fillStyle = "#2ba08a";
+    ctx.fillRect(pad, qy - 16, 44, 4);
+    ctx.font = "400 34px 'Figtree', Arial, sans-serif";
+    ctx.fillStyle = "rgba(250,248,243,0.75)";
+    ctx.fillText(`${post.author?.name || "The Trading Narrative"} \u00B7 ${post.category_label || ""}`, pad + 60, qy);
+    // footer brand
+    const fy = H - 90;
+    ctx.fillStyle = "#2ba08a";
+    ctx.fillRect(pad, fy - 26, 16, 16);
+    ctx.font = "600 40px 'EB Garamond', Georgia, serif";
+    ctx.fillStyle = "#faf8f3";
+    ctx.fillText(SITE_NAME, pad + 36, fy);
+    return;
+  }
 
   // cover image (top ~55%)
   const imgH = Math.round(H * 0.55);
@@ -110,10 +143,11 @@ const IgCardDialog = ({ post }) => {
   const canvasRef = useRef(null);
   const [format, setFormat] = useState("post");
   const [rendering, setRendering] = useState(false);
+  const [quoteText, setQuoteText] = useState(post.excerpt || "");
 
-  const render = async (fmt) => {
+  const render = async (fmt, qt) => {
     setRendering(true);
-    if (canvasRef.current) await drawCard(canvasRef.current, post, fmt);
+    if (canvasRef.current) await drawCard(canvasRef.current, post, fmt, qt !== undefined ? qt : quoteText);
     setRendering(false);
   };
 
@@ -147,12 +181,26 @@ const IgCardDialog = ({ post }) => {
           setTimeout(() => render(v), 50);
         }}
       >
-        <TabsList className="grid grid-cols-2 w-full">
-          <TabsTrigger value="post" data-testid="ig-card-format-post">Post 1080×1080</TabsTrigger>
-          <TabsTrigger value="story" data-testid="ig-card-format-story">Story 1080×1920</TabsTrigger>
+        <TabsList className="grid grid-cols-3 w-full">
+          <TabsTrigger value="post" data-testid="ig-card-format-post">Post</TabsTrigger>
+          <TabsTrigger value="story" data-testid="ig-card-format-story">Story</TabsTrigger>
+          <TabsTrigger value="quote" data-testid="ig-card-format-quote">Quote card</TabsTrigger>
         </TabsList>
         <TabsContent value="post" />
         <TabsContent value="story" />
+        <TabsContent value="quote">
+          <Textarea
+            value={quoteText}
+            onChange={(e) => setQuoteText(e.target.value)}
+            onBlur={() => render("quote")}
+            rows={3}
+            maxLength={280}
+            placeholder="Pick a line worth quoting\u2026"
+            className="mt-2"
+            data-testid="quote-card-text-input"
+          />
+          <p className="text-[10px] text-muted-foreground font-mono mt-1">Edit the quote, then click outside to refresh the preview.</p>
+        </TabsContent>
       </Tabs>
       <div className="border border-border rounded-lg overflow-hidden bg-muted/40">
         <canvas

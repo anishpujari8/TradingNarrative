@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Seo } from "@/components/Seo";
+import { Linkedin, Instagram } from "lucide-react";
 import { NewsletterForm } from "@/components/NewsletterForm";
 
 export default function AboutPage() {
@@ -52,10 +53,16 @@ export default function AboutPage() {
             <h3 className="font-serif text-xl font-semibold mb-1">Join the readers</h3>
             <p className="text-sm text-muted-foreground mb-4">Get the next narrative in your inbox.</p>
             <NewsletterForm source="about" testId="about-newsletter-form" />
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-3">
               <Link to="/pricing">
                 <Button variant="outline" className="w-full sm:w-auto" data-testid="about-pricing-button">Explore Premium</Button>
               </Link>
+              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="gap-2" data-testid="about-linkedin-button"><Linkedin className="h-4 w-4" /> Follow on LinkedIn</Button>
+              </a>
+              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="gap-2" data-testid="about-instagram-button"><Instagram className="h-4 w-4" /> Follow on Instagram</Button>
+              </a>
             </div>
           </div>
         </div>

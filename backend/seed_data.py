@@ -10,6 +10,7 @@ SAMPLE_POSTS = [
     # ---------------- TECH & BUSINESS ----------------
     {
         "title": "The AI Infrastructure Gold Rush: Who Actually Wins",
+        "tags": ['AI', 'Investing', 'Semiconductors'],
         "excerpt": "Everyone is chasing model headlines, but the durable profits are accruing to a quieter layer of the stack. Here's how to read the AI value chain like an operator.",
         "category": "tech-business",
         "tier": "premium",
@@ -29,6 +30,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "Why Great Products Die in Distribution",
+        "tags": ['Startups', 'Go-to-Market', 'Strategy'],
         "excerpt": "The graveyard of startups is full of superior products that lost to inferior ones with better go-to-market. A field guide to the distribution advantages that actually compound.",
         "category": "tech-business",
         "tier": "free",
@@ -47,6 +49,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "The Solo Operator Economy: One-Person Businesses at Scale",
+        "tags": ['Creator Economy', 'AI', 'Solopreneurship'],
         "excerpt": "Software leverage, global payments, and AI tooling have made the one-person, seven-figure business a repeatable playbook rather than a lottery ticket. Here's the anatomy of the model.",
         "category": "tech-business",
         "tier": "premium",
@@ -67,6 +70,7 @@ SAMPLE_POSTS = [
     # ---------------- FINANCE ----------------
     {
         "title": "The Boring Portfolio That Beats Your Broker",
+        "tags": ['Index Funds', 'Investing', 'Personal Finance'],
         "excerpt": "Three funds, one rebalancing rule, and the discipline to do nothing. Why the most effective investment strategy fits on an index card — and why almost nobody follows it.",
         "category": "finance",
         "tier": "free",
@@ -85,6 +89,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "Reading the Yield Curve Like a Trader, Not a Tourist",
+        "tags": ['Macro', 'Bonds', 'Investing'],
         "excerpt": "The bond market prices in recessions, cuts, and regime shifts long before equity investors notice. A practical guide to extracting signal from rates without a Bloomberg terminal.",
         "category": "finance",
         "tier": "premium",
@@ -104,6 +109,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "Your First $100k Is the Hardest: A Tactical Map",
+        "tags": ['Wealth Building', 'Personal Finance', 'Compounding'],
         "excerpt": "Charlie Munger was right — the first $100k is a slog governed by savings rate, not returns. A stage-by-stage breakdown of what actually moves the needle at each net worth level.",
         "category": "finance",
         "tier": "premium",
@@ -124,6 +130,7 @@ SAMPLE_POSTS = [
     # ---------------- LIFESTYLE ----------------
     {
         "title": "The Deep Work Reset: Reclaiming 20 Hours a Week",
+        "tags": ['Focus', 'Productivity', 'Digital Minimalism'],
         "excerpt": "Attention is the scarcest asset you own, and the modern workplace is engineered to strip-mine it. A practical protocol for rebuilding your capacity for sustained focus.",
         "category": "lifestyle",
         "tier": "free",
@@ -142,6 +149,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "Habits That Survive Contact With Real Life",
+        "tags": ['Habits', 'Systems', 'Self-Improvement'],
         "excerpt": "Most habit systems are designed for people with perfect calendars and infinite motivation. Here's the engineering approach for the rest of us — built around failure, not around streaks.",
         "category": "lifestyle",
         "tier": "premium",
@@ -161,6 +169,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "The Case for a Personal Annual Report",
+        "tags": ['Reflection', 'Goal Setting', 'Systems'],
         "excerpt": "Companies review performance quarterly; most humans never do. How a two-hour year-end ritual — metrics, narrative, and one honest page — compounds into a deliberately designed life.",
         "category": "lifestyle",
         "tier": "free",
@@ -180,6 +189,7 @@ SAMPLE_POSTS = [
     # ---------------- TRAVEL ----------------
     {
         "title": "Slow Travel: The Month-Long Stay Changes Everything",
+        "tags": ['Slow Travel', 'Remote Work', 'Budget Travel'],
         "excerpt": "Ten cities in ten days is sightseeing; one neighborhood for a month is travel. Why the slow travel model is cheaper, deeper, and perfectly suited to the remote-work era.",
         "category": "travel",
         "tier": "free",
@@ -198,6 +208,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "The Shoulder Season Playbook: Same Trip, Half the Price",
+        "tags": ['Travel Hacks', 'Budget Travel', 'Timing'],
         "excerpt": "The eight-week windows on either side of peak season offer 90% of the experience at 50-60% of the cost — with a fraction of the crowds. A destination-by-destination timing guide.",
         "category": "travel",
         "tier": "premium",
@@ -217,6 +228,7 @@ SAMPLE_POSTS = [
     },
     {
         "title": "Working From Anywhere: A Field-Tested Remote Setup",
+        "tags": ['Digital Nomad', 'Remote Work', 'Gear'],
         "excerpt": "Three years and 14 countries of working remotely, distilled: the gear that earns its weight, the routines that protect your job, and the mistakes that almost cost me both.",
         "category": "travel",
         "tier": "premium",

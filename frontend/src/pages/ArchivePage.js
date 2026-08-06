@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -20,12 +21,15 @@ export default function ArchivePage() {
   const [category, setCategory] = useState("all");
   const [tier, setTier] = useState("all");
   const [total, setTotal] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTag = searchParams.get("tag") || "";
 
   useEffect(() => {
     const params = {};
     if (q) params.q = q;
     if (category !== "all") params.category = category;
     if (tier !== "all") params.tier = tier;
+    if (activeTag) params.tag = activeTag;
     const t = setTimeout(() => {
       api.get("/posts", { params }).then((res) => {
         setPosts(res.data.posts);
@@ -33,7 +37,7 @@ export default function ArchivePage() {
       }).catch(() => setPosts([]));
     }, 250);
     return () => clearTimeout(t);
-  }, [q, category, tier]);
+  }, [q, category, tier, activeTag]);
 
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="archive-page">
@@ -76,6 +80,17 @@ export default function ArchivePage() {
         </Select>
       </div>
 
+      {activeTag && (
+        <div className="mt-4">
+          <button
+            onClick={() => setSearchParams({})}
+            className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 transition-colors"
+            data-testid="archive-active-tag"
+          >
+            #{activeTag} <span className="text-sm leading-none">×</span>
+          </button>
+        </div>
+      )}
       <div className="text-xs font-mono text-muted-foreground mt-4" data-testid="archive-result-count">
         {posts === null ? "Searching…" : `${total} ${total === 1 ? "essay" : "essays"} found`}
       </div>

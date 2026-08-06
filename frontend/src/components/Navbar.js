@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import { useTheme } from "@/context/ThemeContext";
 import { CATEGORIES } from "@/lib/api";
 
@@ -81,6 +82,7 @@ export const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
+          <NotificationsBell />
           <Button variant="ghost" size="icon" onClick={toggleTheme} data-testid="dark-mode-toggle" aria-label="Toggle dark mode">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>

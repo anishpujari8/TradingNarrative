@@ -17,10 +17,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Crown, CalendarClock, Receipt, Sparkles } from "lucide-react";
+import { Crown, CalendarClock, Receipt, Sparkles, MailCheck, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
-import { api, formatDate } from "@/lib/api";
+import { api, formatDate, CATEGORIES } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AccountPage() {
@@ -28,10 +30,13 @@ export default function AccountPage() {
   const navigate = useNavigate();
   const [sub, setSub] = useState(undefined);
   const [invoices, setInvoices] = useState(null);
+  const [prefs, setPrefs] = useState(null);
+  const [prefsSaving, setPrefsSaving] = useState(false);
 
   const loadBilling = useCallback(() => {
     api.get("/billing/subscription").then((res) => setSub(res.data.subscription)).catch(() => setSub(null));
     api.get("/billing/invoices").then((res) => setInvoices(res.data.invoices)).catch(() => setInvoices([]));
+    api.get("/newsletter/my-preferences").then((res) => setPrefs(res.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -51,6 +56,26 @@ export default function AccountPage() {
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Cancellation failed.");
     }
+  };
+
+  const savePrefs = async () => {
+    setPrefsSaving(true);
+    try {
+      await api.post("/newsletter/my-preferences", prefs);
+      toast.success("Email preferences saved.");
+    } catch {
+      toast.error("Could not save preferences.");
+    } finally {
+      setPrefsSaving(false);
+    }
+  };
+
+  const togglePrefCategory = (slug) => {
+    setPrefs((p) => {
+      const has = p.categories.includes(slug);
+      const categories = has ? p.categories.filter((c) => c !== slug) : [...p.categories, slug];
+      return { ...p, categories };
+    });
   };
 
   if (loading || !user) {
@@ -133,6 +158,54 @@ export default function AccountPage() {
                 <p className="text-muted-foreground mb-4">You're on the free tier. Upgrade to unlock every essay.</p>
                 <Button onClick={() => navigate("/pricing")} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="account-upgrade-button">
                   <Sparkles className="h-4 w-4 mr-2" /> Go Premium
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Email preferences */}
+        <Card className="rounded-2xl mb-6" data-testid="account-email-prefs-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="font-serif text-xl flex items-center gap-2">
+              <MailCheck className="h-5 w-5 text-accent" /> Email preferences
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {prefs === null ? (
+              <Skeleton className="h-24" />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm">Newsletter</div>
+                    <div className="text-xs text-muted-foreground">Receive new essays and the weekly digest by email.</div>
+                  </div>
+                  <Switch
+                    checked={prefs.subscribed}
+                    onCheckedChange={(v) => setPrefs((p) => ({ ...p, subscribed: v }))}
+                    data-testid="account-newsletter-switch"
+                  />
+                </div>
+                {prefs.subscribed && (
+                  <div>
+                    <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Pillars you want in your inbox</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {CATEGORIES.map((c) => (
+                        <label key={c.slug} className="flex items-center gap-2 text-sm cursor-pointer border border-border rounded-lg px-3 py-2 hover:border-accent/50 transition-colors">
+                          <Checkbox
+                            checked={prefs.categories.includes(c.slug)}
+                            onCheckedChange={() => togglePrefCategory(c.slug)}
+                            data-testid={`account-pref-${c.slug}`}
+                          />
+                          {c.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <Button onClick={savePrefs} disabled={prefsSaving} variant="outline" className="w-full sm:w-auto" data-testid="account-prefs-save-button">
+                  {prefsSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save preferences
                 </Button>
               </div>
             )}

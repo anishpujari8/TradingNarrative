@@ -23,6 +23,7 @@ const emptyForm = {
   tier: "free",
   cover_image: "",
   content: "",
+  tags: "",
   featured: false,
   status: "draft",
   publish_at: "",
@@ -50,6 +51,7 @@ export default function AdminEditorPage() {
           tier: p.tier,
           cover_image: p.cover_image || "",
           content: (p.content_blocks || []).join("\n\n"),
+          tags: (p.tags || []).join(", "),
           featured: !!p.featured,
           status: p.status,
           publish_at: p.publish_at ? p.publish_at.slice(0, 16) : "",
@@ -78,6 +80,7 @@ export default function AdminEditorPage() {
       tier: form.tier,
       cover_image: form.cover_image,
       content_blocks: blocks,
+      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       featured: form.featured,
       status,
       publish_at: status === "scheduled" && form.publish_at ? new Date(form.publish_at).toISOString() : null,
@@ -144,6 +147,11 @@ export default function AdminEditorPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="post-tags">Tags <span className="text-muted-foreground font-normal">(comma-separated, max 10)</span></Label>
+              <Input id="post-tags" value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="AI, Investing, Macro" data-testid="admin-post-tags-input" />
             </div>
 
             <div className="space-y-1.5">

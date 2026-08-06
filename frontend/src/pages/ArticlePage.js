@@ -15,6 +15,7 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { toast } from "sonner";
 import { api, formatDate, trackEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -86,6 +87,29 @@ export default function ArticlePage() {
           hist.unshift({ slug: res.data.slug, category: res.data.category });
           localStorage.setItem("ttn_read_history", JSON.stringify(hist.slice(0, 50)));
         } catch { /* ignore */ }
+        try {
+          const map = JSON.parse(localStorage.getItem("ttn_progress") || "{}");
+          const saved = map[res.data.slug];
+          if (saved && saved.p > 0.05 && saved.p < 0.95) {
+            setTimeout(() => {
+              toast("Pick up where you left off?", {
+                description: `You were ${Math.round(saved.p * 100)}% through this essay.`,
+                action: {
+                  label: "Resume",
+                  onClick: () => {
+                    const el = bodyRef.current;
+                    if (!el) return;
+                    const rect = el.getBoundingClientRect();
+                    const elTop = rect.top + window.scrollY;
+                    const total = rect.height - window.innerHeight * 0.5;
+                    window.scrollTo({ top: elTop - window.innerHeight * 0.25 + saved.p * total, behavior: "smooth" });
+                  },
+                },
+                duration: 6000,
+              });
+            }, 700);
+          }
+        } catch { /* ignore */ }
       })
       .catch((err) => setError(err?.response?.status === 404 ? "This post doesn't exist." : "Failed to load the article."));
   }, [slug, authLoading, user?.is_premium]);
@@ -116,7 +140,7 @@ export default function ArticlePage() {
   return (
     <article data-testid="article-page">
       <Seo title={post.title} description={post.excerpt} image={post.cover_image} path={`/post/${post.slug}`} type="article" />
-      <ReadingProgress targetRef={bodyRef} readTime={post.read_time} />
+      <ReadingProgress targetRef={bodyRef} readTime={post.read_time} slug={post.slug} />
 
       <div className="container-editorial pt-10 sm:pt-14">
         <div className="reading-col">
@@ -137,6 +161,15 @@ export default function ArticlePage() {
               {post.title}
             </h1>
             <p className="text-muted-foreground text-lg mt-4">{post.excerpt}</p>
+            {post.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4" data-testid="article-tags">
+                {post.tags.map((t) => (
+                  <Link key={t} to={`/archive?tag=${encodeURIComponent(t)}`} className="text-xs font-mono px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:border-accent hover:text-accent transition-colors" data-testid="article-tag-chip">
+                    #{t}
+                  </Link>
+                ))}
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3 mt-6 flex-wrap">
               <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 border border-border">

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer } from "recharts";
-import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus } from "lucide-react";
+import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -49,6 +49,10 @@ export default function AdminPage() {
   const [emailLogs, setEmailLogs] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [issueDialog, setIssueDialog] = useState(false);
+  const [digest, setDigest] = useState(null);
+  const [digestOpen, setDigestOpen] = useState(false);
+  const [digestBusy, setDigestBusy] = useState(false);
+  const [digestSending, setDigestSending] = useState(false);
   const [issuePostId, setIssuePostId] = useState("");
   const [issueSubject, setIssueSubject] = useState("");
   const [sending, setSending] = useState(false);
@@ -76,6 +80,33 @@ export default function AdminPage() {
       loadAll();
     } catch {
       toast.error("Delete failed.");
+    }
+  };
+
+  const openDigest = async () => {
+    setDigestBusy(true);
+    try {
+      const res = await api.get("/admin/newsletter/digest-preview");
+      setDigest(res.data);
+      setDigestOpen(true);
+    } catch {
+      toast.error("Could not build the digest preview.");
+    } finally {
+      setDigestBusy(false);
+    }
+  };
+
+  const sendDigest = async () => {
+    setDigestSending(true);
+    try {
+      const res = await api.post("/admin/newsletter/send-digest", { subject: digest?.subject });
+      toast.success(`Digest sent (mocked) to ${res.data.recipients} subscribers.`);
+      setDigestOpen(false);
+      loadAll();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Digest send failed.");
+    } finally {
+      setDigestSending(false);
     }
   };
 
@@ -215,9 +246,14 @@ export default function AdminPage() {
             <Card className="rounded-xl">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-serif text-xl">Subscribers ({subscribers?.total ?? "…"})</CardTitle>
-                <Button onClick={() => setIssueDialog(true)} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="admin-send-issue-button">
-                  <Send className="h-4 w-4 mr-2" /> Send issue
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={openDigest} disabled={digestBusy} data-testid="admin-digest-preview-button">
+                    <Newspaper className="h-4 w-4 mr-2" /> {digestBusy ? "Building…" : "Weekly digest"}
+                  </Button>
+                  <Button onClick={() => setIssueDialog(true)} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="admin-send-issue-button">
+                    <Send className="h-4 w-4 mr-2" /> Send issue
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {subscribers?.subscribers?.length ? (
@@ -312,6 +348,35 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Weekly digest preview dialog */}
+      <Dialog open={digestOpen} onOpenChange={setDigestOpen}>
+        <DialogContent className="max-w-2xl" data-testid="admin-digest-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Weekly digest preview</DialogTitle>
+            <DialogDescription>
+              {digest ? `${digest.post_count} essays from the past week · Subject: "${digest.subject}"` : ""} Sending is MOCKED and logged in the email log.
+            </DialogDescription>
+          </DialogHeader>
+          {digest && (
+            <div className="border border-border rounded-lg overflow-hidden bg-white">
+              <iframe
+                title="Digest preview"
+                srcDoc={digest.html}
+                className="w-full h-[420px]"
+                sandbox=""
+                data-testid="admin-digest-iframe"
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDigestOpen(false)}>Close</Button>
+            <Button onClick={sendDigest} disabled={digestSending} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="admin-digest-send-button">
+              <Send className="h-4 w-4 mr-2" /> {digestSending ? "Sending…" : "Send to all subscribers"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Send issue dialog */}
       <Dialog open={issueDialog} onOpenChange={setIssueDialog}>

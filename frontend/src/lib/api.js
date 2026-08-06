@@ -16,21 +16,21 @@ api.interceptors.request.use((config) => {
 export const CATEGORIES = [
   {
     slug: "tech-business",
-    label: "Tech & Business",
+    label: "Tech & AI",
     description:
-      "Operator-grade insights on technology, startups, and the business models shaping the next decade.",
+      "Operator-grade insights on AI, technology, and the business models being built on them.",
   },
   {
     slug: "finance",
-    label: "Finance",
+    label: "Business & Finance",
     description:
-      "Personal finance and investing, minus the noise. Markets, portfolios, and the psychology of money.",
+      "Markets, investing, and business strategy, minus the noise. Portfolios, macro, and the psychology of money.",
   },
   {
     slug: "lifestyle",
-    label: "Lifestyle",
+    label: "Personal Growth",
     description:
-      "Personal growth, focus, and the systems behind a deliberately designed life.",
+      "Focus, habits, and the systems behind a deliberately designed life.",
   },
   {
     slug: "travel",
@@ -59,3 +59,21 @@ export const formatDate = (iso) => {
     return "";
   }
 };
+
+export const detectIndia = () => {
+  try {
+    if (Intl.DateTimeFormat().resolvedOptions().timeZone === "Asia/Kolkata") return true;
+    if ((navigator.language || "").toLowerCase().endsWith("-in")) return true;
+  } catch { /* ignore */ }
+  return false;
+};
+
+export const getPreferredCurrency = () => {
+  const stored = localStorage.getItem("ttn_currency");
+  if (stored === "usd" || stored === "inr") return stored;
+  return detectIndia() ? "inr" : "usd";
+};
+
+export const setPreferredCurrency = (c) => localStorage.setItem("ttn_currency", c);
+
+export const formatINR = (n) => `₹${Number(n).toLocaleString("en-IN")}`;
