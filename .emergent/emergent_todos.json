@@ -9,18 +9,18 @@
   },
   {
     "content": "Phase 2: Get design guidelines from design_agent",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Phase 2: Build full frontend (Home, Article, Categories, Archive, Pricing, About, Auth, Account, Admin CMS, share bar, IG card, dark mode, SEO meta)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 2: All user stories covered in development",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 2: End to End Testing using Testing Agent + fix all issues",
-    "status": "pending"
+    "status": "in_progress"
   }
 ]
