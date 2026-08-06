@@ -126,3 +126,7 @@
 - Real Stripe checkout (test mode, emergentintegrations, sk_test_emergent) LIVE — full E2E payment verified with 4242 card: paid → premium activated → invoice recorded. Claimable sandbox unavailable (account country IN unsupported), so one-time timed-access model used; user's own key swappable via STRIPE_API_KEY.
 - Password reset (mocked email, dev-mode link) DONE. Premium comments DONE. Reading progress DONE.
 - testing_agent iteration_2: backend 89/89, frontend 45/45 — all passing.
+
+## STATUS UPDATE (post V1.2 feature batch)
+- Reply threads, bookmarks/reading list, For-You recommendations DONE + tested (iteration_3: 120/120 backend, 43/43 frontend).
+- Auto-renew billing branch implemented & dormant: activates automatically when user's own Stripe key replaces STRIPE_API_KEY in backend/.env (user skipped providing key). Shared key verified to allow subscription session creation but NOT Subscription.delete — hence one-time passes remain default.

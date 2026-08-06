@@ -4,7 +4,7 @@
 Subscription-based blog + newsletter ("Substack × premium magazine") covering 4 pillars:
 Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, MongoDB).
 
-## Status: V1.1 COMPLETE (iteration_2: backend 89/89, frontend 45/45; full Stripe test payment verified E2E)
+## Status: V1.2 COMPLETE (iteration_3: backend 120/120, frontend 43/43)
 
 ## Implemented
 - **Content**: 12 seeded editorial posts (3/category, mixed free/premium, 1 featured), author Jordan Hale.
@@ -20,6 +20,9 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 
 ## Credentials
 - Admin: admin@tradingnarrative.com / Admin@2025 (see /app/memory/test_credentials.md)
+
+## New in V1.2
+- Reply threads on comments (1-level nesting, flattened deeper replies, cascade delete), bookmarks/reading list (/reading-list, article Save button + card overlay icon, any logged-in user), 'For you' homepage recommendations (localStorage ttn_read_history + server pageview history, weighted by category via GET /api/recommendations), auto-renew-ready billing: billing/config exposes auto_renew; with shared sk_test_emergent key → one-time passes (proxy blocks Subscription cancel API); paste user's own key into STRIPE_API_KEY → subscription-mode checkout (recurring price_data), Stripe-side cancel, real period end. Branch dormant until key provided.
 
 ## New in V1.1
 - Real Stripe test-mode checkout (above), password reset flow (mocked email — link shown in UI, single-use, 15-min expiry, rate-limited), premium-member comments on articles (read: everyone; post: premium/admin; delete: owner/admin), reading progress bar + "min left" pill on articles.
