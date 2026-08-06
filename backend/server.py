@@ -2047,7 +2047,7 @@ async def seed_database():
     existing_admin = await db.users.find_one({'email': admin_email})
     if not existing_admin:
         await db.users.insert_one({
-            'id': str(uuid.uuid4()), 'email': admin_email, 'name': 'Jordan Hale',
+            'id': str(uuid.uuid4()), 'email': admin_email, 'name': 'Anish Pujari',
             'password_hash': hash_password('Admin@2025'), 'role': 'admin',
             'created_at': iso(now_utc()),
         })

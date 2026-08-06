@@ -8,13 +8,13 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 export default function AboutPage() {
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="about-page">
-      <Seo title="About" description="The story behind The Trading Narrative and its author, Jordan Hale." path="/about" />
+      <Seo title="About" description="The story behind The Trading Narrative and its author, Anish Pujari." path="/about" />
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
         <div className="lg:col-span-5">
           <div className="rounded-2xl overflow-hidden border border-border shadow-[var(--shadow-float)] card-img-zoom">
             <img
-              src="https://images.pexels.com/photos/10209456/pexels-photo-10209456.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
-              alt="Jordan Hale, author of The Trading Narrative"
+              src="/anish.jpg"
+              alt="Anish Pujari, author of The Trading Narrative"
               className="w-full aspect-[4/5] object-cover"
               data-testid="about-author-photo"
             />
@@ -27,25 +27,29 @@ export default function AboutPage() {
           </h1>
           <div className="article-body mt-8">
             <p>
-              I'm Jordan Hale — a former fintech operator and trader who spent a decade watching
-              brilliant people make terrible decisions because nobody translated the numbers into
-              narrative. The Trading Narrative is my answer to that gap.
+              I'm Anish Pujari, a senior product and engagement manager who's spent over 12 years
+              inside commodity trading floors, watching multi-million-pound technology programmes
+              succeed or collapse for reasons that had nothing to do with the technology. This
+              publication is my answer to that gap.
             </p>
             <p>
-              This publication covers four things I care about obsessively: technology and the
-              businesses being built on it, personal finance and investing without the noise,
-              the systems behind a well-designed life, and travel that changes how you think
-              rather than just where you've been.
+              It covers four things I've built a career around: technology and AI reshaping
+              enterprise systems and how work actually gets delivered, the business and financial
+              mechanics behind high-stakes client engagements, budgets, negotiation, governance,
+              without the jargon, the unglamorous systems that let large programmes run on time
+              and under budget instead of quietly falling apart, and the personal growth that
+              comes from managing complexity — stakeholders, teams, ambiguity — rather than just
+              headcount.
             </p>
             <p>
-              Every essay follows the same rule: it must be something I'd send to a close friend
-              who asked a hard question. No filler, no engagement bait, no ten-item listicles.
-              One idea, argued properly, with the homework done.
+              Every piece follows the same rule: it must be something I'd tell a colleague who's
+              about to walk into a steering committee and needs the real answer, not the safe one.
+              No buzzwords, no theory without a delivery scar to back it up.
             </p>
             <p>
-              Free subscribers get a full essay every week and previews of premium work.
-              Premium members get everything: the full library, ad-free reading, and early
-              access to new pieces before they're public.
+              Free subscribers get a full essay every week and previews of premium work. Premium
+              members get the full library, ad-free reading, and early access before anything
+              goes public.
             </p>
           </div>
           <Separator className="my-8" />
@@ -57,7 +61,7 @@ export default function AboutPage() {
               <Link to="/pricing">
                 <Button variant="outline" className="w-full sm:w-auto" data-testid="about-pricing-button">Explore Premium</Button>
               </Link>
-              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://www.linkedin.com/in/anish-pujari-69174b6a" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" className="gap-2" data-testid="about-linkedin-button"><Linkedin className="h-4 w-4" /> Follow on LinkedIn</Button>
               </a>
               <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">

@@ -1,22 +1,22 @@
 [
   {
-    "content": "Unsubscribe links: token endpoint + footer in emails",
-    "status": "completed"
+    "content": "Download + optimize logo and headshot assets",
+    "status": "in_progress"
   },
   {
-    "content": "Subscriber growth chart: weekly buckets + UI",
-    "status": "completed"
+    "content": "Update logo in Navbar/footer + favicon",
+    "status": "pending"
   },
   {
-    "content": "Digest preview email: send-to-self endpoint + button",
-    "status": "completed"
+    "content": "Update About page with new bio + headshot",
+    "status": "pending"
   },
   {
-    "content": "Post conversion stats: per-essay conversions + UI",
-    "status": "completed"
+    "content": "Update author name to Anish Pujari across site",
+    "status": "pending"
   },
   {
-    "content": "Test all four features",
-    "status": "completed"
+    "content": "Ask user for LinkedIn article text to import",
+    "status": "pending"
   }
 ]

@@ -9,8 +9,8 @@ export const Footer = () => (
     <div className="container-editorial py-12 sm:py-16">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
         <div className="md:col-span-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-2 h-2 bg-accent inline-block" />
+          <div className="flex items-center gap-2.5 mb-3">
+            <img src="/logo192.png" alt="The Trading Narrative logo" className="w-9 h-9" />
             <span className="font-serif text-xl font-semibold">The Trading Narrative</span>
           </div>
           <p className="text-sm text-muted-foreground max-w-sm mb-5">

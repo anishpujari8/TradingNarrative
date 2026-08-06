@@ -1,9 +1,9 @@
 """Seed content for The Trading Narrative - 12 editorial posts (3 per category)."""
 
 AUTHOR = {
-    "name": "Jordan Hale",
-    "bio": "Founder of The Trading Narrative. Former fintech operator turned writer, covering the intersection of markets, technology, and living well. 10+ years in trading and product.",
-    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop",
+    "name": "Anish Pujari",
+    "bio": "Senior product and engagement manager with 12+ years inside commodity trading floors, writing about technology, delivery, and the mechanics of high-stakes programmes.",
+    "avatar": "/anish.jpg",
 }
 
 SAMPLE_POSTS = [
