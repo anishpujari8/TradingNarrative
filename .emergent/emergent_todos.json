@@ -1,22 +1,22 @@
 [
   {
     "content": "Unsubscribe links: token endpoint + footer in emails",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Subscriber growth chart: weekly buckets + UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Digest preview email: send-to-self endpoint + button",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Post conversion stats: per-essay conversions + UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test all four features",
-    "status": "pending"
+    "status": "completed"
   }
 ]

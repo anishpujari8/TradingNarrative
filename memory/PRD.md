@@ -80,3 +80,11 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Funnel Plan Split**: conversions_monthly/conversions_annual per source + overall; Monthly/Annual columns in funnel table + split under 'Went Premium' card.
 - Housekeeping: removed 12 fake test emails from newsletter_subscribers so live Gmail sending (incl. Friday autosend) doesn't hit invalid addresses. Owner's Gmail subscribed (tech pillar) as first real subscriber.
 - Testing: iteration_9.json — backend 100%, frontend 100%, regression 100%.
+
+## V2.6 Session Update (Unsubscribe, Growth Chart, Digest Preview, Post Conversions)
+- **One-click Unsubscribe**: All marketing emails (digest/issue/welcome) carry an unsubscribe footer + List-Unsubscribe header. GET /api/newsletter/unsubscribe?email=&token= (stateless HMAC token) unsubscribes and shows a branded confirmation page; invalid token → 400.
+- **Subscriber Growth Chart**: /api/admin/traffic returns subscriber_trend (weekly new + cumulative total); line chart in Admin → Traffic.
+- **Digest Preview Email**: POST /api/admin/newsletter/send-digest-preview sends the full digest only to the owner's Gmail; "Send preview to me" button in the digest dialog (verified delivered for real).
+- **Post Conversion Stats**: /api/admin/funnel returns post_conversions (per-essay reader sessions → premium conversions + rate); "Essays that convert" table in the funnel card.
+- Stale "MOCKED" copy replaced with live-Gmail messaging in the digest dialog.
+- Testing: latest iteration — backend 98.2% (one wrong test expectation, implementation correct), frontend 100%, all regressions pass, email-safety compliant.
