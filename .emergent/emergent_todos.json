@@ -1,22 +1,22 @@
 [
   {
     "content": "Download + optimize logo and headshot assets",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Update logo in Navbar/footer + favicon",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Update About page with new bio + headshot",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Update author name to Anish Pujari across site",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Ask user for LinkedIn article text to import",
-    "status": "pending"
+    "content": "Import LinkedIn article Edition #1 as free featured post",
+    "status": "completed"
   }
 ]

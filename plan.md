@@ -29,13 +29,17 @@
   - **Private Community Lounge** (premium-only announcements + discussion threads)
   - Enhancements: **pinned discussions, thread lock, member profiles, Lounge reply notifications**
   - **Scheduled announcements** (publish later) + **announcement editing/rescheduling**
-- Newsletter operations (now production-like):
+- Newsletter operations (production-ready):
   - Subscriber capture + account-level email preferences
   - **Real email sending via Gmail SMTP is LIVE** (App Password configured) + admin status/test send
   - **One-click unsubscribe** on all marketing emails (digest/issue/welcome) with **List-Unsubscribe** header
   - **Pillar-personalized weekly digests** based on subscriber preferences
   - **Weekly digest autosend every Friday (UTC)** with admin toggle
   - **Digest preview email to admin** before sending to all subscribers
+- Branding + content readiness:
+  - Use the **official The Trading Narrative logo** across the UI (navbar/footer/mobile + favicon)
+  - Use **Anish Pujari** author identity + bio + headshot across pages and post metadata
+  - Import existing writing (LinkedIn newsletter + related articles) into posts
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
 
 ## 2) Implementation Steps
@@ -169,78 +173,39 @@
 4. As an admin, I can pin important discussions so new members see them first.
 
 **Steps**
-- Razorpay Autopay live re-probe (DONE):
-  - Throttled capability re-check (max once / 10 minutes) on `GET /api/billing/config` and `POST /api/billing/razorpay/checkout`.
-  - Automatically flips `razorpay_autopay` to true once the Razorpay account has Subscriptions enabled (no restart required).
-- Lounge reply notifications (DONE):
-  - Replying to someone else’s lounge thread creates a notification (`type: lounge_reply`) for the thread author.
-  - Notification click deep-links to `/lounge?thread=<id>` and the Lounge auto-opens the thread detail view.
-- Traffic trends (DONE):
-  - `GET /api/admin/traffic` returns weekly `trend` buckets and `trend_series`.
-  - Admin Traffic tab renders a multi-line Recharts `LineChart` (“Weekly trend by source”).
-- Pinned discussions (DONE):
-  - Admin-only endpoint: `POST /api/community/threads/{tid}/pin` toggles pinned.
-  - Threads list sorts pinned-first.
-  - UI: “Pinned” badge on pinned thread cards + pin toggle button in thread detail view (admin-only).
-- Testing (DONE):
-  - Iteration 6 report: backend **99.5% (183/184)**, frontend **100%**, no regressions.
+- Razorpay Autopay live re-probe (DONE).
+- Lounge reply notifications (DONE).
+- Traffic trends (DONE).
+- Pinned discussions (DONE).
+- Testing (DONE): Iteration 6 report: backend **99.5% (183/184)**, frontend **100%**, no regressions.
 
 ### Phase 7 — V2.3 Enhancements (Post Attribution + CSV Export + Digest Autosend + Thread Lock) ✅ DONE
 **User stories**
-1. As an admin, I can see which **landing pages** readers hit from each traffic source so I know what content converts.
-2. As an admin, I can export traffic breakdown (sources, referrers, campaigns, landing pages) to CSV.
-3. As an admin, I can enable an automatic weekly digest that goes out every Friday without manual action.
-4. As an admin, I can lock a Lounge discussion so it stays readable but closed to new replies.
+1. As an admin, I can see which **landing pages** readers hit from each traffic source.
+2. As an admin, I can export traffic breakdown to CSV.
+3. As an admin, I can enable an automatic weekly digest every Friday without manual action.
+4. As an admin, I can lock a Lounge discussion.
 
 **Steps**
-- Post attribution (DONE):
-  - `GET /api/admin/traffic` returns `landing_pages` (path × source × count).
-  - Admin → Traffic tab displays “Landing pages by source” table.
-- CSV export (DONE):
-  - `GET /api/admin/traffic/export?days=N` streams a CSV containing sections for sources/referrers/campaigns/landing pages.
-  - Admin → Traffic tab adds “Export CSV” button.
-- Weekly Digest autosend (DONE; autosend toggle left ON):
-  - Background loop checks every 30 minutes.
-  - Sends on Fridays (UTC), at most once per ISO week, when enabled.
-  - Admin endpoints: `GET/POST /api/admin/newsletter/autosend`.
-  - Admin → Newsletter tab switch controls autosend.
-- Lounge thread lock (DONE):
-  - Admin-only endpoint: `POST /api/community/threads/{tid}/lock` toggles locked.
-  - Locked threads reject replies (403) while remaining readable.
-  - UI: Locked badge, lock toggle button in thread detail, locked notice replaces reply composer.
-- Testing (DONE):
-  - Iteration 7 report: backend **99.5% (208/209)**, frontend **100%**, no regressions.
-- End-states preserved (DONE):
-  - Digest autosend left **ON**.
-  - Demo pinned discussion remains pinned.
-  - Notification-test thread remains locked.
+- Post attribution (DONE).
+- CSV export (DONE).
+- Weekly Digest autosend (DONE; autosend toggle left ON).
+- Lounge thread lock (DONE).
+- Testing (DONE): Iteration 7 report: backend **99.5% (208/209)**, frontend **100%**, no regressions.
 
 ### Phase 8 — V2.4 Enhancements (Conversion Funnel + Gmail SMTP Email + Member Profiles + Scheduled Announcements) ✅ DONE
 **User stories**
-1. As an admin, I can see the full path from traffic source to checkout to premium activation so I can see where readers drop off.
+1. As an admin, I can see the full path from traffic source to checkout to premium activation.
 2. As an admin, I can send newsletter/digest emails and verify delivery.
-3. As a Lounge member, I can click a member and see a lightweight profile (join date, counts, recent discussions).
-4. As an admin, I can schedule an announcement to publish later; members should only see it once published.
+3. As a Lounge member, I can click a member and see a lightweight profile.
+4. As an admin, I can schedule an announcement to publish later.
 
 **Steps**
-- Conversion funnel (DONE):
-  - Frontend `trackEvent` includes a per-session `sid` stored in `sessionStorage`.
-  - Backend analytics stores `sid` in `analytics` documents.
-  - Endpoint: `GET /api/admin/funnel?days=N` aggregates per-source sessions through stages.
-  - Admin → Traffic tab UI: “Conversion funnel” stage cards + per-source table.
-- Gmail SMTP email integration (DONE; later made LIVE):
-  - SMTP adapter implemented (async via `asyncio.to_thread`) + safe fallback.
-  - Admin endpoints: `GET /api/admin/email/status`, `POST /api/admin/email/test`.
-  - Digest send includes HTML.
-- Member profiles (DONE):
-  - Endpoint: `GET /api/community/members/{uid}` (premium-gated).
-  - Lounge UI: clicking an author opens a profile dialog with join date, counts, and recent threads.
-- Scheduled announcements (DONE):
-  - Announcement create supports optional `publish_at` ISO datetime.
-  - Members see only published announcements; admins see scheduled items with “Scheduled” badge.
-  - Announcement dialog includes a `datetime-local` input.
-- Testing (DONE):
-  - Iteration 8 report: backend **100% (261/262)**, frontend **100%**, no regressions.
+- Conversion funnel (DONE).
+- Gmail SMTP integration (DONE; later made LIVE).
+- Member profiles (DONE).
+- Scheduled announcements (DONE).
+- Testing (DONE): Iteration 8 report: backend **100% (261/262)**, frontend **100%**, no regressions.
 
 ### Phase 9 — V2.5 Enhancements (Email LIVE + Pillar Digests + Announcement Editing + Funnel Plan Split) ✅ DONE
 **User stories**
@@ -250,53 +215,57 @@
 4. As an admin, I can see funnel conversions split by monthly vs annual plans.
 
 **Steps**
-- Gmail SMTP LIVE (DONE):
-  - Gmail **App Password configured**; `GET /api/admin/email/status` returns `verified: true`.
-  - Real delivery verified.
-  - Housekeeping: purged fake test subscriber emails to protect Friday autosend.
-- Pillar-personalized weekly digest (DONE):
-  - Digest respects `newsletter_subscribers.categories`.
-  - Subscribers with no matching posts are skipped.
-  - Digest HTML cached per unique post-set.
-- Announcement editing (DONE):
-  - Endpoint: `PUT /api/community/announcements/{aid}` updates `title/body/publish_at`.
-  - UI: pencil buttons open announcement dialog in edit mode (prefilled), supports reschedule or clear schedule to publish now.
-- Funnel plan split (DONE):
-  - Checkout completion analytics records `meta.plan`.
-  - `/api/admin/funnel` returns `conversions_monthly` and `conversions_annual` per source + overall.
-  - Admin UI funnel table shows Monthly/Annual columns + split under the “Went Premium” stage card.
-- Testing (DONE):
-  - Iteration 9 report: backend **100%**, frontend **100%**, regression **100%**.
+- Gmail SMTP LIVE (DONE).
+- Pillar-personalized weekly digest (DONE).
+- Announcement editing (DONE).
+- Funnel plan split (DONE).
+- Testing (DONE): Iteration 9 report: backend **100%**, frontend **100%**, regression **100%**.
 
 ### Phase 10 — V2.6 Enhancements (Unsubscribe + Subscriber Growth + Digest Preview Email + Post Conversion Stats) ✅ DONE
 **User stories**
 1. As a subscriber, I can unsubscribe with one click from any email.
-2. As an admin, I can see subscriber growth week by week next to traffic trends.
-3. As an admin, I can email the digest to myself first before sending it to everyone.
+2. As an admin, I can see subscriber growth week by week.
+3. As an admin, I can email the digest to myself first.
 4. As an admin, I can see which essays most often lead to Premium upgrades.
 
 **Steps**
-- One-click unsubscribe (DONE):
-  - Marketing emails (digest/issue/welcome) include:
-    - Unsubscribe footer link
-    - `List-Unsubscribe` header
-  - Endpoint: `GET /api/newsletter/unsubscribe?email=<email>&token=<hmac>`
-    - Stateless HMAC token based on `JWT_SECRET`
-    - Marks subscriber as `unsubscribed` and renders branded HTML confirmation
-    - Invalid token returns 400 with friendly page
-- Subscriber growth trend (DONE):
-  - `GET /api/admin/traffic` now returns `subscriber_trend` weekly buckets (`{week, new, total}`)
-  - Admin → Traffic tab renders “Subscriber growth” line chart
-- Digest preview email (DONE):
-  - Endpoint: `POST /api/admin/newsletter/send-digest-preview`
-  - UI: “Send preview to me” button in the digest dialog
-- Post conversion stats (DONE):
-  - `/api/admin/funnel` returns `post_conversions` (per essay: reader sessions → conversions → rate)
-  - Admin → Traffic tab renders “Essays that convert” table
-- Copy updates (DONE):
-  - Removed stale “MOCKED” messaging from digest dialog when Gmail is verified
-- Testing (DONE):
-  - Latest iteration: backend **98.2%** (sole flag was an incorrect test expectation; implementation correct), frontend **100%**, regressions **100%**, email-safety compliant.
+- One-click unsubscribe (DONE).
+- Subscriber growth trend (DONE).
+- Digest preview email (DONE).
+- Post conversion stats (DONE).
+
+### Phase 11 — Branding + Author Identity + Content Import ✅ DONE
+**User stories**
+1. As a reader, I see consistent brand identity (logo + favicon) across the site.
+2. As a reader, I can learn who runs the publication and what it stands for.
+3. As the author, my identity (Anish Pujari) is consistent across posts, community content, and admin.
+4. As the author, I can import my existing writing (LinkedIn newsletter editions) as posts.
+
+**Steps**
+- Branding assets (DONE):
+  - User-provided circular logo cropped/optimized to `/logo.png` + `/logo192.png`.
+  - Favicon set to `/favicon.png`.
+  - Navbar, Footer, and mobile menu updated to use the official logo.
+- About page rewrite (DONE):
+  - About page rewritten with the provided long-form bio and value proposition.
+  - Headshot saved and used as `/anish.jpg`.
+  - LinkedIn link added.
+- Author identity alignment (DONE):
+  - Renamed prior placeholder author (**Jordan Hale**) → **Anish Pujari** across:
+    - users
+    - posts `author` object (name/bio/avatar)
+    - community threads/replies/announcements
+    - seed data (`/app/backend/seed_data.py`).
+- Content import (DONE for Edition #1):
+  - Imported LinkedIn newsletter Edition #1:
+    - Title: **Five Things Commodity Desks Need to Know This Week**
+    - Marked **Free** and **Featured**
+    - Category: **Business & Finance** (`finance`)
+    - Slug: `five-things-commodity-desks-need-to-know-this-week`
+  - Added simple heading support in Article renderer:
+    - `content_blocks` starting with `"## "` are rendered as section headings (`<h2>`).
+- Verification (DONE):
+  - Verified logo + about + imported article via screenshots.
 
 ## 3) Next Actions
 All planned phases are complete. Remaining high-impact setup actions and optional upgrades:
@@ -304,22 +273,23 @@ All planned phases are complete. Remaining high-impact setup actions and optiona
 ### A) Required setup actions (to fully go-live)
 1. **Enable Razorpay Subscriptions** in the Razorpay dashboard to activate true UPI Autopay mandates.
    - The app will switch automatically via the live re-probe (no restart required).
-2. Operational checks for live email:
-   - Verify deliverability (spam placement) for your audience.
-   - Consider moving to an API-based provider (Resend/SendGrid) for better deliverability analytics and higher volume.
+2. **Deploy branding/content updates to production**.
+   - Current changes were applied in preview; production requires redeploy.
 
-### B) Optional enhancements (nice-to-haves)
+### B) Content operations (next editorial steps)
+1. Import remaining LinkedIn newsletter editions and any standalone LinkedIn articles.
+   - Input format: paste title + full text (as done for Edition #1).
+   - Decide per article: Free vs Premium, pillar/category, featured.
+2. Resolve the **Travel pillar** decision:
+   - Keep as-is, remove, or rename to align with your stated themes.
+
+### C) Optional enhancements (nice-to-haves)
 1. Configure `RAZORPAY_WEBHOOK_SECRET` and Stripe webhook secrets in production for stronger signature verification.
 2. Refactor `/app/backend/server.py` into modules (billing, community, admin/analytics, newsletter) to reduce risk from large-file edits.
 3. Analytics upgrades:
    - Funnel segmentation by **landing page** and by **currency** (USD vs INR)
    - Attribution to paid vs free articles and premium conversion lift
-   - CSV export variants (per week, per campaign, per landing page)
-4. Community upgrades:
-   - Lock reasons + audit log
-   - Pin announcements
-   - Announcement moderation queue
-5. Newsletter upgrades:
+4. Newsletter upgrades:
    - Double opt-in for subscribers
    - Dedicated sender domain + SPF/DKIM/DMARC hardening
 
@@ -342,6 +312,8 @@ All planned phases are complete. Remaining high-impact setup actions and optiona
 ✅ Weekly digest autosend is toggleable and runs on schedule.
 ✅ Weekly digest is pillar-personalized per subscriber preferences.
 ✅ Digest preview email can be sent to admin before full send.
+✅ One-click unsubscribe works (HMAC token + confirmation page) and emails contain List-Unsubscribe.
+✅ Real email delivery is **LIVE** and verified via Gmail SMTP App Password.
 ✅ Premium-only Community Lounge works with announcements + threads + replies and correct access control.
 ✅ Lounge reply notifications appear in bell and deep-link opens the relevant thread.
 ✅ Member profiles work: profile dialog shows join date + counts + recent discussions.
@@ -349,15 +321,19 @@ All planned phases are complete. Remaining high-impact setup actions and optiona
 ✅ Announcement editing works: admin can edit/reschedule/clear schedule.
 ✅ Pinned discussions work (admin toggle + pinned-first sorting + UI badges).
 ✅ Thread lock works: locked discussions are readable but reply-closed.
-✅ One-click unsubscribe works (HMAC token + confirmation page) and emails contain List-Unsubscribe.
-✅ Real email delivery is **LIVE** and verified via Gmail SMTP App Password.
+✅ Branding is applied consistently:
+- Logo in navbar/footer/mobile menu
+- Favicon updated
+✅ About page reflects the current author bio and includes real headshot.
+✅ Imported LinkedIn newsletter Edition #1 is live as a free featured post with section headings.
+
 ✅ Testing passes (key iterations):
 - Iteration 5: backend 99.4% + frontend verification.
 - Iteration 6: backend 99.5% (183/184) + frontend 100%, no regressions.
 - Iteration 7: backend 99.5% (208/209) + frontend 100%, no regressions.
 - Iteration 8: backend 100% (261/262) + frontend 100%, no regressions.
 - Iteration 9: backend 100%, frontend 100%, regression 100%.
-- Iteration 10 (latest): backend 98.2% (test expectation mismatch only), frontend 100%, regressions 100%.
+- Iteration 10: backend 98.2% (test expectation mismatch only), frontend 100%, regressions 100%.
 
 ---
 ## STATUS UPDATE (post Phase 2)
@@ -375,10 +351,7 @@ All planned phases are complete. Remaining high-impact setup actions and optiona
 - Stripe auto-renew: enabled with real keys DONE.
 
 ## STATUS UPDATE (V2.1 — payments + analytics + community) ✅ COMPLETE
-- Razorpay integration FIXED:
-  - Test keys validated; Orders API works.
-  - Subscriptions/Plans unauthorized on account → correctly detected → fallback to one-time Orders.
-  - Frontend supports both order and subscription flows.
+- Razorpay integration FIXED and stable.
 - Traffic Sources Analytics shipped.
 - Community Lounge shipped.
 
@@ -407,9 +380,16 @@ All planned phases are complete. Remaining high-impact setup actions and optiona
 - Funnel plan split.
 
 ## STATUS UPDATE (V2.6 — Unsubscribe + Subscriber Growth + Digest Preview + Post Conversion Stats) ✅ COMPLETE
-- One-click unsubscribe (footer + List-Unsubscribe + confirmation endpoint).
+- One-click unsubscribe.
 - Subscriber growth chart.
 - Digest preview email to admin.
 - Essays that convert.
+
+## STATUS UPDATE (V2.7 — Branding + Content Import) ✅ COMPLETE
+- Official logo + favicon applied.
+- About page updated with Anish Pujari bio + headshot.
+- Author identity aligned across DB/seed.
+- Imported LinkedIn newsletter Edition #1 as a free featured post.
+- Heading convention (`"## "`) supported in article rendering.
 
 > Engineering note: `/app/backend/server.py` is large. Apply edits sequentially to avoid merge/conflict corruption; consider modularizing next.

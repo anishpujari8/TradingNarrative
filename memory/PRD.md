@@ -88,3 +88,10 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Post Conversion Stats**: /api/admin/funnel returns post_conversions (per-essay reader sessions → premium conversions + rate); "Essays that convert" table in the funnel card.
 - Stale "MOCKED" copy replaced with live-Gmail messaging in the digest dialog.
 - Testing: latest iteration — backend 98.2% (one wrong test expectation, implementation correct), frontend 100%, all regressions pass, email-safety compliant.
+
+## V2.7 Session Update (Branding + Content Import)
+- **Logo**: User's circular "The Trading Narrative" badge cropped/optimized → /logo.png, /logo192.png (navbar, footer, mobile menu), /favicon.png (browser tab).
+- **About page**: Rewritten with Anish Pujari's provided bio (12+ years commodity trading floors, four themes, steering-committee rule, free/premium promise) + real headshot (/anish.jpg) + LinkedIn profile link.
+- **Author identity**: "Jordan Hale" → "Anish Pujari" everywhere (users, posts author incl. bio/avatar, community threads/replies/announcements, seed_data.py).
+- **Article import**: LinkedIn newsletter Edition #1 "Five Things Commodity Desks Need to Know This Week" imported as a FREE featured post (finance pillar, 22 content blocks, section headings via new '## ' block convention in ArticlePage renderer). More articles can be imported the same way when user pastes them.
+- NOTE: production (insight-hub-484.emergent.host) needs a redeploy to receive these changes.

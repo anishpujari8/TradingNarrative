@@ -207,9 +207,13 @@ export default function ArticlePage() {
           </div>
 
           <div className="article-body" data-testid="article-body">
-            {visibleBlocks.map((block, i) => (
-              <p key={i}>{block}</p>
-            ))}
+            {visibleBlocks.map((block, i) =>
+              block.startsWith("## ") ? (
+                <h2 key={i} className="font-serif text-2xl font-semibold mt-10 mb-4">{block.slice(3)}</h2>
+              ) : (
+                <p key={i}>{block}</p>
+              )
+            )}
             {post.is_locked && blurredBlock && (
               <div className="paywall-fade" data-testid="paywall-blurred-content">
                 <p className="paywall-blur" aria-hidden="true">{blurredBlock}</p>
