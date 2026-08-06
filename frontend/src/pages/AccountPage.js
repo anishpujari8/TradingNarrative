@@ -104,7 +104,7 @@ export default function AccountPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Plan</span><span className="font-medium capitalize" data-testid="account-plan">{sub.plan}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10">{sub.status}</Badge></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Renews</span><span>{formatDate(sub.current_period_end)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{sub.auto_renew ? "Renews automatically" : "Access until"}</span><span data-testid="account-period-end">{formatDate(sub.current_period_end)}</span></div>
                 <Separator className="my-3" />
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive } from "lucide-react";
+import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { CATEGORIES } from "@/lib/api";
@@ -117,6 +117,9 @@ export const Navbar = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/account")} data-testid="nav-account-link">
                   <User className="h-4 w-4 mr-2" /> Account & Billing
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/reading-list")} data-testid="nav-reading-list-link">
+                  <Bookmark className="h-4 w-4 mr-2" /> Reading List
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/archive")}>
                   <Archive className="h-4 w-4 mr-2" /> Archive

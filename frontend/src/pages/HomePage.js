@@ -10,6 +10,7 @@ import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { api, CATEGORIES, formatDate } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const fadeUp = {
   initial: { opacity: 0, y: 14 },
@@ -18,9 +19,23 @@ const fadeUp = {
 };
 
 export default function HomePage() {
+  const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState(null);
   const [featured, setFeatured] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [recs, setRecs] = useState(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    let slugs = [];
+    try {
+      slugs = JSON.parse(localStorage.getItem("ttn_read_history") || "[]").map((h) => h.slug);
+    } catch { /* ignore */ }
+    if (slugs.length === 0 && !user) { setRecs({ posts: [], based_on: [] }); return; }
+    api.get("/recommendations", { params: { slugs: slugs.join(","), limit: 3 } })
+      .then((res) => setRecs(res.data))
+      .catch(() => setRecs({ posts: [], based_on: [] }));
+  }, [user, authLoading]);
 
   useEffect(() => {
     api.get("/posts").then((res) => {
@@ -140,6 +155,20 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* FOR YOU */}
+      {recs?.posts?.length > 0 && (
+        <section className="container-editorial py-6 sm:py-10" data-testid="for-you-section">
+          <span className="section-label">For you</span>
+          <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-2 mb-2">Picked for your interests</h2>
+          <p className="text-sm text-muted-foreground mb-8" data-testid="for-you-based-on">
+            Because you've been reading {recs.based_on.join(" & ")}.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" data-testid="for-you-grid">
+            {recs.posts.map((p) => <PostCard key={p.id} post={p} />)}
+          </div>
+        </section>
+      )}
 
       {/* FILTERABLE GRID */}
       <section className="container-editorial py-6 sm:py-10" data-testid="home-filter-section">

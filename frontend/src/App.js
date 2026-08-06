@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import { BookmarkProvider } from "@/context/BookmarkContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -21,6 +22,7 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import PaymentCancelPage from "@/pages/PaymentCancelPage";
 import AccountPage from "@/pages/AccountPage";
+import ReadingListPage from "@/pages/ReadingListPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminEditorPage from "@/pages/AdminEditorPage";
 import NotFoundPage from "@/pages/NotFoundPage";
@@ -39,6 +41,7 @@ function App() {
     <HelmetProvider>
       <ThemeProvider>
         <AuthProvider>
+          <BookmarkProvider>
           <BrowserRouter>
             <div className="min-h-screen flex flex-col bg-background text-foreground grain-overlay">
               <RouteEffects />
@@ -57,6 +60,7 @@ function App() {
                   <Route path="/payment/success" element={<PaymentSuccessPage />} />
                   <Route path="/payment/cancel" element={<PaymentCancelPage />} />
                   <Route path="/account" element={<AccountPage />} />
+                  <Route path="/reading-list" element={<ReadingListPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/editor" element={<AdminEditorPage />} />
                   <Route path="/admin/editor/:id" element={<AdminEditorPage />} />
@@ -67,6 +71,7 @@ function App() {
               <Toaster position="bottom-right" richColors />
             </div>
           </BrowserRouter>
+          </BookmarkProvider>
         </AuthProvider>
       </ThemeProvider>
     </HelmetProvider>

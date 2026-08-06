@@ -372,6 +372,178 @@ def main():
         except Exception as e:
             check('Admin delete any comment', False, str(e))
 
+    # ==================== REPLY THREADS (NEW FEATURE) ====================
+    print('\n💬 9b. REPLY THREADS (NESTED COMMENTS)')
+    
+    # Create a top-level comment as admin
+    top_comment_id = None
+    if admin_token and admin_hdr:
+        try:
+            r = requests.post(f'{BASE}/posts/{prem_slug}/comments', json={'body': 'Top-level comment for reply test'}, headers=admin_hdr, timeout=10)
+            check('Create top-level comment for reply test', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                top_comment_id = r.json().get('id')
+        except Exception as e:
+            check('Create top-level comment', False, str(e))
+
+    # Reply to the top-level comment
+    reply_id = None
+    if top_comment_id and admin_token:
+        try:
+            r = requests.post(f'{BASE}/posts/{prem_slug}/comments', json={
+                'body': 'This is a reply to the top-level comment',
+                'parent_id': top_comment_id
+            }, headers=admin_hdr, timeout=10)
+            check('POST comment with parent_id (reply) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                reply_id = r.json().get('id')
+                check('Reply has parent_id set', r.json().get('parent_id') == top_comment_id)
+        except Exception as e:
+            check('POST reply with parent_id', False, str(e))
+
+    # Reply to a reply (should flatten to top-level parent)
+    if reply_id and admin_token:
+        try:
+            r = requests.post(f'{BASE}/posts/{prem_slug}/comments', json={
+                'body': 'Reply to a reply (should flatten)',
+                'parent_id': reply_id
+            }, headers=admin_hdr, timeout=10)
+            check('Reply to reply returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('Reply to reply flattens to top-level parent', r.json().get('parent_id') == top_comment_id)
+        except Exception as e:
+            check('Reply to reply flattening', False, str(e))
+
+    # Invalid parent_id should return 400
+    if admin_token:
+        try:
+            r = requests.post(f'{BASE}/posts/{prem_slug}/comments', json={
+                'body': 'Reply with invalid parent',
+                'parent_id': 'invalid-parent-id-12345'
+            }, headers=admin_hdr, timeout=10)
+            check('Invalid parent_id returns 400', r.status_code == 400)
+        except Exception as e:
+            check('Invalid parent_id test', False, str(e))
+
+    # Delete top-level comment should cascade replies
+    if top_comment_id and admin_token:
+        try:
+            # First, get comment count before delete
+            r = requests.get(f'{BASE}/posts/{prem_slug}/comments', timeout=10)
+            count_before = len(r.json().get('comments', []))
+            
+            # Delete top-level comment
+            r = requests.delete(f'{BASE}/comments/{top_comment_id}', headers=admin_hdr, timeout=10)
+            check('DELETE top-level comment returns 200', r.status_code == 200)
+            
+            # Verify replies are also deleted (cascade)
+            r = requests.get(f'{BASE}/posts/{prem_slug}/comments', timeout=10)
+            count_after = len(r.json().get('comments', []))
+            check('Deleting top-level comment cascades replies', count_after < count_before, 
+                  f'before={count_before}, after={count_after}')
+        except Exception as e:
+            check('Cascade delete test', False, str(e))
+
+    # ==================== BOOKMARKS (NEW FEATURE) ====================
+    print('\n🔖 9c. BOOKMARKS (READING LIST)')
+    
+    # Get bookmarks (requires auth)
+    try:
+        r = requests.get(f'{BASE}/bookmarks', timeout=10)
+        check('GET /api/bookmarks without auth returns 401', r.status_code == 401)
+    except Exception as e:
+        check('GET /api/bookmarks (no auth)', False, str(e))
+
+    # Get bookmarks as authenticated user
+    if token and hdr:
+        try:
+            r = requests.get(f'{BASE}/bookmarks', headers=hdr, timeout=10)
+            check('GET /api/bookmarks with auth returns 200', r.status_code == 200, r.text)
+            check('Bookmarks response has posts array', 'posts' in r.json())
+            check('Bookmarks response has post_ids array', 'post_ids' in r.json())
+        except Exception as e:
+            check('GET /api/bookmarks', False, str(e))
+
+    # Toggle bookmark (save a post)
+    bookmark_post_id = None
+    if posts and len(posts) > 0:
+        bookmark_post_id = posts[0]['id']
+    
+    if bookmark_post_id and token and hdr:
+        try:
+            r = requests.post(f'{BASE}/bookmarks/toggle', json={'post_id': bookmark_post_id}, headers=hdr, timeout=10)
+            check('POST /api/bookmarks/toggle (save) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('Toggle returns bookmarked=true on first call', r.json().get('bookmarked') is True)
+        except Exception as e:
+            check('POST /api/bookmarks/toggle (save)', False, str(e))
+
+        # Toggle again (unsave)
+        try:
+            r = requests.post(f'{BASE}/bookmarks/toggle', json={'post_id': bookmark_post_id}, headers=hdr, timeout=10)
+            check('POST /api/bookmarks/toggle (unsave) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('Toggle returns bookmarked=false on second call', r.json().get('bookmarked') is False)
+        except Exception as e:
+            check('POST /api/bookmarks/toggle (unsave)', False, str(e))
+
+    # Invalid post_id should return 404
+    if token and hdr:
+        try:
+            r = requests.post(f'{BASE}/bookmarks/toggle', json={'post_id': 'invalid-post-id-12345'}, headers=hdr, timeout=10)
+            check('Toggle with invalid post_id returns 404', r.status_code == 404)
+        except Exception as e:
+            check('Invalid post_id bookmark test', False, str(e))
+
+    # ==================== AUTO-RENEW BILLING CONFIG (NEW FEATURE) ====================
+    print('\n💳 9d. AUTO-RENEW BILLING CONFIG')
+    
+    try:
+        r = requests.get(f'{BASE}/billing/config', timeout=10)
+        check('GET /api/billing/config returns 200', r.status_code == 200, r.text)
+        if r.status_code == 200:
+            config = r.json()
+            check('Config has mock_mode field', 'mock_mode' in config)
+            check('Config has auto_renew field', 'auto_renew' in config)
+            check('Config auto_renew=false (shared test key)', config.get('auto_renew') is False, 
+                  f"auto_renew={config.get('auto_renew')}")
+            check('Config mock_mode=false', config.get('mock_mode') is False)
+            check('Config has plans array', 'plans' in config and isinstance(config['plans'], list))
+    except Exception as e:
+        check('GET /api/billing/config', False, str(e))
+
+    # ==================== RECOMMENDATIONS (NEW FEATURE) ====================
+    print('\n🎯 9e. RECOMMENDATIONS (RELATED BY INTEREST)')
+    
+    # Get recommendations without slugs and without auth (should return empty)
+    try:
+        r = requests.get(f'{BASE}/recommendations', timeout=10)
+        check('GET /api/recommendations (no slugs, no auth) returns 200', r.status_code == 200, r.text)
+        if r.status_code == 200:
+            check('Recommendations without history returns empty posts', len(r.json().get('posts', [])) == 0)
+            check('Recommendations without history returns empty based_on', len(r.json().get('based_on', [])) == 0)
+    except Exception as e:
+        check('GET /api/recommendations (empty)', False, str(e))
+
+    # Get recommendations with finance slugs (should return finance posts)
+    finance_posts = [p for p in posts if p.get('category') == 'finance']
+    if len(finance_posts) >= 2:
+        slug1, slug2 = finance_posts[0]['slug'], finance_posts[1]['slug']
+        try:
+            r = requests.get(f'{BASE}/recommendations', params={'slugs': f'{slug1},{slug2}', 'limit': 6}, timeout=10)
+            check('GET /api/recommendations with finance slugs returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                recs = r.json()
+                check('Recommendations response has posts array', 'posts' in recs)
+                check('Recommendations response has based_on array', 'based_on' in recs)
+                check('Recommendations based_on includes Finance', 'Finance' in recs.get('based_on', []), 
+                      f"based_on={recs.get('based_on')}")
+                # Verify returned posts exclude the input slugs
+                rec_slugs = [p['slug'] for p in recs.get('posts', [])]
+                check('Recommendations exclude input slugs', slug1 not in rec_slugs and slug2 not in rec_slugs)
+        except Exception as e:
+            check('GET /api/recommendations with slugs', False, str(e))
+
     # ==================== NEWSLETTER ====================
     print('\n📧 10. NEWSLETTER SUBSCRIBE')
     nl_email = f'newsletter-{uuid.uuid4().hex[:8]}@test.com'

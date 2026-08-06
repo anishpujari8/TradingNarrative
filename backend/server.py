@@ -21,6 +21,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from seed_data import SAMPLE_POSTS, AUTHOR  # noqa: E402
+import stripe as stripe_sdk  # noqa: E402
 from emergentintegrations.payments.stripe.checkout import (  # noqa: E402
     StripeCheckout, CheckoutSessionRequest,
 )
@@ -35,6 +36,18 @@ JWT_EXPIRY_DAYS = 30
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 MOCK_BILLING = os.environ.get('MOCK_BILLING', 'true').lower() == 'true'
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
+# Shared Emergent test key: one-time timed passes (proxy blocks Subscription cancel API).
+# User's own key: true auto-renewing subscriptions + Stripe-side cancellation.
+IS_SHARED_STRIPE_KEY = 'sk_test_emergent' in STRIPE_API_KEY
+AUTO_RENEW = not IS_SHARED_STRIPE_KEY
+
+
+def configure_stripe_sdk():
+    stripe_sdk.api_key = STRIPE_API_KEY
+    if IS_SHARED_STRIPE_KEY:
+        stripe_sdk.api_base = 'https://integrations.emergentagent.com/stripe'
+    return stripe_sdk
+
 
 PLANS = {
     'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 8.00, 'currency': 'usd', 'interval': 'month', 'period_days': 30},
@@ -224,6 +237,11 @@ class PasswordResetConfirmIn(BaseModel):
 
 class CommentIn(BaseModel):
     body: str = Field(min_length=1, max_length=2000)
+    parent_id: Optional[str] = None
+
+
+class BookmarkToggleIn(BaseModel):
+    post_id: str
 
 
 class NewsletterIn(BaseModel):
@@ -454,8 +472,16 @@ async def create_comment(slug: str, body: CommentIn, user=Depends(get_current_us
     entitled = await is_entitled(user)
     if not entitled:
         raise HTTPException(status_code=403, detail='Comments are a Premium member perk. Upgrade to join the discussion.')
+    parent_id = None
+    if body.parent_id:
+        parent = await db.comments.find_one({'id': body.parent_id})
+        if not parent or parent['post_id'] != post['id']:
+            raise HTTPException(status_code=400, detail='Parent comment not found on this post')
+        # flatten threads to 2 levels: replying to a reply attaches to its top-level parent
+        parent_id = parent.get('parent_id') or parent['id']
     comment = {
         'id': str(uuid.uuid4()), 'post_id': post['id'], 'post_slug': slug,
+        'parent_id': parent_id,
         'user_id': user['id'], 'user_name': user.get('name') or user['email'].split('@')[0],
         'is_admin': user.get('role') == 'admin',
         'body': body.body.strip(), 'created_at': iso(now_utc()),
@@ -472,7 +498,80 @@ async def delete_comment(comment_id: str, user=Depends(get_current_user)):
     if comment['user_id'] != user['id'] and user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail='You can only delete your own comments')
     await db.comments.delete_one({'id': comment_id})
+    # remove orphaned replies of a deleted top-level comment
+    await db.comments.delete_many({'parent_id': comment_id})
     return {'ok': True}
+
+
+# ---------------------- bookmarks (reading list) ----------------------
+
+@api_router.get('/bookmarks')
+async def get_bookmarks(user=Depends(get_current_user)):
+    marks = await db.bookmarks.find({'user_id': user['id']}).sort('created_at', -1).to_list(500)
+    post_ids = [m['post_id'] for m in marks]
+    posts_map = {}
+    if post_ids:
+        posts = await db.posts.find({'id': {'$in': post_ids}, **published_query()}).to_list(500)
+        posts_map = {p['id']: post_summary(clean(p)) for p in posts}
+    ordered = [posts_map[pid] for pid in post_ids if pid in posts_map]
+    return {'posts': ordered, 'post_ids': post_ids}
+
+
+@api_router.post('/bookmarks/toggle')
+async def toggle_bookmark(body: BookmarkToggleIn, user=Depends(get_current_user)):
+    post = await db.posts.find_one({'id': body.post_id})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    existing = await db.bookmarks.find_one({'user_id': user['id'], 'post_id': body.post_id})
+    if existing:
+        await db.bookmarks.delete_one({'id': existing['id']})
+        return {'bookmarked': False}
+    await db.bookmarks.insert_one({
+        'id': str(uuid.uuid4()), 'user_id': user['id'], 'post_id': body.post_id,
+        'created_at': iso(now_utc()),
+    })
+    return {'bookmarked': True}
+
+
+# ---------------------- recommendations (related by interest) ----------------------
+
+@api_router.get('/recommendations')
+async def recommendations(slugs: str = '', limit: int = Query(6, le=12), user=Depends(get_optional_user)):
+    read_slugs = [s for s in slugs.split(',') if s.strip()][:50]
+    weights = {}
+    # weight categories from client-provided reading history
+    if read_slugs:
+        read_posts = await db.posts.find({'slug': {'$in': read_slugs}}).to_list(100)
+        for p in read_posts:
+            weights[p['category']] = weights.get(p['category'], 0) + 1
+    # plus server-side pageview history for signed-in readers
+    if user:
+        events = await db.analytics.find(
+            {'user_id': user['id'], 'event': 'pageview', 'path': {'$regex': '^/post/'}}
+        ).sort('created_at', -1).limit(100).to_list(100)
+        seen = set()
+        for e in events:
+            slug = e['path'].split('/post/')[-1].strip('/')
+            if slug and slug not in seen:
+                seen.add(slug)
+                read_slugs.append(slug)
+        if seen:
+            hist_posts = await db.posts.find({'slug': {'$in': list(seen)}}).to_list(200)
+            for p in hist_posts:
+                weights[p['category']] = weights.get(p['category'], 0) + 1
+    if not weights:
+        return {'posts': [], 'based_on': []}
+    candidates = await db.posts.find({**published_query(), 'slug': {'$nin': read_slugs}}).to_list(500)
+    scored = sorted(
+        candidates,
+        key=lambda p: (-(weights.get(p['category'], 0)), p.get('published_at') or ''),
+    )
+    scored = [p for p in scored if weights.get(p['category'], 0) > 0]
+    top_categories = sorted(weights, key=weights.get, reverse=True)[:2]
+    return {
+        'posts': [post_summary(clean(p)) for p in scored[:limit]],
+        'based_on': [CATEGORIES.get(c, c) for c in top_categories],
+    }
 
 
 # ---------------------- billing (Stripe via emergentintegrations) ----------------------
@@ -498,12 +597,25 @@ async def activate_premium_from_transaction(txn):
         return
     existing = await db.subscriptions.find_one({'user_id': user['id'], 'status': 'active'})
     if not existing:
+        auto_renew = bool(txn.get('auto_renew'))
+        period_end = now_utc() + timedelta(days=plan['period_days'])
+        stripe_sub_id = txn.get('stripe_subscription_id')
+        if auto_renew and stripe_sub_id:
+            try:
+                sdk = configure_stripe_sdk()
+                s = sdk.Subscription.retrieve(stripe_sub_id)
+                if s.get('current_period_end'):
+                    period_end = datetime.fromtimestamp(s['current_period_end'], tz=timezone.utc)
+            except Exception as e:
+                logger.warning(f'Could not fetch Stripe subscription period end: {e}')
         sub = {
             'id': str(uuid.uuid4()), 'user_id': user['id'], 'plan': plan_id,
             'status': 'active', 'provider': 'stripe',
+            'auto_renew': auto_renew,
             'stripe_session_id': txn['session_id'],
+            'stripe_subscription_id': stripe_sub_id,
             'current_period_start': iso(now_utc()),
-            'current_period_end': iso(now_utc() + timedelta(days=plan['period_days'])),
+            'current_period_end': iso(period_end),
             'created_at': iso(now_utc()), 'canceled_at': None,
         }
         await db.subscriptions.insert_one(dict(sub))
@@ -524,7 +636,7 @@ async def activate_premium_from_transaction(txn):
 
 @api_router.get('/billing/config')
 async def billing_config():
-    return {'mock_mode': MOCK_BILLING, 'plans': list(PLANS.values())}
+    return {'mock_mode': MOCK_BILLING, 'auto_renew': AUTO_RENEW, 'plans': list(PLANS.values())}
 
 
 @api_router.post('/billing/checkout')
@@ -560,25 +672,51 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
 
     # REAL STRIPE CHECKOUT (test mode)
     origin = (body.origin_url or FRONTEND_URL).rstrip('/')
-    checkout_req = CheckoutSessionRequest(
-        amount=float(plan['amount']),
-        currency=plan['currency'],
-        success_url=f'{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}',
-        cancel_url=f'{origin}/payment/cancel',
-        metadata={'user_id': user['id'], 'plan': body.plan, 'app': 'trading-narrative'},
-    )
+    success_url = f'{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}'
+    cancel_url = f'{origin}/payment/cancel'
+    metadata = {'user_id': user['id'], 'plan': body.plan, 'app': 'trading-narrative'}
     try:
-        session = await stripe_client().create_checkout_session(checkout_req)
+        if AUTO_RENEW:
+            # TRUE AUTO-RENEWING SUBSCRIPTION (user's own Stripe key)
+            sdk = configure_stripe_sdk()
+            session_obj = sdk.checkout.Session.create(
+                mode='subscription',
+                line_items=[{
+                    'price_data': {
+                        'currency': plan['currency'],
+                        'unit_amount': int(round(plan['amount'] * 100)),
+                        'recurring': {'interval': plan['interval']},
+                        'product_data': {'name': f"The Trading Narrative Premium — {plan['label']}"},
+                    },
+                    'quantity': 1,
+                }],
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata=metadata,
+            )
+            session_url, session_id = session_obj.url, session_obj.id
+        else:
+            # One-time timed pass (shared Emergent test key — Stripe-side cancel API unavailable)
+            checkout_req = CheckoutSessionRequest(
+                amount=float(plan['amount']),
+                currency=plan['currency'],
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata=metadata,
+            )
+            session = await stripe_client().create_checkout_session(checkout_req)
+            session_url, session_id = session.url, session.session_id
     except Exception as e:
         logger.error(f'Stripe checkout creation failed: {e}')
         raise HTTPException(status_code=502, detail='Could not start Stripe checkout. Please try again.')
     await db.payment_transactions.insert_one({
-        'session_id': session.session_id, 'user_id': user['id'], 'plan': body.plan,
+        'session_id': session_id, 'user_id': user['id'], 'plan': body.plan,
         'amount': plan['amount'], 'currency': plan['currency'],
+        'auto_renew': AUTO_RENEW,
         'status': 'initiated', 'payment_status': 'pending', 'activated': False,
         'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
     })
-    return {'ok': True, 'mock': False, 'checkout_url': session.url, 'session_id': session.session_id}
+    return {'ok': True, 'mock': False, 'checkout_url': session_url, 'session_id': session_id}
 
 
 @api_router.get('/payments/status/{session_id}')
@@ -588,15 +726,17 @@ async def payment_status(session_id: str):
         raise HTTPException(status_code=404, detail='Transaction not found')
     if record.get('payment_status') != 'paid':
         try:
-            status = await stripe_client().get_checkout_status(session_id)
-            if status.payment_status == 'paid' or status.status == 'complete':
+            sdk = configure_stripe_sdk()
+            s = sdk.checkout.Session.retrieve(session_id)
+            if s.payment_status == 'paid' or s.status == 'complete':
                 await db.payment_transactions.update_one(
                     {'session_id': session_id, 'payment_status': {'$ne': 'paid'}},
                     {'$set': {'status': 'completed', 'payment_status': 'paid',
+                              'stripe_subscription_id': s.get('subscription'),
                               'updated_at': iso(now_utc())}},
                 )
                 record = await db.payment_transactions.find_one({'session_id': session_id})
-            elif status.status == 'expired':
+            elif s.status == 'expired':
                 await db.payment_transactions.update_one(
                     {'session_id': session_id},
                     {'$set': {'status': 'expired', 'payment_status': 'expired',
@@ -636,6 +776,13 @@ async def cancel_subscription(user=Depends(get_current_user)):
     sub = await db.subscriptions.find_one({'user_id': user['id'], 'status': 'active'})
     if not sub:
         raise HTTPException(status_code=400, detail='No active subscription')
+    # Cancel the recurring subscription at Stripe too (own-key auto-renew mode)
+    if sub.get('auto_renew') and sub.get('stripe_subscription_id') and not IS_SHARED_STRIPE_KEY:
+        try:
+            sdk = configure_stripe_sdk()
+            sdk.Subscription.delete(sub['stripe_subscription_id'])
+        except Exception as e:
+            logger.warning(f'Stripe subscription cancel failed (continuing with local cancel): {e}')
     await db.subscriptions.update_one({'id': sub['id']}, {'$set': {'status': 'canceled', 'canceled_at': iso(now_utc())}})
     return {'ok': True, 'message': 'Subscription canceled. Premium access removed.'}
 

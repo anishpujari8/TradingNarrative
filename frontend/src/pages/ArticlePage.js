@@ -14,6 +14,7 @@ import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ReadingProgress } from "@/components/ReadingProgress";
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { api, formatDate, trackEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -78,7 +79,14 @@ export default function ArticlePage() {
     setError(null);
     api
       .get(`/posts/${slug}`)
-      .then((res) => setPost(res.data))
+      .then((res) => {
+        setPost(res.data);
+        try {
+          const hist = JSON.parse(localStorage.getItem("ttn_read_history") || "[]").filter((h) => h.slug !== res.data.slug);
+          hist.unshift({ slug: res.data.slug, category: res.data.category });
+          localStorage.setItem("ttn_read_history", JSON.stringify(hist.slice(0, 50)));
+        } catch { /* ignore */ }
+      })
       .catch((err) => setError(err?.response?.status === 404 ? "This post doesn't exist." : "Failed to load the article."));
   }, [slug, authLoading, user?.is_premium]);
 
@@ -129,7 +137,8 @@ export default function ArticlePage() {
               {post.title}
             </h1>
             <p className="text-muted-foreground text-lg mt-4">{post.excerpt}</p>
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex items-center justify-between gap-3 mt-6 flex-wrap">
+              <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 border border-border">
                 <AvatarImage src={post.author?.avatar} alt={post.author?.name} />
                 <AvatarFallback>{post.author?.name?.slice(0, 2)}</AvatarFallback>
@@ -141,6 +150,8 @@ export default function ArticlePage() {
                   <span className="inline-flex items-center gap-1" data-testid="article-read-time"><Clock className="h-3 w-3" /> {post.read_time} min read</span>
                 </div>
               </div>
+              </div>
+              <BookmarkButton postId={post.id} />
             </div>
           </motion.div>
 

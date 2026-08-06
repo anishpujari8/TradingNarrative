@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Clock } from "lucide-react";
 import { formatDate } from "@/lib/api";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 export const PostCard = ({ post, large = false }) => {
   return (
@@ -11,7 +12,8 @@ export const PostCard = ({ post, large = false }) => {
       data-testid="article-card"
     >
       <article className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col transition-colors duration-200 hover:border-foreground/25">
-        <div className={`card-img-zoom overflow-hidden ${large ? "aspect-[16/9]" : "aspect-[3/2]"}`}>
+        <div className={`relative card-img-zoom overflow-hidden ${large ? "aspect-[16/9]" : "aspect-[3/2]"}`}>
+          <BookmarkButton postId={post.id} variant="overlay" />
           <img
             src={post.cover_image}
             alt={post.title}

@@ -37,9 +37,13 @@ export default function PricingPage() {
   const [busy, setBusy] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [mockMode, setMockMode] = useState(false);
+  const [autoRenew, setAutoRenew] = useState(false);
 
   useEffect(() => {
-    api.get("/billing/config").then((res) => setMockMode(res.data.mock_mode)).catch(() => {});
+    api.get("/billing/config").then((res) => {
+      setMockMode(res.data.mock_mode);
+      setAutoRenew(res.data.auto_renew);
+    }).catch(() => {});
   }, []);
 
   const plan = annual ? "annual" : "monthly";
@@ -172,7 +176,9 @@ export default function PricingPage() {
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-stripe-notice">
-                Secure Stripe checkout · Test mode · card 4242 4242 4242 4242
+                {autoRenew
+                  ? "Secure Stripe checkout · renews automatically · cancel anytime"
+                  : `Secure Stripe checkout · Test mode · ${annual ? "365" : "30"}-day pass · card 4242 4242 4242 4242`}
               </p>
             )}
           </CardContent>
