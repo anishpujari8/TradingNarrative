@@ -121,3 +121,8 @@
 - Phase 1 (POC): DONE — test_core.py 32/32 passed (server-side paywall, subscription transitions, magic link, newsletter, admin gating).
 - Phase 2 (V1 app): DONE — full frontend + backend built; testing_agent iteration_1: backend 74/74, frontend 59/60; the 1 minor issue (duplicate share-bar testids on hidden mobile bar) FIXED and verified.
 - Next: Phase 3 hardening (password reset, analytics trends) and Phase 4 (real Stripe + email provider when user supplies keys).
+
+## STATUS UPDATE (post V1.1 feature batch)
+- Real Stripe checkout (test mode, emergentintegrations, sk_test_emergent) LIVE — full E2E payment verified with 4242 card: paid → premium activated → invoice recorded. Claimable sandbox unavailable (account country IN unsupported), so one-time timed-access model used; user's own key swappable via STRIPE_API_KEY.
+- Password reset (mocked email, dev-mode link) DONE. Premium comments DONE. Reading progress DONE.
+- testing_agent iteration_2: backend 89/89, frontend 45/45 — all passing.
