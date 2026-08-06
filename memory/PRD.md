@@ -45,3 +45,9 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 
 ## Future
 - Recurring auto-renew subscriptions + Stripe customer portal (needs user's own Stripe account with subscriptions), real email provider, 7/30-day analytics trends, scheduled-post preview.
+
+## V2.1 Session Update (Razorpay + Traffic + Lounge)
+- **Razorpay INR checkout (LIVE, test mode)**: Real test keys configured. Account's Subscriptions/Autopay feature not yet enabled on Razorpay dashboard, so backend auto-falls back to one-time Orders (30/365-day passes). Startup probe flips to UPI Autopay mandates automatically once Subscriptions is enabled on the dashboard. Frontend handles both order and subscription checkout modes.
+- **Traffic Sources Analytics**: First-pageview-per-session attribution via referrer + UTM params. Classifies LinkedIn, Instagram, X, Facebook, Google, YouTube, Reddit, WhatsApp, Telegram, Substack, etc. Admin → Traffic tab: stat cards, bar chart, source breakdown, top referring domains, UTM campaigns, 7/30/90-day selector. Endpoint: GET /api/admin/traffic.
+- **Private Community Lounge (/lounge)**: Premium-members-only. Admin announcements (create/delete), member discussion threads with replies, delete own content, admin moderation, rate limits (5 threads/hr, 30 replies/hr). Locked states: signed-out → sign-in CTA; free user → upgrade CTA. Nav link "Lounge" added.
+- Testing: iteration_5.json — backend 99.4%, frontend verified end-to-end.
