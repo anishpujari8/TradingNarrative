@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, Legend, ResponsiveContainer } from "recharts";
-import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp } from "lucide-react";
+import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -67,6 +68,8 @@ export default function AdminPage() {
   const [sending, setSending] = useState(false);
   const [traffic, setTraffic] = useState(null);
   const [trafficDays, setTrafficDays] = useState("30");
+  const [exporting, setExporting] = useState(false);
+  const [autosend, setAutosend] = useState(null);
 
   const loadAll = useCallback(() => {
     api.get("/admin/analytics/stats").then((r) => setStats(r.data)).catch(() => {});
@@ -74,7 +77,38 @@ export default function AdminPage() {
     api.get("/admin/newsletter/subscribers").then((r) => setSubscribers(r.data)).catch(() => {});
     api.get("/admin/newsletter/issues").then((r) => setIssues(r.data.issues)).catch(() => setIssues([]));
     api.get("/admin/email-logs").then((r) => setEmailLogs(r.data.logs)).catch(() => setEmailLogs([]));
+    api.get("/admin/newsletter/autosend").then((r) => setAutosend(r.data)).catch(() => {});
   }, []);
+
+  const toggleAutosend = async (enabled) => {
+    try {
+      await api.post("/admin/newsletter/autosend", { enabled });
+      setAutosend((a) => ({ ...a, enabled }));
+      toast.success(enabled ? "Weekly digest will auto-send every Friday." : "Digest autosend turned off.");
+    } catch {
+      toast.error("Could not update autosend.");
+    }
+  };
+
+  const exportTrafficCsv = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get(`/admin/traffic/export?days=${trafficDays}`, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `traffic-sources-${trafficDays}d.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Traffic CSV downloaded.");
+    } catch {
+      toast.error("Export failed. Try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!user || user.role !== "admin") return;
@@ -212,16 +246,21 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">
               Where readers arrive from — first visit of each browser session, powered by referrers and UTM tags.
             </p>
-            <Select value={trafficDays} onValueChange={setTrafficDays}>
-              <SelectTrigger className="w-36" data-testid="admin-traffic-days-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={trafficDays} onValueChange={setTrafficDays}>
+                <SelectTrigger className="w-36" data-testid="admin-traffic-days-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="90">Last 90 days</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={exportTrafficCsv} disabled={exporting || !traffic?.total_visits} data-testid="admin-traffic-export-button">
+                <Download className="h-4 w-4 mr-2" /> {exporting ? "Exporting…" : "Export CSV"}
+              </Button>
+            </div>
           </div>
           {traffic === null ? (
             <Skeleton className="h-96 rounded-xl" />
@@ -354,6 +393,35 @@ export default function AdminPage() {
                     )}
                   </CardContent>
                 </Card>
+                <Card className="rounded-xl lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="font-serif text-xl flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-accent" /> Landing pages by source
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {traffic.landing_pages?.length ? (
+                      <Table data-testid="admin-traffic-landing-table">
+                        <TableHeader>
+                          <TableRow><TableHead>Page</TableHead><TableHead>Source</TableHead><TableHead className="text-right">Visits</TableHead></TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {traffic.landing_pages.map((p, i) => (
+                            <TableRow key={`${p.path}-${p.source}-${i}`}>
+                              <TableCell className="font-mono text-xs max-w-md truncate">
+                                <Link to={p.path} className="hover:text-accent transition-colors">{p.path}</Link>
+                              </TableCell>
+                              <TableCell><Badge variant="secondary" className="font-mono text-[10px]">{p.source}</Badge></TableCell>
+                              <TableCell className="text-right font-mono text-sm">{p.count}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-sm text-muted-foreground p-6" data-testid="admin-traffic-no-landing">No landing pages recorded yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </>
           )}
@@ -412,6 +480,33 @@ export default function AdminPage() {
 
         {/* NEWSLETTER */}
         <TabsContent value="newsletter">
+          <Card className="rounded-xl mb-6">
+            <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  <CalendarClock className="h-4 w-4 text-accent" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">Auto-send weekly digest every Friday</div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {autosend?.enabled
+                      ? autosend?.last_auto_send
+                        ? `On · last auto-send ${formatDate(autosend.last_auto_send)}`
+                        : "On · first auto-send this Friday"
+                      : "Off · digests only go out when you press Send"}
+                    {" · sends are MOCKED"}
+                  </div>
+                </div>
+              </div>
+              <Switch
+                checked={!!autosend?.enabled}
+                onCheckedChange={toggleAutosend}
+                disabled={autosend === null}
+                data-testid="admin-digest-autosend-toggle"
+                aria-label="Toggle weekly digest autosend"
+              />
+            </CardContent>
+          </Card>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="rounded-xl">
               <CardHeader className="flex flex-row items-center justify-between">

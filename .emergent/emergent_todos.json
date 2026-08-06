@@ -1,22 +1,22 @@
 [
   {
-    "content": "Autopay: add live re-probe so autopay switches on without restart",
-    "status": "completed"
+    "content": "Post attribution: landing pages per source (backend + UI)",
+    "status": "in_progress"
   },
   {
-    "content": "Lounge notifications: notify thread author on new replies",
-    "status": "completed"
+    "content": "Weekly digest autosend: Friday scheduler + admin toggle",
+    "status": "pending"
   },
   {
-    "content": "Traffic trends: weekly per-source chart (backend + UI)",
-    "status": "completed"
+    "content": "Lounge thread lock: endpoint + reply guard + UI",
+    "status": "pending"
   },
   {
-    "content": "Pinned discussions: admin pin/unpin + sort + UI badge",
-    "status": "completed"
+    "content": "CSV export: /api/admin/traffic/export + download button",
+    "status": "pending"
   },
   {
     "content": "Test all four features",
-    "status": "completed"
+    "status": "pending"
   }
 ]

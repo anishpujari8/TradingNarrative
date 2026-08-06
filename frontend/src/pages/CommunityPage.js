@@ -15,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin } from "lucide-react";
+import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin, LockOpen } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -162,6 +162,19 @@ export default function CommunityPage() {
     }
   };
 
+  const toggleLock = async (tid) => {
+    try {
+      const res = await api.post(`/community/threads/${tid}/lock`);
+      toast.success(res.data.locked ? "Discussion locked — readable, but closed to new replies." : "Discussion unlocked.");
+      if (selected?.thread?.id === tid) {
+        setSelected({ ...selected, thread: { ...selected.thread, locked: res.data.locked } });
+      }
+      loadLounge();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not update the lock.");
+    }
+  };
+
   const confirmDelete = async () => {
     const { type, id } = deleteTarget;
     try {
@@ -231,6 +244,11 @@ export default function CommunityPage() {
                 </h1>
                 <div className="flex gap-1 shrink-0">
                   {isAdmin && (
+                    <Button variant="ghost" size="icon" onClick={() => toggleLock(t.id)} data-testid="community-lock-thread-button" aria-label={t.locked ? "Unlock discussion" : "Lock discussion"}>
+                      {t.locked ? <Lock className="h-4 w-4 text-accent" /> : <LockOpen className="h-4 w-4" />}
+                    </Button>
+                  )}
+                  {isAdmin && (
                     <Button variant="ghost" size="icon" onClick={() => togglePin(t.id)} data-testid="community-pin-thread-button" aria-label={t.pinned ? "Unpin discussion" : "Pin discussion"}>
                       <Pin className={`h-4 w-4 ${t.pinned ? "text-accent" : ""}`} />
                     </Button>
@@ -271,19 +289,28 @@ export default function CommunityPage() {
             )}
           </div>
 
-          <div className="mt-6 flex gap-2">
-            <Textarea
-              value={replyBody}
-              onChange={(e) => setReplyBody(e.target.value)}
-              placeholder="Add your reply…"
-              rows={2}
-              className="resize-none"
-              data-testid="community-reply-input"
-            />
-            <Button onClick={sendReply} disabled={replying || !replyBody.trim()} className="bg-accent text-accent-foreground hover:bg-accent/90 self-end" data-testid="community-reply-submit">
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+          {t.locked ? (
+            <Card className="rounded-xl mt-6 border-dashed">
+              <CardContent className="p-4 flex items-center gap-3 text-sm text-muted-foreground" data-testid="community-locked-notice">
+                <Lock className="h-4 w-4 text-accent shrink-0" />
+                This discussion is locked — it stays readable, but new replies are closed.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="mt-6 flex gap-2">
+              <Textarea
+                value={replyBody}
+                onChange={(e) => setReplyBody(e.target.value)}
+                placeholder="Add your reply…"
+                rows={2}
+                className="resize-none"
+                data-testid="community-reply-input"
+              />
+              <Button onClick={sendReply} disabled={replying || !replyBody.trim()} className="bg-accent text-accent-foreground hover:bg-accent/90 self-end" data-testid="community-reply-submit">
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         <DeleteDialog target={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />
@@ -385,6 +412,11 @@ export default function CommunityPage() {
                         {t.pinned && (
                           <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 gap-1 text-[10px] px-1.5 py-0" data-testid={`community-pinned-badge-${t.id}`}>
                             <Pin className="h-3 w-3" /> Pinned
+                          </Badge>
+                        )}
+                        {t.locked && (
+                          <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0" data-testid={`community-locked-badge-${t.id}`}>
+                            <Lock className="h-3 w-3" /> Locked
                           </Badge>
                         )}
                         <h3 className="font-medium">{t.title}</h3>

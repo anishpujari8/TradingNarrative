@@ -1150,6 +1150,182 @@ def main():
         except Exception as e:
             check('GET /api/admin/traffic (trend)', False, str(e))
 
+    # ==================== NEW FEATURES: ITERATION 7 ====================
+    print('\n🆕 24. NEW FEATURES: POST ATTRIBUTION, CSV EXPORT, AUTOSEND, THREAD LOCK')
+    
+    # Test 1: POST ATTRIBUTION - landing_pages in traffic response
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/admin/traffic', params={'days': 30}, headers=admin_hdr, timeout=10)
+            check('GET /api/admin/traffic includes landing_pages array', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                traffic = r.json()
+                check('Traffic response has landing_pages array', 'landing_pages' in traffic and isinstance(traffic['landing_pages'], list))
+                if len(traffic.get('landing_pages', [])) > 0:
+                    lp = traffic['landing_pages'][0]
+                    check('Landing page has path field', 'path' in lp)
+                    check('Landing page has source field', 'source' in lp)
+                    check('Landing page has count field', 'count' in lp)
+                    print(f'   ✓ Found {len(traffic["landing_pages"])} landing pages')
+        except Exception as e:
+            check('GET /api/admin/traffic (landing_pages)', False, str(e))
+    
+    # Test 2: CSV EXPORT
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/admin/traffic/export', params={'days': 30}, headers=admin_hdr, timeout=10)
+            check('GET /api/admin/traffic/export (admin) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('CSV export Content-Type is text/csv', 'text/csv' in r.headers.get('content-type', ''))
+                check('CSV export has Content-Disposition attachment', 'attachment' in r.headers.get('content-disposition', ''))
+                csv_text = r.text
+                check('CSV has header row', 'section,name,source,visits,share_pct' in csv_text)
+                check('CSV has source section', 'source,' in csv_text)
+                check('CSV has landing_page section', 'landing_page,' in csv_text)
+                print(f'   ✓ CSV export working, {len(csv_text.splitlines())} rows')
+        except Exception as e:
+            check('GET /api/admin/traffic/export (admin)', False, str(e))
+        
+        # Test non-admin gets 403
+        if token and hdr:
+            try:
+                r = requests.get(f'{BASE}/admin/traffic/export', params={'days': 30}, headers=hdr, timeout=10)
+                check('GET /api/admin/traffic/export (non-admin) returns 403', r.status_code == 403)
+            except Exception as e:
+                check('GET /api/admin/traffic/export (non-admin)', False, str(e))
+    
+    # Test 3: WEEKLY DIGEST AUTOSEND
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/admin/newsletter/autosend', headers=admin_hdr, timeout=10)
+            check('GET /api/admin/newsletter/autosend returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                data = r.json()
+                check('Autosend response has enabled field', 'enabled' in data)
+                check('Autosend response has last_auto_send field', 'last_auto_send' in data)
+                initial_enabled = data.get('enabled')
+                print(f'   Current autosend state: enabled={initial_enabled}')
+        except Exception as e:
+            check('GET /api/admin/newsletter/autosend', False, str(e))
+        
+        # Toggle autosend OFF
+        try:
+            r = requests.post(f'{BASE}/admin/newsletter/autosend', json={'enabled': False}, headers=admin_hdr, timeout=10)
+            check('POST /api/admin/newsletter/autosend (disable) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('Autosend disabled successfully', r.json().get('enabled') is False)
+        except Exception as e:
+            check('POST /api/admin/newsletter/autosend (disable)', False, str(e))
+        
+        # Toggle autosend ON (LEAVE IT ENABLED)
+        try:
+            r = requests.post(f'{BASE}/admin/newsletter/autosend', json={'enabled': True}, headers=admin_hdr, timeout=10)
+            check('POST /api/admin/newsletter/autosend (enable) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('Autosend enabled successfully', r.json().get('enabled') is True)
+                print('   ✓ Autosend left ENABLED as required')
+        except Exception as e:
+            check('POST /api/admin/newsletter/autosend (enable)', False, str(e))
+    
+    # Test 4: THREAD LOCK
+    lock_test_thread_id = None
+    if admin_token and admin_hdr:
+        # Find the existing locked thread "Thread for Notification Test"
+        try:
+            r = requests.get(f'{BASE}/community/threads', headers=admin_hdr, timeout=10)
+            if r.status_code == 200:
+                threads = r.json().get('threads', [])
+                notification_thread = next((t for t in threads if t['title'] == 'Thread for Notification Test'), None)
+                if notification_thread:
+                    lock_test_thread_id = notification_thread['id']
+                    print(f'   Found existing thread "Thread for Notification Test": {lock_test_thread_id}')
+                    print(f'   Current locked state: {notification_thread.get("locked")}')
+        except Exception as e:
+            check('Find existing locked thread', False, str(e))
+        
+        # If thread doesn't exist, create one for testing
+        if not lock_test_thread_id:
+            try:
+                r = requests.post(f'{BASE}/community/threads', json={
+                    'title': 'Thread for Lock Test',
+                    'body': 'Testing thread lock functionality.'
+                }, headers=admin_hdr, timeout=10)
+                if r.status_code == 200:
+                    lock_test_thread_id = r.json().get('id')
+                    print(f'   Created new thread for lock test: {lock_test_thread_id}')
+            except Exception as e:
+                check('Create thread for lock test', False, str(e))
+        
+        if lock_test_thread_id:
+            # Test admin can lock thread
+            try:
+                r = requests.post(f'{BASE}/community/threads/{lock_test_thread_id}/lock', headers=admin_hdr, timeout=10)
+                check('POST /api/community/threads/{id}/lock (admin) returns 200', r.status_code == 200, r.text)
+                if r.status_code == 200:
+                    check('Lock response has locked field', 'locked' in r.json())
+                    is_locked = r.json().get('locked')
+                    print(f'   Thread locked state toggled to: {is_locked}')
+            except Exception as e:
+                check('POST /api/community/threads/{id}/lock (admin)', False, str(e))
+            
+            # Ensure thread is LOCKED for reply test
+            try:
+                r = requests.get(f'{BASE}/community/threads/{lock_test_thread_id}', headers=admin_hdr, timeout=10)
+                if r.status_code == 200:
+                    is_locked = r.json()['thread'].get('locked')
+                    if not is_locked:
+                        # Lock it
+                        r = requests.post(f'{BASE}/community/threads/{lock_test_thread_id}/lock', headers=admin_hdr, timeout=10)
+                        print('   Locked thread for reply test')
+            except Exception:
+                pass
+            
+            # Test replying to LOCKED thread returns 403
+            try:
+                r = requests.post(f'{BASE}/community/threads/{lock_test_thread_id}/replies', json={
+                    'body': 'This reply should fail because thread is locked.'
+                }, headers=admin_hdr, timeout=10)
+                check('POST reply to locked thread returns 403', r.status_code == 403)
+                if r.status_code == 403:
+                    check('Locked thread error message is friendly', 'locked' in r.json().get('detail', '').lower())
+            except Exception as e:
+                check('POST reply to locked thread (403)', False, str(e))
+            
+            # Test non-admin premium user gets 403 on lock endpoint
+            if token and hdr:
+                try:
+                    r = requests.post(f'{BASE}/community/threads/{lock_test_thread_id}/lock', headers=hdr, timeout=10)
+                    check('POST /api/community/threads/{id}/lock (non-admin) returns 403', r.status_code == 403)
+                except Exception as e:
+                    check('POST /api/community/threads/{id}/lock (non-admin)', False, str(e))
+            
+            # Unlock thread to test replies work after unlock
+            try:
+                r = requests.post(f'{BASE}/community/threads/{lock_test_thread_id}/lock', headers=admin_hdr, timeout=10)
+                if r.status_code == 200 and r.json().get('locked') is False:
+                    print('   Thread unlocked for reply test')
+                    # Try to reply (should work now)
+                    r2 = requests.post(f'{BASE}/community/threads/{lock_test_thread_id}/replies', json={
+                        'body': 'This reply should work because thread is unlocked.'
+                    }, headers=admin_hdr, timeout=10)
+                    check('POST reply to unlocked thread returns 200', r2.status_code == 200)
+            except Exception as e:
+                check('POST reply to unlocked thread', False, str(e))
+            
+            # LEAVE THREAD LOCKED at the end (as required)
+            try:
+                r = requests.get(f'{BASE}/community/threads/{lock_test_thread_id}', headers=admin_hdr, timeout=10)
+                if r.status_code == 200:
+                    is_locked = r.json()['thread'].get('locked')
+                    if not is_locked:
+                        # Lock it
+                        r = requests.post(f'{BASE}/community/threads/{lock_test_thread_id}/lock', headers=admin_hdr, timeout=10)
+                        print('   ✓ Thread left LOCKED as required')
+                    else:
+                        print('   ✓ Thread already LOCKED as required')
+            except Exception:
+                pass
+
     # ==================== SUMMARY ====================
     print('\n' + '=' * 80)
     print(f'📊 TEST SUMMARY')

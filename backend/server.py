@@ -1075,13 +1075,43 @@ async def admin_traffic(admin=Depends(get_admin_user), days: int = Query(30, le=
         for s in trend_series:
             row[s] = weeks[(ws, label)].get(s, 0)
         trend.append(row)
+    # post attribution: which pages visitors landed on, per source
+    pages = await db.analytics.aggregate([
+        {'$match': match},
+        {'$group': {'_id': {'path': '$path', 'source': '$source'}, 'count': {'$sum': 1}}},
+        {'$sort': {'count': -1}}, {'$limit': 15},
+    ]).to_list(15)
+    landing_pages = [{'path': p['_id']['path'] or '/', 'source': p['_id']['source'],
+                      'count': p['count']} for p in pages]
     return {
         'days': days, 'total_visits': total, 'sources': sources,
         'top_referrers': [{'host': r['_id'], 'count': r['count']} for r in referrers],
         'campaigns': [{'campaign': c['_id']['campaign'], 'source': c['_id']['source'],
                        'count': c['count']} for c in campaigns],
         'trend': trend, 'trend_series': trend_series,
+        'landing_pages': landing_pages,
     }
+
+
+@api_router.get('/admin/traffic/export')
+async def admin_traffic_export(admin=Depends(get_admin_user), days: int = Query(30, le=365)):
+    data = await admin_traffic(admin=admin, days=days)
+    import csv as _csv
+    import io as _io
+    buf = _io.StringIO()
+    w = _csv.writer(buf)
+    w.writerow(['section', 'name', 'source', 'visits', 'share_pct'])
+    for s in data['sources']:
+        w.writerow(['source', s['source'], '', s['count'], s['pct']])
+    for r in data['top_referrers']:
+        w.writerow(['referrer', r['host'], '', r['count'], ''])
+    for c in data['campaigns']:
+        w.writerow(['campaign', c['campaign'], c['source'], c['count'], ''])
+    for p in data['landing_pages']:
+        w.writerow(['landing_page', p['path'], p['source'], p['count'], ''])
+    filename = f'traffic-sources-{days}d-{now_utc().strftime("%Y%m%d")}.csv'
+    return Response(content=buf.getvalue(), media_type='text/csv',
+                    headers={'Content-Disposition': f'attachment; filename="{filename}"'})
 
 
 # ---------------------- community lounge (premium members only) ----------------------
@@ -1158,7 +1188,7 @@ async def community_create_thread(body: CommunityThreadIn, user=Depends(get_prem
     if recent >= 5:
         raise HTTPException(status_code=429, detail='Slow down — you can start up to 5 discussions per hour.')
     thread = {'id': str(uuid.uuid4()), 'title': title, 'body': text,
-              'author': community_author(user), 'reply_count': 0, 'pinned': False,
+              'author': community_author(user), 'reply_count': 0, 'pinned': False, 'locked': False,
               'created_at': iso(now_utc()), 'last_activity_at': iso(now_utc())}
     await db.community_threads.insert_one(dict(thread))
     return clean(thread)
@@ -1178,6 +1208,8 @@ async def community_reply(tid: str, body: CommunityReplyIn, user=Depends(get_pre
     thread = await db.community_threads.find_one({'id': tid})
     if not thread:
         raise HTTPException(status_code=404, detail='Thread not found')
+    if thread.get('locked'):
+        raise HTTPException(status_code=403, detail='This discussion is locked — it stays readable but no new replies.')
     text = body.body.strip()
     if not (1 <= len(text) <= 5000):
         raise HTTPException(status_code=400, detail='Reply must be 1-5000 characters')
@@ -1208,6 +1240,16 @@ async def community_pin_thread(tid: str, admin=Depends(get_admin_user)):
     new_state = not thread.get('pinned', False)
     await db.community_threads.update_one({'id': tid}, {'$set': {'pinned': new_state}})
     return {'ok': True, 'pinned': new_state}
+
+
+@api_router.post('/community/threads/{tid}/lock')
+async def community_lock_thread(tid: str, admin=Depends(get_admin_user)):
+    thread = await db.community_threads.find_one({'id': tid})
+    if not thread:
+        raise HTTPException(status_code=404, detail='Thread not found')
+    new_state = not thread.get('locked', False)
+    await db.community_threads.update_one({'id': tid}, {'$set': {'locked': new_state}})
+    return {'ok': True, 'locked': new_state}
 
 
 @api_router.delete('/community/threads/{tid}')
@@ -1570,12 +1612,12 @@ class DigestSendIn(BaseModel):
     subject: Optional[str] = None
 
 
-@api_router.post('/admin/newsletter/send-digest')
-async def send_digest(body: DigestSendIn, admin=Depends(get_admin_user)):
+async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
+    """Shared digest send used by the admin button and the Friday autosend scheduler."""
     posts = await get_digest_posts()
     if not posts:
-        raise HTTPException(status_code=400, detail='No published posts to include')
-    subject = body.subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+        return None
+    subject = subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
     subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
     titles = ', '.join(p['title'] for p in posts[:5])
     # MOCKED SEND
@@ -1583,11 +1625,65 @@ async def send_digest(body: DigestSendIn, admin=Depends(get_admin_user)):
         await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest')
     issue = {
         'id': str(uuid.uuid4()), 'post_id': None, 'post_title': f'Weekly digest ({len(posts)} essays)',
-        'kind': 'digest', 'subject': subject, 'recipients': len(subs), 'status': 'sent (mocked)',
-        'sent_at': iso(now_utc()),
+        'kind': 'digest', 'subject': subject, 'recipients': len(subs),
+        'status': 'sent (mocked)' + (' · auto' if auto else ''),
+        'auto': auto, 'sent_at': iso(now_utc()),
     }
     await db.newsletter_issues.insert_one(dict(issue))
+    return issue
+
+
+@api_router.post('/admin/newsletter/send-digest')
+async def send_digest(body: DigestSendIn, admin=Depends(get_admin_user)):
+    issue = await do_send_digest(subject=body.subject, auto=False)
+    if not issue:
+        raise HTTPException(status_code=400, detail='No published posts to include')
     return clean(issue)
+
+
+# ---------------------- weekly digest autosend (every Friday) ----------------------
+
+async def digest_autosend_loop():
+    """Background loop: sends the weekly digest automatically every Friday (UTC),
+    at most once per ISO week, when the admin toggle is on."""
+    import asyncio
+    while True:
+        try:
+            cfg = await db.config.find_one({'key': 'digest_autosend'})
+            enabled = bool(cfg and cfg.get('value'))
+            now = now_utc()
+            if enabled and now.weekday() == 4:  # Friday
+                week_key = f'{now.isocalendar().year}-W{now.isocalendar().week}'
+                sent = await db.config.find_one({'key': 'digest_autosend_last_week'})
+                if not sent or sent.get('value') != week_key:
+                    issue = await do_send_digest(auto=True)
+                    if issue:
+                        await db.config.update_one(
+                            {'key': 'digest_autosend_last_week'},
+                            {'$set': {'value': week_key, 'sent_at': iso(now)}}, upsert=True)
+                        logger.info(f'Weekly digest auto-sent to {issue["recipients"]} subscribers ({week_key})')
+        except Exception as e:
+            logger.warning(f'Digest autosend loop error: {e}')
+        await asyncio.sleep(1800)  # check every 30 minutes
+
+
+@api_router.get('/admin/newsletter/autosend')
+async def get_autosend(admin=Depends(get_admin_user)):
+    cfg = await db.config.find_one({'key': 'digest_autosend'})
+    last = await db.config.find_one({'key': 'digest_autosend_last_week'})
+    return {'enabled': bool(cfg and cfg.get('value')),
+            'last_auto_send': last.get('sent_at') if last else None}
+
+
+class AutosendIn(BaseModel):
+    enabled: bool
+
+
+@api_router.post('/admin/newsletter/autosend')
+async def set_autosend(body: AutosendIn, admin=Depends(get_admin_user)):
+    await db.config.update_one({'key': 'digest_autosend'},
+                               {'$set': {'value': body.enabled}}, upsert=True)
+    return {'ok': True, 'enabled': body.enabled}
 
 
 # ---------------------- SEO ----------------------
@@ -1650,8 +1746,10 @@ async def seed_database():
 
 @app.on_event('startup')
 async def startup():
+    import asyncio
     await seed_database()
     await probe_razorpay_subscriptions()
+    asyncio.create_task(digest_autosend_loop())
 
 
 app.include_router(api_router)
