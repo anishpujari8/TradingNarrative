@@ -466,7 +466,7 @@ export default function AdminPage() {
                             { label: "Arrived", value: funnel.overall.visits },
                             { label: "Viewed pricing", value: funnel.overall.pricing_views },
                             { label: "Started checkout", value: funnel.overall.checkouts_started },
-                            { label: "Went Premium", value: funnel.overall.conversions },
+                            { label: "Went Premium", value: funnel.overall.conversions, split: `${funnel.overall.conversions_monthly ?? 0} monthly · ${funnel.overall.conversions_annual ?? 0} annual` },
                           ].map((s, i, arr) => {
                             const max = arr[0].value || 1;
                             return (
@@ -476,6 +476,9 @@ export default function AdminPage() {
                                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                                   <div className="h-full bg-accent rounded-full" style={{ width: `${Math.max(4, (s.value / max) * 100)}%` }} />
                                 </div>
+                                {s.split && (
+                                  <div className="text-[10px] font-mono text-muted-foreground mt-2" data-testid="admin-funnel-plan-split">{s.split}</div>
+                                )}
                               </div>
                             );
                           })}
@@ -487,7 +490,8 @@ export default function AdminPage() {
                               <TableHead className="text-right">Arrived</TableHead>
                               <TableHead className="text-right">Pricing</TableHead>
                               <TableHead className="text-right">Checkout</TableHead>
-                              <TableHead className="text-right">Premium</TableHead>
+                              <TableHead className="text-right">Monthly</TableHead>
+                              <TableHead className="text-right">Annual</TableHead>
                               <TableHead className="text-right">Conv.</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -498,7 +502,8 @@ export default function AdminPage() {
                                 <TableCell className="text-right font-mono text-sm">{r.visits}</TableCell>
                                 <TableCell className="text-right font-mono text-sm">{r.pricing_views}</TableCell>
                                 <TableCell className="text-right font-mono text-sm">{r.checkouts_started}</TableCell>
-                                <TableCell className="text-right font-mono text-sm">{r.conversions}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">{r.conversions_monthly ?? 0}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">{r.conversions_annual ?? 0}</TableCell>
                                 <TableCell className="text-right">
                                   <Badge variant={r.conversion_rate > 0 ? "default" : "secondary"} className={`font-mono text-[10px] ${r.conversion_rate > 0 ? "bg-accent/10 text-accent border-accent/30 hover:bg-accent/10" : ""}`}>
                                     {r.conversion_rate}%

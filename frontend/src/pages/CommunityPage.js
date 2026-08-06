@@ -15,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin, LockOpen, CalendarClock } from "lucide-react";
+import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin, LockOpen, CalendarClock, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -64,6 +64,7 @@ export default function CommunityPage() {
   const [annOpen, setAnnOpen] = useState(false);
   const [annForm, setAnnForm] = useState({ title: "", body: "", publish_at: "" });
   const [annBusy, setAnnBusy] = useState(false);
+  const [annEditing, setAnnEditing] = useState(null); // announcement id when editing
 
   const [profile, setProfile] = useState(null); // member profile data
   const [profileOpen, setProfileOpen] = useState(false);
@@ -141,6 +142,24 @@ export default function CommunityPage() {
     }
   };
 
+  const isoToLocalInput = (isoStr) => {
+    if (!isoStr) return "";
+    const d = new Date(isoStr);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openAnnEditor = (a = null) => {
+    if (a) {
+      setAnnEditing(a.id);
+      setAnnForm({ title: a.title, body: a.body, publish_at: a.scheduled ? isoToLocalInput(a.publish_at) : "" });
+    } else {
+      setAnnEditing(null);
+      setAnnForm({ title: "", body: "", publish_at: "" });
+    }
+    setAnnOpen(true);
+  };
+
   const createAnnouncement = async () => {
     if (annForm.title.trim().length < 3) { toast.error("Announcement needs a title (3+ characters)."); return; }
     if (!annForm.body.trim()) { toast.error("Write the announcement body."); return; }
@@ -148,13 +167,20 @@ export default function CommunityPage() {
     try {
       const payload = { title: annForm.title, body: annForm.body };
       if (annForm.publish_at) payload.publish_at = new Date(annForm.publish_at).toISOString();
-      const res = await api.post("/community/announcements", payload);
-      toast.success(res.data.scheduled ? "Announcement scheduled — it publishes automatically." : "Announcement posted.");
+      const res = annEditing
+        ? await api.put(`/community/announcements/${annEditing}`, payload)
+        : await api.post("/community/announcements", payload);
+      toast.success(
+        annEditing
+          ? res.data.scheduled ? "Announcement updated — rescheduled." : "Announcement updated."
+          : res.data.scheduled ? "Announcement scheduled — it publishes automatically." : "Announcement posted."
+      );
       setAnnOpen(false);
+      setAnnEditing(null);
       setAnnForm({ title: "", body: "", publish_at: "" });
       loadLounge();
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Could not post the announcement.");
+      toast.error(err?.response?.data?.detail || "Could not save the announcement.");
     } finally {
       setAnnBusy(false);
     }
@@ -359,7 +385,7 @@ export default function CommunityPage() {
         </div>
         <div className="flex gap-2">
           {isAdmin && (
-            <Button variant="outline" onClick={() => setAnnOpen(true)} data-testid="community-new-announcement-button">
+            <Button variant="outline" onClick={() => openAnnEditor()} data-testid="community-new-announcement-button">
               <Megaphone className="h-4 w-4 mr-2" /> New announcement
             </Button>
           )}
@@ -398,9 +424,14 @@ export default function CommunityPage() {
                         )}
                       </h3>
                       {isAdmin && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => setDeleteTarget({ type: "announcement", id: a.id })} data-testid={`community-delete-announcement-${a.id}`} aria-label="Delete announcement">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex gap-0.5 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openAnnEditor(a)} data-testid={`community-edit-announcement-${a.id}`} aria-label="Edit announcement">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => setDeleteTarget({ type: "announcement", id: a.id })} data-testid={`community-delete-announcement-${a.id}`} aria-label="Delete announcement">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 whitespace-pre-wrap">{a.body}</p>
@@ -500,11 +531,11 @@ export default function CommunityPage() {
       </Dialog>
 
       {/* New announcement dialog (admin) */}
-      <Dialog open={annOpen} onOpenChange={setAnnOpen}>
+      <Dialog open={annOpen} onOpenChange={(o) => { setAnnOpen(o); if (!o) setAnnEditing(null); }}>
         <DialogContent data-testid="community-announcement-dialog">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">Post an announcement</DialogTitle>
-            <DialogDescription>Pinned to the Lounge for all Premium members.</DialogDescription>
+            <DialogTitle className="font-serif text-2xl">{annEditing ? "Edit announcement" : "Post an announcement"}</DialogTitle>
+            <DialogDescription>{annEditing ? "Changes apply immediately — clear the schedule to publish now." : "Pinned to the Lounge for all Premium members."}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -529,7 +560,7 @@ export default function CommunityPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAnnOpen(false)}>Cancel</Button>
             <Button onClick={createAnnouncement} disabled={annBusy} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="community-announcement-submit">
-              {annBusy ? "Posting…" : annForm.publish_at ? "Schedule announcement" : "Post announcement"}
+              {annBusy ? "Saving…" : annEditing ? (annForm.publish_at ? "Save & reschedule" : "Save changes") : annForm.publish_at ? "Schedule announcement" : "Post announcement"}
             </Button>
           </DialogFooter>
         </DialogContent>

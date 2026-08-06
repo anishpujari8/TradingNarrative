@@ -1187,24 +1187,34 @@ async def admin_funnel(admin=Depends(get_admin_user), days: int = Query(30, le=3
             s['cta'] = True
         if ev.get('user_id'):
             s['user_ids'].add(ev['user_id'])
-    # 3) which users converted (checkout completed) in the window
+    # 3) which users converted (checkout completed) in the window — with plan for the split
     conv_events = await db.analytics.find(
         {'event': 'checkout_complete', 'created_at': {'$gte': since}},
-        {'user_id': 1}).to_list(10000)
-    converted_users = {c['user_id'] for c in conv_events if c.get('user_id')}
+        {'user_id': 1, 'meta': 1}).to_list(10000)
+    converted_users = {}
+    for c in conv_events:
+        if c.get('user_id'):
+            converted_users[c['user_id']] = (c.get('meta') or {}).get('plan') or 'monthly'
     # 4) aggregate per source
     per_source = {}
     for sid, src in sid_source.items():
         s = sessions.get(sid, {'pricing': False, 'cta': False, 'user_ids': set()})
         row = per_source.setdefault(src, {'source': src, 'visits': 0, 'pricing_views': 0,
-                                          'checkouts_started': 0, 'conversions': 0})
+                                          'checkouts_started': 0, 'conversions': 0,
+                                          'conversions_monthly': 0, 'conversions_annual': 0})
         row['visits'] += 1
         if s['pricing']:
             row['pricing_views'] += 1
         if s['cta']:
             row['checkouts_started'] += 1
-        if s['user_ids'] & converted_users:
+        matched = s['user_ids'] & set(converted_users)
+        if matched:
             row['conversions'] += 1
+            plan = converted_users[next(iter(matched))]
+            if plan == 'annual':
+                row['conversions_annual'] += 1
+            else:
+                row['conversions_monthly'] += 1
     funnel = sorted(per_source.values(), key=lambda r: -r['visits'])
     for r in funnel:
         r['conversion_rate'] = round(r['conversions'] * 100 / r['visits'], 1) if r['visits'] else 0
@@ -1213,6 +1223,8 @@ async def admin_funnel(admin=Depends(get_admin_user), days: int = Query(30, le=3
         'pricing_views': sum(r['pricing_views'] for r in funnel),
         'checkouts_started': sum(r['checkouts_started'] for r in funnel),
         'conversions': sum(r['conversions'] for r in funnel),
+        'conversions_monthly': sum(r['conversions_monthly'] for r in funnel),
+        'conversions_annual': sum(r['conversions_annual'] for r in funnel),
     }
     return {'days': days, 'total_sessions': len(sids), 'funnel': funnel, 'overall': overall}
 
@@ -1280,6 +1292,34 @@ async def community_create_announcement(body: AnnouncementIn, admin=Depends(get_
             'author': community_author(admin), 'publish_at': publish_at,
             'created_at': iso(now_utc())}
     await db.community_announcements.insert_one(dict(item))
+    item = clean(item)
+    item['scheduled'] = bool(publish_at and publish_at > iso(now_utc()))
+    return item
+
+
+@api_router.put('/community/announcements/{aid}')
+async def community_edit_announcement(aid: str, body: AnnouncementIn, admin=Depends(get_admin_user)):
+    existing = await db.community_announcements.find_one({'id': aid})
+    if not existing:
+        raise HTTPException(status_code=404, detail='Announcement not found')
+    title, text = body.title.strip(), body.body.strip()
+    if not (3 <= len(title) <= 200):
+        raise HTTPException(status_code=400, detail='Title must be 3-200 characters')
+    if not (1 <= len(text) <= 5000):
+        raise HTTPException(status_code=400, detail='Body must be 1-5000 characters')
+    publish_at = None
+    if body.publish_at:
+        try:
+            dt = datetime.fromisoformat(body.publish_at.replace('Z', '+00:00'))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            publish_at = iso(dt)
+        except Exception:
+            raise HTTPException(status_code=400, detail='Invalid publish_at datetime')
+    await db.community_announcements.update_one({'id': aid}, {'$set': {
+        'title': title, 'body': text, 'publish_at': publish_at,
+        'edited_at': iso(now_utc())}})
+    item = await db.community_announcements.find_one({'id': aid})
     item = clean(item)
     item['scheduled'] = bool(publish_at and publish_at > iso(now_utc()))
     return item
@@ -1518,12 +1558,13 @@ async def admin_send_issue(body: IssueIn, admin=Depends(get_admin_user)):
     subs = [x for x in subs if post['category'] in x.get('categories', list(CATEGORIES.keys()))]
     subject = body.subject or f"New on The Trading Narrative: {post['title']}"
     post_url = f"{FRONTEND_URL}/post/{post['slug']}"
-    # MOCKED SEND: log one email per subscriber
     for s in subs:
-        await log_email(s['email'], subject, f"{post.get('excerpt', '')}\n\nRead: {post_url}", 'issue')
+        await log_email(s['email'], subject, f"{post.get('excerpt', '')}\n\nRead: {post_url}", 'issue',
+                        html=f"<h2 style='font-family:Georgia,serif'>{post['title']}</h2><p>{post.get('excerpt', '')}</p><p><a href='{post_url}'>Read the full essay →</a></p>")
     issue = {
         'id': str(uuid.uuid4()), 'post_id': post['id'], 'post_title': post['title'],
-        'subject': subject, 'recipients': len(subs), 'status': 'sent (mocked)',
+        'subject': subject, 'recipients': len(subs),
+        'status': 'sent (gmail)' if EMAIL_ENABLED and not EMAIL_LAST_ERROR else 'sent (mocked)',
         'sent_at': iso(now_utc()),
     }
     await db.newsletter_issues.insert_one(dict(issue))
@@ -1786,19 +1827,30 @@ class DigestSendIn(BaseModel):
 
 
 async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
-    """Shared digest send used by the admin button and the Friday autosend scheduler."""
+    """Shared digest send — personalised per subscriber's pillar preferences."""
     posts = await get_digest_posts()
     if not posts:
         return None
     subject = subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
     subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
-    titles = ', '.join(p['title'] for p in posts[:5])
-    digest_html = build_digest_html(posts)
+    all_cats = list(CATEGORIES.keys())
+    html_cache = {}
+    sent = 0
     for sub in subs:
-        await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest', html=digest_html)
+        cats = sub.get('categories') or all_cats
+        sub_posts = [p for p in posts if p['category'] in cats]
+        if not sub_posts:
+            continue  # nothing in their chosen pillars this week
+        key = tuple(sorted(p['id'] for p in sub_posts))
+        if key not in html_cache:
+            html_cache[key] = build_digest_html(sub_posts)
+        titles = ', '.join(p['title'] for p in sub_posts[:5])
+        await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest', html=html_cache[key])
+        sent += 1
     issue = {
-        'id': str(uuid.uuid4()), 'post_id': None, 'post_title': f'Weekly digest ({len(posts)} essays)',
-        'kind': 'digest', 'subject': subject, 'recipients': len(subs),
+        'id': str(uuid.uuid4()), 'post_id': None,
+        'post_title': f'Weekly digest ({len(posts)} essays · pillar-personalised)',
+        'kind': 'digest', 'subject': subject, 'recipients': sent,
         'status': ('sent (gmail)' if EMAIL_ENABLED and not EMAIL_LAST_ERROR else 'sent (mocked)') + (' · auto' if auto else ''),
         'auto': auto, 'sent_at': iso(now_utc()),
     }

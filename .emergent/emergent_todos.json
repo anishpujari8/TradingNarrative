@@ -1,22 +1,22 @@
 [
   {
-    "content": "Gmail SMTP email layer + test endpoint + fallback",
+    "content": "Gmail App Password: activate + verify real sending",
     "status": "completed"
   },
   {
-    "content": "Conversion funnel: session ids + /api/admin/funnel + UI",
-    "status": "completed"
+    "content": "Pillar digests: per-subscriber pillar prefs + personalized digest",
+    "status": "in_progress"
   },
   {
-    "content": "Lounge member profiles: endpoint + profile card UI",
-    "status": "completed"
+    "content": "Announcement editing: PUT endpoint + edit/reschedule UI",
+    "status": "pending"
   },
   {
-    "content": "Scheduled announcements: publish_at + admin UI",
-    "status": "completed"
+    "content": "Funnel plan split: plan on conversions + UI columns",
+    "status": "pending"
   },
   {
-    "content": "Test all four features",
-    "status": "completed"
+    "content": "Test all features",
+    "status": "pending"
   }
 ]
