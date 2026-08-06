@@ -300,7 +300,7 @@ EMAIL_ENABLED = bool(GMAIL_SMTP_USER and GMAIL_SMTP_PASSWORD)
 EMAIL_LAST_ERROR = None  # set when an SMTP send fails, surfaced in admin
 
 
-def _smtp_send(to: str, subject: str, text: str, html: str = None):
+def _smtp_send(to: str, subject: str, text: str, html: str = None, unsub_url: str = None):
     """Blocking SMTP send — always call via asyncio.to_thread."""
     import smtplib
     from email.mime.multipart import MIMEMultipart
@@ -311,6 +311,8 @@ def _smtp_send(to: str, subject: str, text: str, html: str = None):
     msg['To'] = to
     if EMAIL_REPLY_TO:
         msg['Reply-To'] = EMAIL_REPLY_TO
+    if unsub_url:
+        msg['List-Unsubscribe'] = f'<{unsub_url}>'
     msg.attach(MIMEText(text or '', 'plain'))
     if html:
         msg.attach(MIMEText(html, 'html'))
@@ -320,17 +322,40 @@ def _smtp_send(to: str, subject: str, text: str, html: str = None):
         server.sendmail(GMAIL_SMTP_USER, [to], msg.as_string())
 
 
+def unsubscribe_token(email: str) -> str:
+    import hmac as _hmac
+    import hashlib as _hashlib
+    return _hmac.new(JWT_SECRET.encode(), email.strip().lower().encode(), _hashlib.sha256).hexdigest()[:32]
+
+
+def unsubscribe_url(email: str) -> str:
+    from urllib.parse import quote
+    return f"{FRONTEND_URL}/api/newsletter/unsubscribe?email={quote(email)}&token={unsubscribe_token(email)}"
+
+
+MARKETING_KINDS = {'digest', 'issue', 'welcome'}
+
+
 async def log_email(to: str, subject: str, body: str, kind: str, html: str = None):
     """Email adapter: real Gmail SMTP when configured; falls back to mocked logging
     on failure so digests/issues never crash the request."""
     global EMAIL_LAST_ERROR
     import asyncio
+    # one-click unsubscribe footer on marketing emails
+    if kind in MARKETING_KINDS:
+        u_url = unsubscribe_url(to)
+        body = f"{body}\n\n—\nYou're receiving this because you subscribed to The Trading Narrative.\nUnsubscribe: {u_url}"
+        footer_html = (f'<hr style="border:none;border-top:1px solid #e5e5e5;margin:28px 0 12px">'
+                       f'<p style="font-size:12px;color:#888;font-family:sans-serif">You\'re receiving this because you subscribed to The Trading Narrative. '
+                       f'<a href="{u_url}" style="color:#888">Unsubscribe with one click</a>.</p>')
+        html = (html or f'<p>{body}</p>') + footer_html
     status = 'sent (mocked)'
     provider = 'mock'
     if EMAIL_ENABLED:
         provider = 'gmail_smtp'
         try:
-            await asyncio.to_thread(_smtp_send, to, subject, body, html)
+            await asyncio.to_thread(_smtp_send, to, subject, body, html,
+                                    unsubscribe_url(to) if kind in MARKETING_KINDS else None)
             status = 'sent (gmail)'
             EMAIL_LAST_ERROR = None
         except Exception as e:
@@ -1013,6 +1038,31 @@ async def newsletter_subscribe(body: NewsletterIn):
     return {'ok': True, 'message': "You're in! Check your inbox for a welcome note.", 'already': False}
 
 
+@api_router.get('/newsletter/unsubscribe')
+async def newsletter_unsubscribe(email: str = Query(...), token: str = Query(...)):
+    from fastapi.responses import HTMLResponse
+    ok = token == unsubscribe_token(email)
+    if ok:
+        await db.newsletter_subscribers.update_one(
+            {'email': email.strip().lower()}, {'$set': {'status': 'unsubscribed',
+                                                        'unsubscribed_at': iso(now_utc())}})
+    heading = "You're unsubscribed" if ok else "That link didn't work"
+    message = ("You won't receive the weekly digest or new-essay emails anymore. "
+               "Changed your mind? You can re-subscribe any time from your account page.") if ok else \
+              ("This unsubscribe link is invalid or expired. "
+               "You can manage email preferences from your account page instead.")
+    page = f"""<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>{heading} — The Trading Narrative</title></head>
+<body style='margin:0;background:#faf9f7;font-family:Georgia,serif;color:#1a1a1a'>
+<div style='max-width:480px;margin:12vh auto;padding:40px;background:#fff;border:1px solid #e8e6e1;border-radius:16px;text-align:center'>
+<div style='font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#2a7d6c;font-family:monospace'>The Trading Narrative</div>
+<h1 style='font-size:28px;margin:18px 0 12px'>{heading}</h1>
+<p style='font-size:15px;line-height:1.6;color:#555'>{message}</p>
+<a href='{FRONTEND_URL}' style='display:inline-block;margin-top:18px;padding:12px 28px;background:#2a7d6c;color:#fff;text-decoration:none;border-radius:8px;font-family:sans-serif;font-size:14px'>Back to the essays</a>
+</div></body></html>"""
+    return HTMLResponse(content=page, status_code=200 if ok else 400)
+
+
 class NewsletterPrefsIn(BaseModel):
     subscribed: bool = True
     categories: List[str] = []
@@ -1127,6 +1177,22 @@ async def admin_traffic(admin=Depends(get_admin_user), days: int = Query(30, le=
     ]).to_list(15)
     landing_pages = [{'path': p['_id']['path'] or '/', 'source': p['_id']['source'],
                       'count': p['count']} for p in pages]
+    # subscriber growth: weekly new subscribers + cumulative
+    all_subs = await db.newsletter_subscribers.find({}, {'created_at': 1}).to_list(20000)
+    sub_weeks = {}
+    for s in all_subs:
+        try:
+            dt = datetime.fromisoformat(s['created_at'])
+        except Exception:
+            continue
+        ws = (dt - timedelta(days=dt.weekday())).date()
+        sub_weeks[ws] = sub_weeks.get(ws, 0) + 1
+    cutoff = (now_utc() - timedelta(days=days)).date()
+    running = sum(c for w, c in sub_weeks.items() if w < cutoff)
+    subscriber_trend = []
+    for ws in sorted(w for w in sub_weeks if w >= cutoff):
+        running += sub_weeks[ws]
+        subscriber_trend.append({'week': ws.strftime('%b %d'), 'new': sub_weeks[ws], 'total': running})
     return {
         'days': days, 'total_visits': total, 'sources': sources,
         'top_referrers': [{'host': r['_id'], 'count': r['count']} for r in referrers],
@@ -1134,6 +1200,7 @@ async def admin_traffic(admin=Depends(get_admin_user), days: int = Query(30, le=
                        'count': c['count']} for c in campaigns],
         'trend': trend, 'trend_series': trend_series,
         'landing_pages': landing_pages,
+        'subscriber_trend': subscriber_trend,
     }
 
 
@@ -1226,7 +1293,36 @@ async def admin_funnel(admin=Depends(get_admin_user), days: int = Query(30, le=3
         'conversions_monthly': sum(r['conversions_monthly'] for r in funnel),
         'conversions_annual': sum(r['conversions_annual'] for r in funnel),
     }
-    return {'days': days, 'total_sessions': len(sids), 'funnel': funnel, 'overall': overall}
+    # which essays convert: post views (any session) → did that session's user go premium?
+    post_events = await db.analytics.find(
+        {'event': 'pageview', 'path': {'$regex': '^/post/'}, 'created_at': {'$gte': since},
+         'sid': {'$nin': [None, '']}},
+        {'sid': 1, 'path': 1, 'user_id': 1}).to_list(100000)
+    post_stats = {}
+    sid_users = {sid: s['user_ids'] for sid, s in sessions.items()}
+    for ev in post_events:
+        slug = ev['path'].split('/post/', 1)[1].split('?')[0]
+        stat = post_stats.setdefault(slug, {'slug': slug, 'sessions': set(), 'converted': set()})
+        stat['sessions'].add(ev['sid'])
+        users = sid_users.get(ev['sid'], set())
+        if ev.get('user_id'):
+            users = users | {ev['user_id']}
+        if users & set(converted_users):
+            stat['converted'].add(ev['sid'])
+    slugs = list(post_stats.keys())
+    titles = {}
+    if slugs:
+        for p in await db.posts.find({'slug': {'$in': slugs}}, {'slug': 1, 'title': 1}).to_list(200):
+            titles[p['slug']] = p['title']
+    post_conversions = []
+    for s in post_stats.values():
+        views, conv = len(s['sessions']), len(s['converted'])
+        post_conversions.append({'slug': s['slug'], 'title': titles.get(s['slug'], s['slug']),
+                                 'reader_sessions': views, 'conversions': conv,
+                                 'rate': round(conv * 100 / views, 1) if views else 0})
+    post_conversions.sort(key=lambda x: (-x['conversions'], -x['reader_sessions']))
+    return {'days': days, 'total_sessions': len(sids), 'funnel': funnel, 'overall': overall,
+            'post_conversions': post_conversions[:10]}
 
 
 # ---------------------- community lounge (premium members only) ----------------------
@@ -1864,6 +1960,20 @@ async def send_digest(body: DigestSendIn, admin=Depends(get_admin_user)):
     if not issue:
         raise HTTPException(status_code=400, detail='No published posts to include')
     return clean(issue)
+
+
+@api_router.post('/admin/newsletter/send-digest-preview')
+async def send_digest_preview(body: DigestSendIn, admin=Depends(get_admin_user)):
+    """Send the full weekly digest to the admin only — a dry run before it reaches subscribers."""
+    posts = await get_digest_posts()
+    if not posts:
+        raise HTTPException(status_code=400, detail='No published posts to include')
+    subject = body.subject or f"[PREVIEW] The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+    to = GMAIL_SMTP_USER or admin['email']
+    titles = ', '.join(p['title'] for p in posts[:5])
+    entry = await log_email(to, subject, f'Weekly digest preview featuring: {titles}', 'digest',
+                            html=build_digest_html(posts))
+    return {'ok': True, 'to': to, 'status': entry['status'], 'posts': len(posts)}
 
 
 # ---------------------- weekly digest autosend (every Friday) ----------------------

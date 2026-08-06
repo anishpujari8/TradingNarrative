@@ -63,6 +63,7 @@ export default function AdminPage() {
   const [digestOpen, setDigestOpen] = useState(false);
   const [digestBusy, setDigestBusy] = useState(false);
   const [digestSending, setDigestSending] = useState(false);
+  const [digestPreviewSending, setDigestPreviewSending] = useState(false);
   const [issuePostId, setIssuePostId] = useState("");
   const [issueSubject, setIssueSubject] = useState("");
   const [sending, setSending] = useState(false);
@@ -174,7 +175,7 @@ export default function AdminPage() {
     setDigestSending(true);
     try {
       const res = await api.post("/admin/newsletter/send-digest", { subject: digest?.subject });
-      toast.success(`Digest sent (mocked) to ${res.data.recipients} subscribers.`);
+      toast.success(`Digest sent to ${res.data.recipients} subscribers (${res.data.status}).`);
       setDigestOpen(false);
       loadAll();
     } catch (err) {
@@ -184,12 +185,24 @@ export default function AdminPage() {
     }
   };
 
+  const sendDigestPreviewToMe = async () => {
+    setDigestPreviewSending(true);
+    try {
+      const res = await api.post("/admin/newsletter/send-digest-preview", { subject: digest?.subject ? `[PREVIEW] ${digest.subject}` : undefined });
+      toast.success(`Preview delivered to ${res.data.to} — check your inbox before sending to everyone.`);
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Preview send failed.");
+    } finally {
+      setDigestPreviewSending(false);
+    }
+  };
+
   const sendIssue = async () => {
     if (!issuePostId) { toast.error("Pick a post to send."); return; }
     setSending(true);
     try {
       const res = await api.post("/admin/newsletter/issues", { post_id: issuePostId, subject: issueSubject || undefined });
-      toast.success(`Issue sent (mocked) to ${res.data.recipients} subscribers.`);
+      toast.success(`Issue sent to ${res.data.recipients} subscribers (${res.data.status}).`);
       setIssueDialog(false);
       setIssuePostId("");
       setIssueSubject("");
@@ -334,6 +347,31 @@ export default function AdminPage() {
                     ) : (
                       <p className="text-sm text-muted-foreground pt-8 text-center" data-testid="admin-traffic-no-trend">
                         Trend appears once visits span more than one week.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="font-serif text-xl flex items-center gap-2">
+                      <Users className="h-4 w-4 text-accent" /> Subscriber growth
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-64" data-testid="admin-subscriber-growth-chart">
+                    {traffic.subscriber_trend?.length ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={traffic.subscriber_trend} margin={{ left: 0, right: 20, top: 5 }}>
+                          <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
+                          <ReTooltip cursor={{ stroke: "hsla(168,52%,34%,0.2)" }} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          <Line type="monotone" dataKey="total" name="Total subscribers" stroke="hsl(168 52% 34%)" strokeWidth={2} dot={{ r: 3 }} />
+                          <Line type="monotone" dataKey="new" name="New that week" stroke="hsl(30 65% 50%)" strokeWidth={2} dot={{ r: 3 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <p className="text-sm text-muted-foreground pt-8 text-center" data-testid="admin-subscriber-growth-empty">
+                        Growth appears as readers join the newsletter.
                       </p>
                     )}
                   </CardContent>
@@ -513,6 +551,39 @@ export default function AdminPage() {
                             ))}
                           </TableBody>
                         </Table>
+                        {funnel.post_conversions?.length > 0 && (
+                          <div className="mt-8">
+                            <h4 className="font-serif text-lg font-semibold mb-3 flex items-center gap-2">
+                              <Newspaper className="h-4 w-4 text-accent" /> Essays that convert
+                            </h4>
+                            <Table data-testid="admin-post-conversions-table">
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Essay</TableHead>
+                                  <TableHead className="text-right">Reader sessions</TableHead>
+                                  <TableHead className="text-right">Went Premium</TableHead>
+                                  <TableHead className="text-right">Rate</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {funnel.post_conversions.map((p) => (
+                                  <TableRow key={p.slug}>
+                                    <TableCell className="font-medium text-sm max-w-md truncate">
+                                      <Link to={`/post/${p.slug}`} className="hover:text-accent transition-colors">{p.title}</Link>
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono text-sm">{p.reader_sessions}</TableCell>
+                                    <TableCell className="text-right font-mono text-sm">{p.conversions}</TableCell>
+                                    <TableCell className="text-right">
+                                      <Badge variant={p.rate > 0 ? "default" : "secondary"} className={`font-mono text-[10px] ${p.rate > 0 ? "bg-accent/10 text-accent border-accent/30 hover:bg-accent/10" : ""}`}>
+                                        {p.rate}%
+                                      </Badge>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
                       </>
                     )}
                   </CardContent>
@@ -743,7 +814,7 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Weekly digest preview</DialogTitle>
             <DialogDescription>
-              {digest ? `${digest.post_count} essays from the past week · Subject: "${digest.subject}"` : ""} Sending is MOCKED and logged in the email log.
+              {digest ? `${digest.post_count} essays from the past week · Subject: "${digest.subject}"` : ""} {emailStatus?.verified ? "Real sending via Gmail — each subscriber gets only their chosen pillars." : "Sending is MOCKED and logged in the email log."}
             </DialogDescription>
           </DialogHeader>
           {digest && (
@@ -759,6 +830,9 @@ export default function AdminPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDigestOpen(false)}>Close</Button>
+            <Button variant="outline" onClick={sendDigestPreviewToMe} disabled={digestPreviewSending} data-testid="admin-digest-preview-me-button">
+              <Mail className="h-4 w-4 mr-2" /> {digestPreviewSending ? "Sending…" : "Send preview to me"}
+            </Button>
             <Button onClick={sendDigest} disabled={digestSending} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="admin-digest-send-button">
               <Send className="h-4 w-4 mr-2" /> {digestSending ? "Sending…" : "Send to all subscribers"}
             </Button>

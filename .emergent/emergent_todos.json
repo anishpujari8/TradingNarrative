@@ -1,22 +1,22 @@
 [
   {
-    "content": "Gmail App Password: activate + verify real sending",
-    "status": "completed"
+    "content": "Unsubscribe links: token endpoint + footer in emails",
+    "status": "in_progress"
   },
   {
-    "content": "Pillar digests: per-subscriber pillar prefs + personalized digest",
-    "status": "completed"
+    "content": "Subscriber growth chart: weekly buckets + UI",
+    "status": "pending"
   },
   {
-    "content": "Announcement editing: PUT endpoint + edit/reschedule UI",
-    "status": "completed"
+    "content": "Digest preview email: send-to-self endpoint + button",
+    "status": "pending"
   },
   {
-    "content": "Funnel plan split: plan on conversions + UI columns",
-    "status": "completed"
+    "content": "Post conversion stats: per-essay conversions + UI",
+    "status": "pending"
   },
   {
-    "content": "Test all features",
-    "status": "completed"
+    "content": "Test all four features",
+    "status": "pending"
   }
 ]

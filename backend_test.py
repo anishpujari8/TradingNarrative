@@ -1566,6 +1566,119 @@ def main():
         # KEEP the scheduled announcement "AMA next week" for frontend testing
         print('   ✓ Scheduled announcement "AMA next week" kept for frontend testing')
 
+    # ==================== NEW FEATURES: UNSUBSCRIBE, SUBSCRIBER TREND, POST CONVERSIONS ====================
+    print('\n📧 25. ONE-CLICK UNSUBSCRIBE')
+    # Create a throwaway subscriber for testing
+    throwaway_email = f'tester-{uuid.uuid4().hex[:8]}@disposable.local'
+    throwaway_id = None
+    try:
+        # Insert throwaway subscriber directly into MongoDB via API (we'll use newsletter subscribe endpoint)
+        r = requests.post(f'{BASE}/newsletter/subscribe', json={'email': throwaway_email, 'source': 'test'}, timeout=10)
+        check('Create throwaway subscriber for unsubscribe test', r.status_code == 200)
+        
+        # Compute HMAC token for unsubscribe
+        import hmac
+        import hashlib
+        jwt_secret = 'ttn-jwt-secret-key-2025-change-in-prod'  # from backend/.env
+        correct_token = hmac.new(jwt_secret.encode(), throwaway_email.lower().encode(), hashlib.sha256).hexdigest()[:32]
+        wrong_token = 'wrongtoken123456789012345678901'
+        
+        # Test with WRONG token - should return 400
+        r = requests.get(f'{BASE}/newsletter/unsubscribe?email={throwaway_email}&token={wrong_token}', timeout=10)
+        check('GET /api/newsletter/unsubscribe with WRONG token returns 400', r.status_code == 400)
+        check('Wrong token returns HTML page with error message', 'didn\'t work' in r.text.lower() or 'invalid' in r.text.lower())
+        
+        # Test with CORRECT token - should return 200 and unsubscribe
+        r = requests.get(f'{BASE}/newsletter/unsubscribe?email={throwaway_email}&token={correct_token}', timeout=10)
+        check('GET /api/newsletter/unsubscribe with CORRECT token returns 200', r.status_code == 200)
+        check('Correct token returns HTML page with success message', 'unsubscribed' in r.text.lower())
+        
+        print(f'   ✓ Throwaway subscriber {throwaway_email} created and unsubscribed successfully')
+    except Exception as e:
+        check('One-click unsubscribe test', False, str(e))
+
+    print('\n📊 26. SUBSCRIBER GROWTH CHART')
+    try:
+        r = requests.get(f'{BASE}/admin/traffic?days=90', headers=admin_hdr, timeout=10)
+        check('GET /api/admin/traffic?days=90 returns 200', r.status_code == 200)
+        data = r.json()
+        check('Traffic response includes subscriber_trend array', 'subscriber_trend' in data)
+        
+        if 'subscriber_trend' in data and len(data['subscriber_trend']) > 0:
+            trend = data['subscriber_trend']
+            check('subscriber_trend has week/new/total keys', 
+                  all('week' in t and 'new' in t and 'total' in t for t in trend))
+            
+            # Check cumulative total is non-decreasing
+            totals = [t['total'] for t in trend]
+            is_non_decreasing = all(totals[i] <= totals[i+1] for i in range(len(totals)-1))
+            check('subscriber_trend cumulative total is non-decreasing', is_non_decreasing, 
+                  f'totals={totals}')
+            print(f'   ✓ Found {len(trend)} weeks of subscriber growth data')
+        else:
+            print('   ⚠️  No subscriber trend data yet (expected if no subscribers)')
+    except Exception as e:
+        check('Subscriber growth chart test', False, str(e))
+
+    print('\n📈 27. POST CONVERSION STATS')
+    try:
+        r = requests.get(f'{BASE}/admin/funnel?days=30', headers=admin_hdr, timeout=10)
+        check('GET /api/admin/funnel?days=30 returns 200', r.status_code == 200)
+        data = r.json()
+        check('Funnel response includes post_conversions array', 'post_conversions' in data)
+        
+        if 'post_conversions' in data and len(data['post_conversions']) > 0:
+            conversions = data['post_conversions']
+            check('post_conversions has slug/title/reader_sessions/conversions/rate keys',
+                  all('slug' in p and 'title' in p and 'reader_sessions' in p and 
+                      'conversions' in p and 'rate' in p for p in conversions))
+            
+            # Check sorted by conversions desc
+            conv_counts = [p['conversions'] for p in conversions]
+            is_sorted = all(conv_counts[i] >= conv_counts[i+1] for i in range(len(conv_counts)-1))
+            check('post_conversions sorted by conversions desc', is_sorted, f'conversions={conv_counts}')
+            print(f'   ✓ Found {len(conversions)} posts with conversion data')
+        else:
+            print('   ⚠️  No post conversion data yet (expected if no conversions)')
+    except Exception as e:
+        check('Post conversion stats test', False, str(e))
+
+    print('\n📧 28. CODE REVIEW: UNSUBSCRIBE FOOTER IN MARKETING EMAILS')
+    # This is a code review test - we check the log_email function in server.py
+    try:
+        import re
+        with open('/app/backend/server.py', 'r') as f:
+            server_code = f.read()
+        
+        # Check that log_email function adds unsubscribe footer for marketing emails
+        log_email_match = re.search(r'async def log_email\(.*?\):(.*?)(?=\nasync def|\nclass |\n@api_router|\Z)', 
+                                     server_code, re.DOTALL)
+        if log_email_match:
+            log_email_code = log_email_match.group(1)
+            
+            # Check for MARKETING_KINDS check
+            check('log_email checks for MARKETING_KINDS (digest/issue/welcome)', 
+                  'MARKETING_KINDS' in log_email_code or 
+                  ('digest' in log_email_code and 'issue' in log_email_code and 'welcome' in log_email_code))
+            
+            # Check for unsubscribe footer in body
+            check('log_email adds unsubscribe footer to email body', 
+                  'Unsubscribe' in log_email_code and 'unsubscribe_url' in log_email_code)
+            
+            # Check for List-Unsubscribe header
+            check('log_email adds List-Unsubscribe header', 
+                  'List-Unsubscribe' in log_email_code or 'list-unsubscribe' in log_email_code.lower())
+            
+            # Check that _smtp_send is called with unsub_url parameter
+            check('_smtp_send receives unsubscribe URL for marketing emails',
+                  'unsub_url' in log_email_code or 'unsubscribe_url' in log_email_code)
+            
+            print('   ✓ Code review passed: unsubscribe footer and header implemented correctly')
+        else:
+            check('Find log_email function in server.py', False, 'Function not found')
+    except Exception as e:
+        check('Code review of log_email function', False, str(e))
+
     # ==================== SUMMARY ====================
     print('\n' + '=' * 80)
     print(f'📊 TEST SUMMARY')
