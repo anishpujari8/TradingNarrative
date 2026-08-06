@@ -40,6 +40,7 @@ export default function PricingPage() {
   const [autoRenew, setAutoRenew] = useState(false);
   const [currency, setCurrency] = useState(getPreferredCurrency());
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [razorpayAutopay, setRazorpayAutopay] = useState(false);
   const [rzpConfirm, setRzpConfirm] = useState(false);
   const [rzpBusy, setRzpBusy] = useState(false);
 
@@ -53,6 +54,7 @@ export default function PricingPage() {
       setMockMode(res.data.mock_mode);
       setAutoRenew(res.data.auto_renew);
       setRazorpayEnabled(res.data.razorpay_enabled);
+      setRazorpayAutopay(!!res.data.razorpay_autopay);
     }).catch(() => {});
   }, []);
 
@@ -80,17 +82,14 @@ export default function PricingPage() {
         script.onerror = reject;
         document.body.appendChild(script);
       });
-      const rzp = new window.Razorpay({
+      const rzpOptions = {
         key: res.data.razorpay_key_id,
-        amount: res.data.amount,
-        currency: res.data.currency,
-        order_id: res.data.order_id,
         name: res.data.name,
         description: res.data.description,
         handler: async (resp) => {
           try {
             await api.post("/billing/razorpay/verify", {
-              order_id: res.data.order_id,
+              order_id: res.data.ref_id,
               payment_id: resp.razorpay_payment_id,
               signature: resp.razorpay_signature,
             });
@@ -102,7 +101,16 @@ export default function PricingPage() {
           }
         },
         modal: { ondismiss: () => setRedirecting(false) },
-      });
+      };
+      if (res.data.kind === "subscription") {
+        // UPI Autopay recurring mandate
+        rzpOptions.subscription_id = res.data.subscription_id;
+      } else {
+        rzpOptions.order_id = res.data.order_id;
+        rzpOptions.amount = res.data.amount;
+        rzpOptions.currency = res.data.currency;
+      }
+      const rzp = new window.Razorpay(rzpOptions);
       rzp.open();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Could not start Razorpay checkout.");
@@ -266,7 +274,7 @@ export default function PricingPage() {
               data-testid="pricing-checkout-button"
             >
               {redirecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              {user?.is_premium ? "You're Premium" : redirecting ? "Opening Stripe…" : `Go Premium ${annual ? "annual" : "monthly"}`}
+              {user?.is_premium ? "You're Premium" : redirecting ? (isINR ? "Opening Razorpay…" : "Opening Stripe…") : `Go Premium ${annual ? "annual" : "monthly"}`}
             </Button>
             {mockMode ? (
               <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-mock-notice">
@@ -276,7 +284,9 @@ export default function PricingPage() {
               <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-stripe-notice">
                 {isINR
                   ? razorpayEnabled
-                    ? "UPI · cards · netbanking via Razorpay · cancel anytime"
+                    ? razorpayAutopay
+                      ? "UPI Autopay · cards · netbanking via Razorpay · renews automatically · cancel anytime"
+                      : `UPI · cards · netbanking via Razorpay · ${annual ? "365" : "30"}-day pass · Test mode`
                     : "UPI · cards · netbanking via Razorpay · MOCKED until keys are added"
                   : autoRenew
                     ? "Secure Stripe checkout · renews automatically · cancel anytime"

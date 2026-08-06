@@ -53,6 +53,7 @@ export const Navbar = () => {
                 ))}
                 <div className="h-px bg-border my-1" />
                 <Link to="/archive" onClick={() => setOpen(false)} className="text-base hover:text-accent">Archive</Link>
+                <Link to="/lounge" onClick={() => setOpen(false)} className="text-base hover:text-accent" data-testid="nav-mobile-lounge-link">Lounge</Link>
                 <Link to="/pricing" onClick={() => setOpen(false)} className="text-base hover:text-accent">Pricing</Link>
                 <Link to="/about" onClick={() => setOpen(false)} className="text-base hover:text-accent">About</Link>
               </nav>
@@ -75,6 +76,9 @@ export const Navbar = () => {
           ))}
           <NavLink to="/archive" className={navLinkCls} data-testid="nav-archive-link">
             Archive
+          </NavLink>
+          <NavLink to="/lounge" className={navLinkCls} data-testid="nav-lounge-link">
+            Lounge
           </NavLink>
           <NavLink to="/about" className={navLinkCls} data-testid="nav-about-link">
             About

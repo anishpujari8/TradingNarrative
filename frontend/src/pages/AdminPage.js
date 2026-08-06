@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer } from "recharts";
-import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper } from "lucide-react";
+import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -56,6 +56,8 @@ export default function AdminPage() {
   const [issuePostId, setIssuePostId] = useState("");
   const [issueSubject, setIssueSubject] = useState("");
   const [sending, setSending] = useState(false);
+  const [traffic, setTraffic] = useState(null);
+  const [trafficDays, setTrafficDays] = useState("30");
 
   const loadAll = useCallback(() => {
     api.get("/admin/analytics/stats").then((r) => setStats(r.data)).catch(() => {});
@@ -64,6 +66,11 @@ export default function AdminPage() {
     api.get("/admin/newsletter/issues").then((r) => setIssues(r.data.issues)).catch(() => setIssues([]));
     api.get("/admin/email-logs").then((r) => setEmailLogs(r.data.logs)).catch(() => setEmailLogs([]));
   }, []);
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    api.get(`/admin/traffic?days=${trafficDays}`).then((r) => setTraffic(r.data)).catch(() => setTraffic({ total_visits: 0, sources: [], top_referrers: [], campaigns: [] }));
+  }, [user, trafficDays]);
 
   useEffect(() => {
     if (loading) return;
@@ -153,6 +160,7 @@ export default function AdminPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex flex-wrap h-auto justify-start mb-6">
           <TabsTrigger value="overview" data-testid="admin-tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="traffic" data-testid="admin-tab-traffic">Traffic</TabsTrigger>
           <TabsTrigger value="posts" data-testid="admin-tab-posts">Posts</TabsTrigger>
           <TabsTrigger value="newsletter" data-testid="admin-tab-newsletter">Newsletter</TabsTrigger>
           <TabsTrigger value="emails" data-testid="admin-tab-emails">Email log</TabsTrigger>
@@ -187,6 +195,130 @@ export default function AdminPage() {
             <StatCard icon={Eye} label="Pageviews (7d)" value={stats?.pageviews_7d} testId="admin-stat-pageviews-7d" />
             <StatCard icon={Crown} label="Checkouts completed" value={stats?.checkouts} testId="admin-stat-checkouts" />
           </div>
+        </TabsContent>
+
+        {/* TRAFFIC SOURCES */}
+        <TabsContent value="traffic">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <p className="text-sm text-muted-foreground">
+              Where readers arrive from — first visit of each browser session, powered by referrers and UTM tags.
+            </p>
+            <Select value={trafficDays} onValueChange={setTrafficDays}>
+              <SelectTrigger className="w-36" data-testid="admin-traffic-days-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {traffic === null ? (
+            <Skeleton className="h-96 rounded-xl" />
+          ) : traffic.total_visits === 0 ? (
+            <Card className="rounded-xl">
+              <CardContent className="py-16 text-center" data-testid="admin-traffic-empty">
+                <Globe className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-serif text-xl font-semibold mb-2">No external visits yet</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  When readers land here from LinkedIn, Instagram, Google, or your newsletter links,
+                  their source shows up in this breakdown. Add <code className="font-mono text-xs">?utm_source=linkedin</code> to
+                  links you share to attribute them precisely.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard icon={Globe} label={`Visits (${traffic.days}d)`} value={traffic.total_visits} testId="admin-traffic-total" />
+                <StatCard icon={TrendingUp} label="Top source" value={traffic.sources[0]?.source ?? "—"} testId="admin-traffic-top-source" />
+                <StatCard icon={Users} label="Sources" value={traffic.sources.length} testId="admin-traffic-source-count" />
+                <StatCard icon={Send} label="Campaigns" value={traffic.campaigns.length} testId="admin-traffic-campaign-count" />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="rounded-xl">
+                  <CardHeader><CardTitle className="font-serif text-xl">Visits by source</CardTitle></CardHeader>
+                  <CardContent className="h-72" data-testid="admin-traffic-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={traffic.sources} layout="vertical" margin={{ left: 10, right: 20 }}>
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="source" width={110} tick={{ fontSize: 11 }} />
+                        <ReTooltip cursor={{ fill: "hsla(168,52%,34%,0.06)" }} />
+                        <Bar dataKey="count" fill="hsl(168 52% 34%)" radius={[0, 6, 6, 0]} barSize={18} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl">
+                  <CardHeader><CardTitle className="font-serif text-xl">Source breakdown</CardTitle></CardHeader>
+                  <CardContent className="p-0">
+                    <Table data-testid="admin-traffic-sources-table">
+                      <TableHeader>
+                        <TableRow><TableHead>Source</TableHead><TableHead className="text-right">Visits</TableHead><TableHead className="text-right">Share</TableHead></TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {traffic.sources.map((s) => (
+                          <TableRow key={s.source} data-testid={`admin-traffic-source-${s.source.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+                            <TableCell className="font-medium text-sm">{s.source}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{s.count}</TableCell>
+                            <TableCell className="text-right font-mono text-xs text-muted-foreground">{s.pct}%</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl">
+                  <CardHeader><CardTitle className="font-serif text-xl">Top referring domains</CardTitle></CardHeader>
+                  <CardContent className="p-0">
+                    {traffic.top_referrers.length ? (
+                      <Table data-testid="admin-traffic-referrers-table">
+                        <TableHeader>
+                          <TableRow><TableHead>Domain</TableHead><TableHead className="text-right">Visits</TableHead></TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {traffic.top_referrers.map((r) => (
+                            <TableRow key={r.host}>
+                              <TableCell className="font-mono text-xs">{r.host}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{r.count}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-sm text-muted-foreground p-6">No referrer domains recorded yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl">
+                  <CardHeader><CardTitle className="font-serif text-xl">UTM campaigns</CardTitle></CardHeader>
+                  <CardContent className="p-0">
+                    {traffic.campaigns.length ? (
+                      <Table data-testid="admin-traffic-campaigns-table">
+                        <TableHeader>
+                          <TableRow><TableHead>Campaign</TableHead><TableHead>Source</TableHead><TableHead className="text-right">Visits</TableHead></TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {traffic.campaigns.map((c, i) => (
+                            <TableRow key={`${c.campaign}-${i}`}>
+                              <TableCell className="font-medium text-sm">{c.campaign}</TableCell>
+                              <TableCell><Badge variant="secondary" className="font-mono text-[10px]">{c.source}</Badge></TableCell>
+                              <TableCell className="text-right font-mono text-sm">{c.count}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-sm text-muted-foreground p-6" data-testid="admin-traffic-no-campaigns">
+                        No UTM campaigns yet. Share links like <code className="font-mono text-xs">?utm_source=linkedin&utm_campaign=launch</code> to track them.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </TabsContent>
 
         {/* POSTS */}

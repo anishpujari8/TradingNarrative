@@ -25,6 +25,7 @@ import AccountPage from "@/pages/AccountPage";
 import ReadingListPage from "@/pages/ReadingListPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminEditorPage from "@/pages/AdminEditorPage";
+import CommunityPage from "@/pages/CommunityPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
 const RouteEffects = () => {
@@ -61,6 +62,7 @@ function App() {
                   <Route path="/payment/cancel" element={<PaymentCancelPage />} />
                   <Route path="/account" element={<AccountPage />} />
                   <Route path="/reading-list" element={<ReadingListPage />} />
+                  <Route path="/lounge" element={<CommunityPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/editor" element={<AdminEditorPage />} />
                   <Route path="/admin/editor/:id" element={<AdminEditorPage />} />

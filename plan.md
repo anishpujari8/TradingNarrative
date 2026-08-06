@@ -1,9 +1,14 @@
 # plan.md — The Trading Narrative (FARM)
 
 ## 1) Objectives
-- Ship a V1 subscription blog + newsletter platform (“The Trading Narrative”) with editorial UX, server-side paywall previews, mock subscription checkout (Stripe-ready), and an admin CMS.
-- Support four pillars (Tech & Business, Finance, Lifestyle, Travel), SEO/meta, social sharing, and lightweight analytics.
-- Ensure core workflows work end-to-end: read free vs premium, upgrade/downgrade, newsletter signup/issue send (mocked), admin publishing.
+- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, server-side paywall previews, and a freemium model.
+- Support **three content pillars**: **Tech & AI**, **Business & Finance**, **Personal Growth**.
+- Provide international subscriptions via **Stripe (recurring)** and India-first subscriptions via **Razorpay (UPI Autopay/mandates)** with locale/IP or manual currency toggle.
+- Deliver strong retention UX: bookmarks/reading list, reading progress, continue-reading strips, notifications, weekly digest previews.
+- Add V2 admin + community capabilities:
+  - **Traffic Sources Analytics** (referrers/UTM breakdown)
+  - **Private Community Lounge** for premium members (announcements + discussion threads)
+- Keep integrations reliable with webhooks, audit logs, and end-to-end tests after each phase.
 
 ## 2) Implementation Steps
 
@@ -16,21 +21,19 @@
 5. As an admin, I can mark a post as free or premium and see gating change instantly.
 
 **Steps**
-- Websearch: best practices for server-side paywalls + Stripe subscription modeling (customer/subscription status, entitlement checks).
 - Backend-only POC in FastAPI:
   - Mongo models: User (roles, premium_status), Post (tier, preview_blocks/full_blocks).
   - Endpoints: `GET /api/posts/{slug}` returns preview vs full based on entitlement.
   - Mock subscription endpoints: `POST /api/billing/mock/checkout` (activate premium), `POST /api/billing/mock/cancel` (deactivate), record mock invoices.
 - Minimal React POC page(s): Login + Post view verifying that page source never includes full premium content when not entitled.
 - POC test checklist: unauth, free user, premium user; verify API responses and DB state transitions.
-- Fix until POC passes completely.
 
-### Phase 2 — V1 App Development (bulk build; no extra integrations beyond mocks)
+### Phase 2 — V1 App Development (bulk build)
 **User stories**
 1. As a visitor, I can browse the homepage, filter by category, and quickly find recent posts.
 2. As a reader, I can read an article with clean typography, read-time, author bio, and related posts.
 3. As a free user, I can see a clear paywall CTA and pricing page with monthly/annual toggle.
-4. As a subscriber, I can access an account page showing premium badge + mock billing history.
+4. As a subscriber, I can access an account page showing premium badge + billing history.
 5. As an admin, I can create/edit/schedule/publish posts and set free/premium tier.
 
 **Design first (design_agent)**
@@ -39,99 +42,145 @@
 **Backend (FastAPI /api, Mongo)**
 - Auth:
   - Email+password (bcrypt + JWT).
-  - Magic link (dev-mode): create token + return link in response + backend logs; UI displays “email mocked”.
+  - Magic link (dev-mode) supported.
 - Content:
-  - Posts CRUD, publish/schedule, categories, featured flag.
+  - Posts CRUD, publish/schedule, categories/pillars, featured flag.
   - Server-side paywall logic: preview paragraphs only for non-premium on premium posts.
-  - Archive search/filter endpoints.
-- Subscriptions (mock Stripe-ready architecture):
-  - Billing entities: Subscription, Invoice.
-  - Routes under `/api/billing/*` with `MOCK_MODE=true` by default; env placeholders for Stripe (`STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, etc.).
-  - “Portal” endpoints: list invoices, cancel subscription.
-- Newsletter (placeholder provider adapter):
-  - Subscriber capture endpoints; welcome email mocked (logged + persisted).
-  - Admin: create “issue from post”, send mocked (store recipients + log).
+  - Search/filter endpoints.
+- Newsletter:
+  - Subscriber capture endpoints.
+  - Weekly digest admin previews.
 - SEO/ops:
   - `GET /sitemap.xml`, `GET /robots.txt`.
-  - Analytics events collector (pageview, subscribe CTA click, checkout start/complete) stored in Mongo + admin stats.
+  - Analytics/events collector (baseline).
 - Seed data:
-  - Admin user + 12 sample posts (3/category), mixed free/premium, 1 featured.
+  - Admin user + sample posts across the 3 pillars.
 
-**Frontend (React 19)**
+**Frontend (React)**
 - Pages:
-  - Home (hero, featured, filterable grid, newsletter signup).
-  - Article (paywall preview, CTA, share bar, related).
-  - Category x4, Archive (search + filters), Pricing, About.
+  - Home, Article, Pillar pages, Archive, Pricing, About.
   - Auth (login/register + magic link), Account/Billing.
-  - Admin CMS (posts list, editor, schedule/publish, tier/category toggles, newsletter issue sender, analytics dashboard).
+  - Admin CMS (posts list, editor, schedule/publish, tier/category toggles).
 - Social sharing:
-  - LinkedIn + X share URLs, Copy Link w/toast, Web Share API on mobile.
-  - IG image card generator (canvas) for 1080x1080 + 1080x1920 with logo/title/cover; download PNG.
-- SEO meta:
-  - react-helmet-async for title/description/OG/Twitter per route/post.
-- Add `data-testid` for key flows.
+  - Share URLs + Copy Link.
+  - Quote-card generator.
+- Reading UX:
+  - Related-by-interest / For You.
+  - Reply threads.
+  - Bookmarks/reading list.
+  - Reading progress indicator.
+  - Continue-reading strip.
+  - Notifications bell.
 
 **End Phase 2**
-- Run testing_agent_v3 for 1 full E2E pass; fix blocking issues.
+- Run full E2E passes and fix blocking issues.
 
 ### Phase 3 — Hardening + Feature Completion
 **User stories**
-1. As a user, I can reset my password (basic flow) if I forget it.
+1. As a user, I can reset my password if I forget it.
 2. As an admin, I can preview scheduled posts and confirm publish timing.
 3. As a writer, I can see validation errors clearly when saving drafts.
 4. As a subscriber, I can reliably see my entitlement reflected across devices after login.
-5. As an admin, I can view analytics trends (last 7/30 days) and top posts.
 
 **Steps**
 - Improve validation, empty/error states, loading skeletons.
 - Tighten security basics: token expiry, rate-limit magic link generation, sanitize HTML/markdown.
 - Ensure paywall cannot leak full content via list endpoints (only summaries in grids).
-- Expand tests: auth variants, admin role checks, newsletter send logs, sitemap correctness.
-- Run testing_agent_v3 again; fix all regressions.
+- Expand tests.
 
-### Phase 4 — Stripe & Email Provider Swap (when keys provided)
+### Phase 4 — Payments Integrations (Stripe + Razorpay)
 **User stories**
-1. As a user, I can pay with real Stripe checkout and return to unlocked premium.
-2. As a user, I can manage/cancel in Stripe customer portal.
-3. As an admin, I can see real subscription status reflected instantly.
-4. As a subscriber, I receive real welcome/issue emails.
-5. As an admin, I can switch provider via config without code changes.
+1. As a global user, I can pay with real Stripe recurring checkout and return to unlocked premium.
+2. As an Indian user, I can pay via Razorpay with UPI Autopay mandates (recurring) and keep access auto-renewed.
+3. As a user, I can manage/cancel subscriptions cleanly and see status reflected.
+4. As an admin, I can trust webhook-driven entitlement updates.
 
 **Steps**
-- Replace mock billing with Stripe subscriptions + webhooks; keep same entitlement interface.
-- Replace newsletter adapter with Mailchimp/ConvertKit; keep same app-level API.
-- Final E2E test + webhook replay tests.
+- Stripe (DONE):
+  - Stripe Checkout with auto-renew enabled using real keys.
+  - Webhook updates entitlement.
+- Razorpay (IN PROGRESS):
+  - Implement Razorpay customer + plan + subscription creation flow for UPI Autopay.
+  - If Subscriptions feature is not enabled or fails, fallback to one-time Razorpay Orders with a manual renew UX.
+  - Wire INR checkout into `PricingPage.js` with locale/IP detection and a manual currency toggle.
+  - Store references in DB (`rzp_customer_id`, subscription/order IDs) and update entitlement.
+  - Implement/verify Razorpay webhooks.
+- Testing:
+  - Backend: python/curl tests to create plan/subscription/order, verify auth, verify DB updates.
+  - Frontend: checkout initiation, success redirect, entitlement changes.
+
+### Phase 5 — V2 Admin Analytics + Community
+**User stories**
+1. As an admin, I can see where readers come from (LinkedIn, Instagram, Google, Direct, etc.).
+2. As a premium member, I can access a private lounge.
+3. As a premium member, I can read admin announcements and participate in discussion threads (post + reply).
+
+**Steps**
+- Traffic Sources Analytics (P1):
+  - Backend: log `Referer` + UTM parameters on key reads (article views, landing pages).
+  - Create endpoint: `GET /api/admin/traffic` returning breakdown (domain → counts, plus “Direct/Unknown”).
+  - Frontend: add Admin dashboard UI (in `AdminEditorPage.js` or dedicated admin dashboard) with table + simple chart.
+  - Tests: verify referrer capture via curl with `-H 'Referer: ...'` and UI rendering.
+- Private Community Lounge (P1):
+  - Frontend page: `/app/frontend/src/pages/CommunityPage.js` premium-only.
+  - Backend routes: `/api/community/*`:
+    - Announcements CRUD (admin create/edit; members read)
+    - Threads + replies (premium members create; all premium can reply)
+  - Moderation basics: admin delete/hide, rate limiting on posting.
+  - Tests: access control (free vs premium), thread/reply creation.
 
 ## 3) Next Actions
-- Confirm accent color (hex) + author name/bio/photo (or placeholders acceptable).
-- Start Phase 1: websearch + build isolated paywall/subscription POC endpoints + minimal React verifier.
-- After POC passes: proceed to Phase 2 bulk build (design_agent → backend+frontend) and seed content.
+1. **Phase A (now): Fix Razorpay UPI Autopay**
+   - Debug `Unauthorized` / `ServerError` from Razorpay Plan/Subscription APIs.
+   - Confirm `razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_SECRET))` initialization and correct payload formatting.
+   - Implement fallback to one-time Orders if Subscriptions are disabled.
+   - Wire INR checkout button on Pricing page.
+2. **Phase B: Traffic Sources Analytics**
+   - Add referrer/UTM logging and build `/api/admin/traffic` + admin UI.
+3. **Phase C: Community Lounge**
+   - Build premium-only lounge with announcements + discussion threads.
+4. After each phase: run backend tests first, then frontend flow verification.
 
 ## 4) Success Criteria
 - Premium posts never return full content to non-premium users from the API (verified via network + page source).
-- Mock checkout reliably toggles premium status and creates mock invoices; cancel reverts access.
-- Admin can create/edit/schedule/publish posts and set tier/category; public pages reflect changes.
-- Newsletter signup stored; welcome + issue sends recorded/logged; admin can view send history.
-- Social share bar works; IG card generator exports valid PNG sizes; OG/Twitter meta present.
-- Sitemap/robots served; analytics events stored and visible in admin.
-- testing_agent_v3 passes core E2E flows with no critical bugs.
+- Stripe recurring checkout works end-to-end and updates entitlements via webhook (DONE).
+- Razorpay for INR users:
+  - Subscriptions/UPI Autopay mandate creation works end-to-end OR falls back gracefully to one-time Orders.
+  - Pricing page correctly routes users to Stripe vs Razorpay based on locale/toggle.
+- Traffic sources visible in admin with meaningful referrer grouping (LinkedIn/Instagram/Google/Direct).
+- Premium-only Community Lounge works with announcements + discussion threads (post/reply) and correct access control.
+- Test suite/E2E checks pass after each major phase with no regressions.
 
 ---
 ## STATUS UPDATE (post Phase 2)
-- Phase 1 (POC): DONE — test_core.py 32/32 passed (server-side paywall, subscription transitions, magic link, newsletter, admin gating).
-- Phase 2 (V1 app): DONE — full frontend + backend built; testing_agent iteration_1: backend 74/74, frontend 59/60; the 1 minor issue (duplicate share-bar testids on hidden mobile bar) FIXED and verified.
-- Next: Phase 3 hardening (password reset, analytics trends) and Phase 4 (real Stripe + email provider when user supplies keys).
+- Phase 1 (POC): DONE — server-side paywall, subscription transitions, magic link, newsletter, admin gating.
+- Phase 2 (V1 app): DONE — full frontend + backend built and tested; share-bar testid issue fixed.
 
 ## STATUS UPDATE (post V1.1 feature batch)
-- Real Stripe checkout (test mode, emergentintegrations, sk_test_emergent) LIVE — full E2E payment verified with 4242 card: paid → premium activated → invoice recorded. Claimable sandbox unavailable (account country IN unsupported), so one-time timed-access model used; user's own key swappable via STRIPE_API_KEY.
-- Password reset (mocked email, dev-mode link) DONE. Premium comments DONE. Reading progress DONE.
-- testing_agent iteration_2: backend 89/89, frontend 45/45 — all passing.
+- Password reset (mocked email, dev-mode link) DONE.
+- Reading progress DONE.
+- Premium comments DONE.
+- E2E testing iterations passing.
 
 ## STATUS UPDATE (post V1.2 feature batch)
-- Reply threads, bookmarks/reading list, For-You recommendations DONE + tested (iteration_3: 120/120 backend, 43/43 frontend).
-- Auto-renew billing branch implemented & dormant: activates automatically when user's own Stripe key replaces STRIPE_API_KEY in backend/.env (user skipped providing key). Shared key verified to allow subscription session creation but NOT Subscription.delete — hence one-time passes remain default.
+- Reply threads DONE.
+- Bookmarks/reading list DONE.
+- For-You recommendations / related-by-interest DONE.
 
 ## STATUS UPDATE (V2.0 — expanded spec applied)
-- Finished notifications/continue-reading/digest; relabeled pillars; added tags, INR+Razorpay(MOCKED), email prefs, quote cards, follow buttons.
-- iteration_4: backend 62/62; both frontend flags (Razorpay dialog, prefs checkboxes) verified working via real UI flow — testing agent auth-timing false positives.
-- Dormant-until-keys: Razorpay real gateway (RAZORPAY_KEY_ID/SECRET), Stripe auto-renew (own STRIPE_API_KEY).
+- Notifications bell DONE.
+- Continue-reading strip + resume DONE.
+- Weekly digest admin previews DONE.
+- Pillars relabeled to **Tech & AI**, **Business & Finance**, **Personal Growth** DONE.
+- Tags + email preferences DONE.
+- Quote-card generator in share dialog DONE.
+- Pricing page: Razorpay placeholder + manual currency toggle DONE.
+- Stripe auto-renew: enabled with real keys DONE.
+
+## STATUS UPDATE (V2.1 — current focus)
+- Razorpay backend skeleton added (razorpay-python installed) IN PROGRESS.
+- **Blocking issue:** Razorpay Plan/Subscription creation returning `Unauthorized` / `ServerError` using test keys (`rzp_test_TMSwcg1LODuAH4` / `ZLBU0lyf5l96SuODeAxE09H5`).
+- Next: fix Razorpay auth/payload and complete INR checkout wiring.
+- Upcoming: Traffic Sources Analytics (P1) and Private Community Lounge (P1).
+
+> Engineering note: `/app/backend/server.py` is large (>1000 LOC). Apply edits sequentially to avoid merge/conflict corruption.

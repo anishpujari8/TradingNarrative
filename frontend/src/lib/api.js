@@ -44,6 +44,18 @@ export const categoryLabel = (slug) =>
   CATEGORIES.find((c) => c.slug === slug)?.label || slug;
 
 export const trackEvent = (event, path = "", meta = {}) => {
+  try {
+    // Traffic-source attribution: tag the first pageview of each browser session
+    if (event === "pageview" && !sessionStorage.getItem("ttn_visit_tracked")) {
+      sessionStorage.setItem("ttn_visit_tracked", "1");
+      meta = { ...meta, first_visit: true, referrer: document.referrer || "" };
+      const params = new URLSearchParams(window.location.search);
+      ["utm_source", "utm_medium", "utm_campaign"].forEach((k) => {
+        const v = params.get(k);
+        if (v) meta[k] = v;
+      });
+    }
+  } catch { /* sessionStorage unavailable — track without attribution */ }
   api.post("/analytics/track", { event, path, meta }).catch(() => {});
 };
 

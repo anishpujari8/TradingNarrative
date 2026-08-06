@@ -1,34 +1,34 @@
 [
   {
-    "content": "Finish in-progress: Notifications bell UI, Continue Reading strip + resume, Weekly Digest admin UI",
+    "content": "Debug Razorpay client init & API auth in server.py",
     "status": "completed"
   },
   {
-    "content": "Get Razorpay integration playbook (placeholder/swap-ready structure)",
+    "content": "Fix subscription/plan creation or implement Orders fallback",
     "status": "completed"
   },
   {
-    "content": "Relabel pillars: Tech & AI, Business & Finance, Personal Growth, Travel",
+    "content": "Wire INR checkout on PricingPage with Razorpay flow",
     "status": "completed"
   },
   {
-    "content": "Post tags: backend + seed + admin editor + display + archive filter",
+    "content": "Backend: referrer/UTM tracking + /api/admin/traffic endpoint",
     "status": "completed"
   },
   {
-    "content": "INR pricing + currency auto-detect + toggle + MOCKED Razorpay checkout path",
+    "content": "Frontend: Traffic Sources UI in admin",
     "status": "completed"
   },
   {
-    "content": "Email preferences in Account (category opt-ins, respected by mocked sends)",
+    "content": "Backend: /api/community endpoints (announcements + threads)",
     "status": "completed"
   },
   {
-    "content": "Quote-card generator tab in share dialog",
+    "content": "Frontend: CommunityPage (premium-only lounge)",
     "status": "completed"
   },
   {
-    "content": "End to End Testing using Testing Agent + fix all issues",
-    "status": "completed"
+    "content": "Comprehensive testing (backend + frontend)",
+    "status": "in_progress"
   }
 ]

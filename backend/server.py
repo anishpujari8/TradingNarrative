@@ -47,9 +47,43 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
 RAZORPAY_ENABLED = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
 
 
+RAZORPAY_SUBS_ENABLED = False  # probed at startup — True when the account has Subscriptions (UPI Autopay) enabled
+
+
 def razorpay_client():
     import razorpay
     return razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+
+
+async def probe_razorpay_subscriptions():
+    global RAZORPAY_SUBS_ENABLED
+    if not RAZORPAY_ENABLED:
+        RAZORPAY_SUBS_ENABLED = False
+        return
+    try:
+        import asyncio
+        await asyncio.to_thread(lambda: razorpay_client().subscription.all({'count': 1}))
+        RAZORPAY_SUBS_ENABLED = True
+        logger.info('Razorpay Subscriptions (UPI Autopay) ENABLED on this account')
+    except Exception:
+        RAZORPAY_SUBS_ENABLED = False
+        logger.info('Razorpay Subscriptions not enabled on this account — using one-time INR passes')
+
+
+async def get_or_create_razorpay_plan(plan_id: str) -> str:
+    plan = PLANS[plan_id]
+    key = f'razorpay_plan_{plan_id}'
+    stored = await db.config.find_one({'key': key})
+    if stored:
+        return stored['value']
+    import asyncio
+    rz_plan = await asyncio.to_thread(lambda: razorpay_client().plan.create({
+        'period': 'monthly' if plan_id == 'monthly' else 'yearly', 'interval': 1,
+        'item': {'name': f"The Trading Narrative Premium — {plan['label']} (INR)",
+                 'amount': int(round(plan['amount_inr'] * 100)), 'currency': 'INR'},
+    }))
+    await db.config.update_one({'key': key}, {'$set': {'value': rz_plan['id']}}, upsert=True)
+    return rz_plan['id']
 
 
 def configure_stripe_sdk():
@@ -74,6 +108,48 @@ CATEGORIES = {
 }
 
 PREVIEW_BLOCKS = 3  # paragraphs shown to non-premium users on premium posts
+
+# ---------------------- traffic source classification ----------------------
+
+TRAFFIC_SOURCE_MAP = {
+    'linkedin': 'LinkedIn', 'lnkd.in': 'LinkedIn',
+    'instagram': 'Instagram', 'ig.me': 'Instagram', 'l.instagram': 'Instagram',
+    't.co': 'X (Twitter)', 'twitter': 'X (Twitter)', 'x.com': 'X (Twitter)',
+    'facebook': 'Facebook', 'fb.me': 'Facebook', 'l.facebook': 'Facebook', 'm.facebook': 'Facebook',
+    'google': 'Google', 'bing': 'Bing', 'duckduckgo': 'DuckDuckGo', 'yahoo': 'Yahoo',
+    'youtube': 'YouTube', 'youtu.be': 'YouTube',
+    'reddit': 'Reddit', 'out.reddit': 'Reddit',
+    'whatsapp': 'WhatsApp', 'wa.me': 'WhatsApp',
+    'telegram': 'Telegram', 't.me': 'Telegram',
+    'substack': 'Substack', 'medium': 'Medium',
+    'news.ycombinator': 'Hacker News', 'threads.net': 'Threads',
+    'pinterest': 'Pinterest', 'quora': 'Quora', 'discord': 'Discord',
+    'newsletter': 'Newsletter', 'email': 'Newsletter', 'mail': 'Newsletter',
+}
+
+
+def classify_traffic_source(referrer: str = '', utm_source: str = ''):
+    """Return (source_label, referrer_host). source_label is None for internal navigation."""
+    from urllib.parse import urlparse
+    if utm_source:
+        u = utm_source.strip().lower()
+        for key, label in TRAFFIC_SOURCE_MAP.items():
+            if key in u:
+                return label, (urlparse(referrer).netloc.lower() if referrer else '')
+        return utm_source.strip().title(), (urlparse(referrer).netloc.lower() if referrer else '')
+    if not referrer:
+        return 'Direct', ''
+    host = urlparse(referrer).netloc.lower()
+    if not host:
+        return 'Direct', ''
+    own_host = urlparse(FRONTEND_URL).netloc.lower() if FRONTEND_URL else ''
+    if own_host and host == own_host:
+        return None, host  # internal navigation — not a traffic source
+    for key, label in TRAFFIC_SOURCE_MAP.items():
+        if key in host:
+            return label, host
+    return 'Other', host
+
 
 app = FastAPI(title='The Trading Narrative API')
 api_router = APIRouter(prefix='/api')
@@ -644,6 +720,7 @@ async def activate_premium_from_transaction(txn):
         auto_renew = bool(txn.get('auto_renew'))
         period_end = now_utc() + timedelta(days=plan['period_days'])
         stripe_sub_id = txn.get('stripe_subscription_id')
+        rzp_sub_id = txn['session_id'] if txn.get('kind') == 'subscription' else None
         if auto_renew and stripe_sub_id:
             try:
                 sdk = configure_stripe_sdk()
@@ -658,6 +735,8 @@ async def activate_premium_from_transaction(txn):
             'auto_renew': auto_renew,
             'stripe_session_id': txn['session_id'],
             'stripe_subscription_id': stripe_sub_id,
+            'razorpay_subscription_id': rzp_sub_id,
+            'gateway': txn.get('provider', 'stripe'),
             'current_period_start': iso(now_utc()),
             'current_period_end': iso(period_end),
             'created_at': iso(now_utc()), 'canceled_at': None,
@@ -683,6 +762,7 @@ async def activate_premium_from_transaction(txn):
 async def billing_config():
     return {'mock_mode': MOCK_BILLING, 'auto_renew': AUTO_RENEW,
             'razorpay_enabled': RAZORPAY_ENABLED, 'razorpay_key_id': RAZORPAY_KEY_ID or None,
+            'razorpay_autopay': RAZORPAY_SUBS_ENABLED,
             'plans': list(PLANS.values())}
 
 
@@ -823,6 +903,13 @@ async def cancel_subscription(user=Depends(get_current_user)):
     sub = await db.subscriptions.find_one({'user_id': user['id'], 'status': 'active'})
     if not sub:
         raise HTTPException(status_code=400, detail='No active subscription')
+    # Cancel the recurring Razorpay Autopay mandate too
+    if sub.get('auto_renew') and sub.get('razorpay_subscription_id') and RAZORPAY_ENABLED:
+        try:
+            import asyncio
+            await asyncio.to_thread(lambda: razorpay_client().subscription.cancel(sub['razorpay_subscription_id']))
+        except Exception as e:
+            logger.warning(f'Razorpay subscription cancel failed (continuing with local cancel): {e}')
     # Cancel the recurring subscription at Stripe too (own-key auto-renew mode)
     if sub.get('auto_renew') and sub.get('stripe_subscription_id') and not IS_SHARED_STRIPE_KEY:
         try:
@@ -901,12 +988,190 @@ async def set_newsletter_prefs(body: NewsletterPrefsIn, user=Depends(get_current
 # ---------------------- analytics ----------------------
 
 @api_router.post('/analytics/track')
-async def track(body: TrackIn, user=Depends(get_optional_user)):
-    await db.analytics.insert_one({
+async def track(body: TrackIn, request: Request, user=Depends(get_optional_user)):
+    doc = {
         'id': str(uuid.uuid4()), 'event': body.event, 'path': body.path,
         'meta': body.meta, 'user_id': user['id'] if user else None,
         'created_at': iso(now_utc()),
-    })
+    }
+    # Traffic source attribution — only on the first pageview of a browser session
+    meta = body.meta or {}
+    if body.event == 'pageview' and meta.get('first_visit'):
+        referrer = (meta.get('referrer') or request.headers.get('referer', '') or '').strip()
+        utm_source = (meta.get('utm_source') or '').strip()
+        source, ref_host = classify_traffic_source(referrer, utm_source)
+        if source:
+            doc['source'] = source
+            doc['referrer_host'] = ref_host
+            if utm_source:
+                doc['utm_source'] = utm_source
+            if meta.get('utm_medium'):
+                doc['utm_medium'] = meta['utm_medium']
+            if meta.get('utm_campaign'):
+                doc['utm_campaign'] = meta['utm_campaign']
+    await db.analytics.insert_one(doc)
+    return {'ok': True}
+
+
+@api_router.get('/admin/traffic')
+async def admin_traffic(admin=Depends(get_admin_user), days: int = Query(30, le=365)):
+    since = iso(now_utc() - timedelta(days=days))
+    match = {'source': {'$exists': True, '$ne': None}, 'created_at': {'$gte': since}}
+    rows = await db.analytics.aggregate([
+        {'$match': match},
+        {'$group': {'_id': '$source', 'count': {'$sum': 1}}},
+        {'$sort': {'count': -1}},
+    ]).to_list(50)
+    total = sum(r['count'] for r in rows) or 0
+    sources = [{'source': r['_id'], 'count': r['count'],
+                'pct': round(r['count'] * 100 / total, 1) if total else 0} for r in rows]
+    referrers = await db.analytics.aggregate([
+        {'$match': {**match, 'referrer_host': {'$nin': ['', None]}}},
+        {'$group': {'_id': '$referrer_host', 'count': {'$sum': 1}}},
+        {'$sort': {'count': -1}}, {'$limit': 10},
+    ]).to_list(10)
+    campaigns = await db.analytics.aggregate([
+        {'$match': {**match, 'utm_campaign': {'$exists': True, '$nin': ['', None]}}},
+        {'$group': {'_id': {'campaign': '$utm_campaign', 'source': '$source'}, 'count': {'$sum': 1}}},
+        {'$sort': {'count': -1}}, {'$limit': 10},
+    ]).to_list(10)
+    return {
+        'days': days, 'total_visits': total, 'sources': sources,
+        'top_referrers': [{'host': r['_id'], 'count': r['count']} for r in referrers],
+        'campaigns': [{'campaign': c['_id']['campaign'], 'source': c['_id']['source'],
+                       'count': c['count']} for c in campaigns],
+    }
+
+
+# ---------------------- community lounge (premium members only) ----------------------
+
+async def get_premium_user(user=Depends(get_current_user)):
+    if not await is_entitled(user):
+        raise HTTPException(status_code=403, detail='The Lounge is for Premium members. Upgrade to join the conversation.')
+    return user
+
+
+class AnnouncementIn(BaseModel):
+    title: str
+    body: str
+
+
+class CommunityThreadIn(BaseModel):
+    title: str
+    body: str
+
+
+class CommunityReplyIn(BaseModel):
+    body: str
+
+
+def community_author(user):
+    return {'id': user['id'], 'name': user.get('name') or user['email'].split('@')[0],
+            'role': user.get('role', 'user')}
+
+
+@api_router.get('/community/announcements')
+async def community_announcements(user=Depends(get_premium_user)):
+    items = await db.community_announcements.find({}).sort('created_at', -1).to_list(50)
+    return {'announcements': [clean(a) for a in items]}
+
+
+@api_router.post('/community/announcements')
+async def community_create_announcement(body: AnnouncementIn, admin=Depends(get_admin_user)):
+    title, text = body.title.strip(), body.body.strip()
+    if not (3 <= len(title) <= 200):
+        raise HTTPException(status_code=400, detail='Title must be 3-200 characters')
+    if not (1 <= len(text) <= 5000):
+        raise HTTPException(status_code=400, detail='Body must be 1-5000 characters')
+    item = {'id': str(uuid.uuid4()), 'title': title, 'body': text,
+            'author': community_author(admin), 'created_at': iso(now_utc())}
+    await db.community_announcements.insert_one(dict(item))
+    return clean(item)
+
+
+@api_router.delete('/community/announcements/{aid}')
+async def community_delete_announcement(aid: str, admin=Depends(get_admin_user)):
+    result = await db.community_announcements.delete_one({'id': aid})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail='Announcement not found')
+    return {'ok': True}
+
+
+@api_router.get('/community/threads')
+async def community_threads(user=Depends(get_premium_user)):
+    threads = await db.community_threads.find({}).sort('last_activity_at', -1).to_list(100)
+    return {'threads': [clean(t) for t in threads]}
+
+
+@api_router.post('/community/threads')
+async def community_create_thread(body: CommunityThreadIn, user=Depends(get_premium_user)):
+    title, text = body.title.strip(), body.body.strip()
+    if not (3 <= len(title) <= 200):
+        raise HTTPException(status_code=400, detail='Title must be 3-200 characters')
+    if not (1 <= len(text) <= 5000):
+        raise HTTPException(status_code=400, detail='Body must be 1-5000 characters')
+    # basic rate limit: max 5 threads per hour per member
+    hour_ago = iso(now_utc() - timedelta(hours=1))
+    recent = await db.community_threads.count_documents({'author.id': user['id'], 'created_at': {'$gte': hour_ago}})
+    if recent >= 5:
+        raise HTTPException(status_code=429, detail='Slow down — you can start up to 5 discussions per hour.')
+    thread = {'id': str(uuid.uuid4()), 'title': title, 'body': text,
+              'author': community_author(user), 'reply_count': 0,
+              'created_at': iso(now_utc()), 'last_activity_at': iso(now_utc())}
+    await db.community_threads.insert_one(dict(thread))
+    return clean(thread)
+
+
+@api_router.get('/community/threads/{tid}')
+async def community_thread_detail(tid: str, user=Depends(get_premium_user)):
+    thread = await db.community_threads.find_one({'id': tid})
+    if not thread:
+        raise HTTPException(status_code=404, detail='Thread not found')
+    replies = await db.community_replies.find({'thread_id': tid}).sort('created_at', 1).to_list(500)
+    return {'thread': clean(thread), 'replies': [clean(r) for r in replies]}
+
+
+@api_router.post('/community/threads/{tid}/replies')
+async def community_reply(tid: str, body: CommunityReplyIn, user=Depends(get_premium_user)):
+    thread = await db.community_threads.find_one({'id': tid})
+    if not thread:
+        raise HTTPException(status_code=404, detail='Thread not found')
+    text = body.body.strip()
+    if not (1 <= len(text) <= 5000):
+        raise HTTPException(status_code=400, detail='Reply must be 1-5000 characters')
+    hour_ago = iso(now_utc() - timedelta(hours=1))
+    recent = await db.community_replies.count_documents({'author.id': user['id'], 'created_at': {'$gte': hour_ago}})
+    if recent >= 30:
+        raise HTTPException(status_code=429, detail='Slow down — up to 30 replies per hour.')
+    reply = {'id': str(uuid.uuid4()), 'thread_id': tid, 'body': text,
+             'author': community_author(user), 'created_at': iso(now_utc())}
+    await db.community_replies.insert_one(dict(reply))
+    await db.community_threads.update_one({'id': tid}, {
+        '$inc': {'reply_count': 1}, '$set': {'last_activity_at': iso(now_utc())}})
+    return clean(reply)
+
+
+@api_router.delete('/community/threads/{tid}')
+async def community_delete_thread(tid: str, user=Depends(get_premium_user)):
+    thread = await db.community_threads.find_one({'id': tid})
+    if not thread:
+        raise HTTPException(status_code=404, detail='Thread not found')
+    if user.get('role') != 'admin' and thread['author']['id'] != user['id']:
+        raise HTTPException(status_code=403, detail='You can only delete your own threads')
+    await db.community_threads.delete_one({'id': tid})
+    await db.community_replies.delete_many({'thread_id': tid})
+    return {'ok': True}
+
+
+@api_router.delete('/community/replies/{rid}')
+async def community_delete_reply(rid: str, user=Depends(get_premium_user)):
+    reply = await db.community_replies.find_one({'id': rid})
+    if not reply:
+        raise HTTPException(status_code=404, detail='Reply not found')
+    if user.get('role') != 'admin' and reply['author']['id'] != user['id']:
+        raise HTTPException(status_code=403, detail='You can only delete your own replies')
+    await db.community_replies.delete_one({'id': rid})
+    await db.community_threads.update_one({'id': reply['thread_id']}, {'$inc': {'reply_count': -1}})
     return {'ok': True}
 
 
@@ -1074,31 +1339,51 @@ async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_u
         raise HTTPException(status_code=400, detail='You already have an active subscription')
     plan = PLANS[body.plan]
     amount_paise = int(round(plan['amount_inr'] * 100))
-    if RAZORPAY_ENABLED:
-        # REAL Razorpay order (activates when RAZORPAY_KEY_ID/SECRET are set)
+    import asyncio
+    kind = 'order'
+    mock = False
+    if RAZORPAY_ENABLED and RAZORPAY_SUBS_ENABLED:
+        # UPI AUTOPAY: recurring subscription via e-mandate
         try:
-            order = razorpay_client().order.create({
+            rz_plan_id = await get_or_create_razorpay_plan(body.plan)
+            sub = await asyncio.to_thread(lambda: razorpay_client().subscription.create({
+                'plan_id': rz_plan_id,
+                'total_count': 120 if body.plan == 'monthly' else 10,
+                'customer_notify': 1,
+                'notes': {'user_id': user['id'], 'plan': body.plan},
+            }))
+            ref_id = sub['id']
+            kind = 'subscription'
+        except Exception as e:
+            logger.error(f'Razorpay subscription creation failed: {e}')
+            raise HTTPException(status_code=502, detail='Could not start Razorpay Autopay checkout.')
+    elif RAZORPAY_ENABLED:
+        # One-time order (Autopay switches on automatically once Subscriptions is enabled on the account)
+        try:
+            order = await asyncio.to_thread(lambda: razorpay_client().order.create({
                 'amount': amount_paise, 'currency': 'INR', 'payment_capture': 1,
                 'receipt': f'ttn-{user["id"][:12]}-{body.plan}'[:40],
                 'notes': {'user_id': user['id'], 'plan': body.plan},
-            })
+            }))
         except Exception as e:
             logger.error(f'Razorpay order creation failed: {e}')
             raise HTTPException(status_code=502, detail='Could not start Razorpay checkout.')
-        order_id = order['id']
-        mock = False
+        ref_id = order['id']
     else:
         # MOCKED order — structure mirrors the real integration 1:1
-        order_id = f'order_mock_{uuid.uuid4().hex[:14]}'
+        ref_id = f'order_mock_{uuid.uuid4().hex[:14]}'
         mock = True
     await db.payment_transactions.insert_one({
-        'session_id': order_id, 'user_id': user['id'], 'plan': body.plan,
+        'session_id': ref_id, 'user_id': user['id'], 'plan': body.plan,
         'amount': plan['amount_inr'], 'currency': 'inr', 'provider': 'razorpay',
-        'auto_renew': False, 'mock': mock,
+        'kind': kind, 'auto_renew': kind == 'subscription', 'mock': mock,
         'status': 'initiated', 'payment_status': 'pending', 'activated': False,
         'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
     })
-    return {'ok': True, 'mock': mock, 'order_id': order_id,
+    return {'ok': True, 'mock': mock, 'kind': kind,
+            'order_id': ref_id if kind == 'order' else None,
+            'subscription_id': ref_id if kind == 'subscription' else None,
+            'ref_id': ref_id,
             'amount': amount_paise, 'currency': 'INR',
             'razorpay_key_id': RAZORPAY_KEY_ID or None,
             'name': 'The Trading Narrative',
@@ -1115,6 +1400,15 @@ async def razorpay_verify(body: RazorpayVerifyIn, user=Depends(get_current_user)
     if txn.get('mock'):
         # MOCKED: mark paid instantly (no gateway available without keys)
         pass
+    elif txn.get('kind') == 'subscription':
+        try:
+            razorpay_client().utility.verify_subscription_payment_signature({
+                'razorpay_subscription_id': body.order_id,
+                'razorpay_payment_id': body.payment_id,
+                'razorpay_signature': body.signature,
+            })
+        except Exception:
+            raise HTTPException(status_code=400, detail='Payment signature verification failed')
     else:
         try:
             razorpay_client().utility.verify_payment_signature({
@@ -1297,6 +1591,7 @@ async def seed_database():
 @app.on_event('startup')
 async def startup():
     await seed_database()
+    await probe_razorpay_subscriptions()
 
 
 app.include_router(api_router)

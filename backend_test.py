@@ -717,6 +717,290 @@ def main():
     except Exception as e:
         check('GET /api/categories', False, str(e))
 
+    # ==================== RAZORPAY CHECKOUT (INR) ====================
+    print('\n💰 18. RAZORPAY CHECKOUT (INR / UPI)')
+    
+    # Get billing config for Razorpay
+    try:
+        r = requests.get(f'{BASE}/billing/config', timeout=10)
+        check('GET /api/billing/config returns 200', r.status_code == 200)
+        if r.status_code == 200:
+            config = r.json()
+            check('Config razorpay_enabled=true', config.get('razorpay_enabled') is True, f"razorpay_enabled={config.get('razorpay_enabled')}")
+            check('Config razorpay_autopay=false (expected)', config.get('razorpay_autopay') is False, f"razorpay_autopay={config.get('razorpay_autopay')}")
+            check('Config razorpay_key_id present', config.get('razorpay_key_id') == 'rzp_test_TMSwcg1LODuAH4')
+    except Exception as e:
+        check('GET /api/billing/config (Razorpay)', False, str(e))
+
+    # Create a fresh user for Razorpay checkout test
+    rzp_email = f'rzp-{uuid.uuid4().hex[:8]}@test.com'
+    rzp_password = 'RzpTest123!'
+    rzp_token = None
+    try:
+        r = requests.post(f'{BASE}/auth/register', json={
+            'email': rzp_email, 'password': rzp_password, 'name': 'Razorpay Test User'
+        }, timeout=10)
+        check('Create user for Razorpay test', r.status_code == 200)
+        if r.status_code == 200:
+            rzp_token = r.json().get('token')
+    except Exception as e:
+        check('Create Razorpay test user', False, str(e))
+
+    rzp_hdr = {'Authorization': f'Bearer {rzp_token}'} if rzp_token else None
+
+    # Test monthly plan checkout
+    if rzp_token and rzp_hdr:
+        try:
+            r = requests.post(f'{BASE}/billing/razorpay/checkout', json={'plan': 'monthly'}, headers=rzp_hdr, timeout=10)
+            check('POST /api/billing/razorpay/checkout (monthly) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                data = r.json()
+                check('Razorpay checkout ok=true', data.get('ok') is True)
+                check('Razorpay checkout mock=false', data.get('mock') is False)
+                check('Razorpay checkout kind=order (not subscription)', data.get('kind') == 'order', f"kind={data.get('kind')}")
+                check('Razorpay order_id starts with order_', data.get('order_id', '').startswith('order_'), f"order_id={data.get('order_id')}")
+                check('Razorpay amount=19900 paise (₹199)', data.get('amount') == 19900, f"amount={data.get('amount')}")
+                check('Razorpay currency=INR', data.get('currency') == 'INR')
+                check('Razorpay razorpay_key_id present', data.get('razorpay_key_id') == 'rzp_test_TMSwcg1LODuAH4')
+        except Exception as e:
+            check('POST /api/billing/razorpay/checkout (monthly)', False, str(e))
+
+    # Test annual plan checkout
+    if rzp_token and rzp_hdr:
+        try:
+            r = requests.post(f'{BASE}/billing/razorpay/checkout', json={'plan': 'annual'}, headers=rzp_hdr, timeout=10)
+            check('POST /api/billing/razorpay/checkout (annual) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                data = r.json()
+                check('Razorpay annual amount=199900 paise (₹1999)', data.get('amount') == 199900, f"amount={data.get('amount')}")
+        except Exception as e:
+            check('POST /api/billing/razorpay/checkout (annual)', False, str(e))
+
+    # ==================== TRAFFIC ANALYTICS ====================
+    print('\n📊 19. TRAFFIC ANALYTICS')
+    
+    # Track a pageview with LinkedIn referrer
+    try:
+        r = requests.post(f'{BASE}/analytics/track', json={
+            'event': 'pageview',
+            'path': '/',
+            'meta': {
+                'first_visit': True,
+                'referrer': 'https://www.linkedin.com/feed/'
+            }
+        }, timeout=10)
+        check('POST /api/analytics/track (LinkedIn referrer) returns 200', r.status_code == 200, r.text)
+    except Exception as e:
+        check('POST /api/analytics/track (LinkedIn)', False, str(e))
+
+    # Track with utm_source (should override referrer)
+    try:
+        r = requests.post(f'{BASE}/analytics/track', json={
+            'event': 'pageview',
+            'path': '/pricing',
+            'meta': {
+                'first_visit': True,
+                'referrer': 'https://www.google.com/',
+                'utm_source': 'instagram',
+                'utm_campaign': 'launch'
+            }
+        }, timeout=10)
+        check('POST /api/analytics/track (UTM override) returns 200', r.status_code == 200, r.text)
+    except Exception as e:
+        check('POST /api/analytics/track (UTM)', False, str(e))
+
+    # Track internal referrer (should NOT be counted as traffic source)
+    try:
+        r = requests.post(f'{BASE}/analytics/track', json={
+            'event': 'pageview',
+            'path': '/about',
+            'meta': {
+                'first_visit': True,
+                'referrer': 'https://insight-hub-484.preview.emergentagent.com/pricing'
+            }
+        }, timeout=10)
+        check('POST /api/analytics/track (internal referrer) returns 200', r.status_code == 200, r.text)
+    except Exception as e:
+        check('POST /api/analytics/track (internal)', False, str(e))
+
+    # Get admin traffic analytics
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/admin/traffic', params={'days': 30}, headers=admin_hdr, timeout=10)
+            check('GET /api/admin/traffic?days=30 returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                traffic = r.json()
+                check('Traffic has sources array', 'sources' in traffic and isinstance(traffic['sources'], list))
+                check('Traffic has top_referrers array', 'top_referrers' in traffic)
+                check('Traffic has campaigns array', 'campaigns' in traffic)
+                check('Traffic has total_visits', 'total_visits' in traffic)
+                check('Traffic has days field', traffic.get('days') == 30)
+                
+                # Verify LinkedIn is in sources
+                sources = [s['source'] for s in traffic.get('sources', [])]
+                if 'LinkedIn' in sources:
+                    print(f'   ✓ LinkedIn traffic source detected')
+        except Exception as e:
+            check('GET /api/admin/traffic', False, str(e))
+
+    # ==================== COMMUNITY LOUNGE ====================
+    print('\n🏠 20. COMMUNITY LOUNGE (PREMIUM MEMBERS ONLY)')
+    
+    # Test unauthenticated access (should return 401)
+    try:
+        r = requests.get(f'{BASE}/community/threads', timeout=10)
+        check('GET /api/community/threads (no auth) returns 401', r.status_code == 401)
+    except Exception as e:
+        check('GET /api/community/threads (no auth)', False, str(e))
+
+    # Test free user access (should return 403)
+    if token and hdr:
+        try:
+            r = requests.get(f'{BASE}/community/threads', headers=hdr, timeout=10)
+            check('GET /api/community/threads (free user) returns 403', r.status_code == 403)
+        except Exception as e:
+            check('GET /api/community/threads (free user)', False, str(e))
+
+    # Test admin access (should return 200)
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/community/threads', headers=admin_hdr, timeout=10)
+            check('GET /api/community/threads (admin) returns 200', r.status_code == 200, r.text)
+            check('Community threads response has threads array', 'threads' in r.json())
+        except Exception as e:
+            check('GET /api/community/threads (admin)', False, str(e))
+
+        try:
+            r = requests.get(f'{BASE}/community/announcements', headers=admin_hdr, timeout=10)
+            check('GET /api/community/announcements (admin) returns 200', r.status_code == 200, r.text)
+            check('Community announcements response has announcements array', 'announcements' in r.json())
+        except Exception as e:
+            check('GET /api/community/announcements (admin)', False, str(e))
+
+    # ==================== COMMUNITY: ANNOUNCEMENTS (ADMIN ONLY) ====================
+    print('\n📢 21. COMMUNITY: ANNOUNCEMENTS (ADMIN ONLY)')
+    
+    announcement_id = None
+    if admin_token and admin_hdr:
+        # Create announcement
+        try:
+            r = requests.post(f'{BASE}/community/announcements', json={
+                'title': 'Test Announcement',
+                'body': 'This is a test announcement from the API test suite.'
+            }, headers=admin_hdr, timeout=10)
+            check('POST /api/community/announcements (admin) returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                announcement_id = r.json().get('id')
+                check('Announcement has id', announcement_id is not None)
+                check('Announcement has author', 'author' in r.json())
+        except Exception as e:
+            check('POST /api/community/announcements', False, str(e))
+
+        # Try to create announcement as free user (should fail)
+        if token and hdr:
+            try:
+                r = requests.post(f'{BASE}/community/announcements', json={
+                    'title': 'Unauthorized Announcement',
+                    'body': 'This should fail.'
+                }, headers=hdr, timeout=10)
+                check('POST /api/community/announcements (free user) returns 403', r.status_code == 403)
+            except Exception as e:
+                check('POST /api/community/announcements (free user)', False, str(e))
+
+        # Delete announcement
+        if announcement_id:
+            try:
+                r = requests.delete(f'{BASE}/community/announcements/{announcement_id}', headers=admin_hdr, timeout=10)
+                check('DELETE /api/community/announcements/{id} returns 200', r.status_code == 200, r.text)
+            except Exception as e:
+                check('DELETE /api/community/announcements/{id}', False, str(e))
+
+    # ==================== COMMUNITY: THREADS & REPLIES ====================
+    print('\n💬 22. COMMUNITY: THREADS & REPLIES')
+    
+    thread_id = None
+    if admin_token and admin_hdr:
+        # Create thread
+        try:
+            r = requests.post(f'{BASE}/community/threads', json={
+                'title': 'Test Discussion Thread',
+                'body': 'This is a test discussion thread created by the API test suite.'
+            }, headers=admin_hdr, timeout=10)
+            check('POST /api/community/threads returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                thread_id = r.json().get('id')
+                check('Thread has id', thread_id is not None)
+                check('Thread has reply_count=0', r.json().get('reply_count') == 0)
+        except Exception as e:
+            check('POST /api/community/threads', False, str(e))
+
+        # Validation: title too short
+        try:
+            r = requests.post(f'{BASE}/community/threads', json={
+                'title': 'AB',
+                'body': 'Body text'
+            }, headers=admin_hdr, timeout=10)
+            check('POST /api/community/threads (title <3 chars) returns 400', r.status_code == 400)
+        except Exception as e:
+            check('Thread title validation', False, str(e))
+
+        # Get thread detail
+        if thread_id:
+            try:
+                r = requests.get(f'{BASE}/community/threads/{thread_id}', headers=admin_hdr, timeout=10)
+                check('GET /api/community/threads/{id} returns 200', r.status_code == 200, r.text)
+                if r.status_code == 200:
+                    check('Thread detail has thread object', 'thread' in r.json())
+                    check('Thread detail has replies array', 'replies' in r.json())
+            except Exception as e:
+                check('GET /api/community/threads/{id}', False, str(e))
+
+            # Post a reply
+            reply_id = None
+            try:
+                r = requests.post(f'{BASE}/community/threads/{thread_id}/replies', json={
+                    'body': 'This is a test reply to the thread.'
+                }, headers=admin_hdr, timeout=10)
+                check('POST /api/community/threads/{id}/replies returns 200', r.status_code == 200, r.text)
+                if r.status_code == 200:
+                    reply_id = r.json().get('id')
+                    check('Reply has id', reply_id is not None)
+            except Exception as e:
+                check('POST /api/community/threads/{id}/replies', False, str(e))
+
+            # Validation: empty reply body
+            try:
+                r = requests.post(f'{BASE}/community/threads/{thread_id}/replies', json={
+                    'body': ''
+                }, headers=admin_hdr, timeout=10)
+                check('POST reply with empty body returns 400', r.status_code == 400)
+            except Exception as e:
+                check('Reply body validation', False, str(e))
+
+            # Verify reply_count incremented
+            try:
+                r = requests.get(f'{BASE}/community/threads/{thread_id}', headers=admin_hdr, timeout=10)
+                if r.status_code == 200:
+                    check('Thread reply_count incremented to 1', r.json()['thread'].get('reply_count') == 1)
+                    check('Thread detail returns 1 reply', len(r.json().get('replies', [])) == 1)
+            except Exception as e:
+                check('Verify reply_count increment', False, str(e))
+
+            # Delete reply
+            if reply_id:
+                try:
+                    r = requests.delete(f'{BASE}/community/replies/{reply_id}', headers=admin_hdr, timeout=10)
+                    check('DELETE /api/community/replies/{id} returns 200', r.status_code == 200, r.text)
+                except Exception as e:
+                    check('DELETE /api/community/replies/{id}', False, str(e))
+
+            # Delete thread
+            try:
+                r = requests.delete(f'{BASE}/community/threads/{thread_id}', headers=admin_hdr, timeout=10)
+                check('DELETE /api/community/threads/{id} returns 200', r.status_code == 200, r.text)
+            except Exception as e:
+                check('DELETE /api/community/threads/{id}', False, str(e))
+
     # ==================== SUMMARY ====================
     print('\n' + '=' * 80)
     print(f'📊 TEST SUMMARY')
