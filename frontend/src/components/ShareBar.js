@@ -174,7 +174,7 @@ const IgCardDialog = ({ post }) => {
   );
 };
 
-export const ShareBar = ({ post, orientation = "horizontal" }) => {
+export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) => {
   const url = `${SITE_URL}/post/${post.slug}`;
 
   const copyLink = async () => {
@@ -231,10 +231,10 @@ export const ShareBar = ({ post, orientation = "horizontal" }) => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className={wrapCls} data-testid="share-bar">
+      <div className={wrapCls} data-testid={`share-bar${idSuffix}`}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className={btnCls} onClick={shareLinkedIn} data-testid="share-linkedin-button" aria-label="Share on LinkedIn">
+            <Button variant="ghost" size="icon" className={btnCls} onClick={shareLinkedIn} data-testid={`share-linkedin-button${idSuffix}`} aria-label="Share on LinkedIn">
               <Linkedin className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -243,7 +243,7 @@ export const ShareBar = ({ post, orientation = "horizontal" }) => {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className={btnCls} onClick={copyLink} data-testid="share-copy-link-button" aria-label="Copy link for Instagram">
+            <Button variant="ghost" size="icon" className={btnCls} onClick={copyLink} data-testid={`share-copy-link-button${idSuffix}`} aria-label="Copy link for Instagram">
               <Instagram className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -254,7 +254,7 @@ export const ShareBar = ({ post, orientation = "horizontal" }) => {
           <Tooltip>
             <TooltipTrigger asChild>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className={btnCls} data-testid="share-download-ig-button" aria-label="Download Instagram card">
+                <Button variant="ghost" size="icon" className={btnCls} data-testid={`share-download-ig-button${idSuffix}`} aria-label="Download Instagram card">
                   <ImageDown className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
@@ -266,7 +266,7 @@ export const ShareBar = ({ post, orientation = "horizontal" }) => {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className={btnCls} onClick={shareX} data-testid="share-x-button" aria-label="Share on X">
+            <Button variant="ghost" size="icon" className={btnCls} onClick={shareX} data-testid={`share-x-button${idSuffix}`} aria-label="Share on X">
               <Twitter className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -275,7 +275,7 @@ export const ShareBar = ({ post, orientation = "horizontal" }) => {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className={btnCls} onClick={copyLink} data-testid="share-plain-copy-button" aria-label="Copy link">
+            <Button variant="ghost" size="icon" className={btnCls} onClick={copyLink} data-testid={`share-plain-copy-button${idSuffix}`} aria-label="Copy link">
               <Link2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -284,7 +284,7 @@ export const ShareBar = ({ post, orientation = "horizontal" }) => {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className={btnCls} onClick={webShare} data-testid="share-webshare-button" aria-label="Share">
+            <Button variant="ghost" size="icon" className={btnCls} onClick={webShare} data-testid={`share-webshare-button${idSuffix}`} aria-label="Share">
               <Share2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>

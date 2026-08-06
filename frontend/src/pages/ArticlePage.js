@@ -146,7 +146,7 @@ export default function ArticlePage() {
 
           {/* Mobile share bar */}
           <div className="lg:hidden mt-6">
-            <ShareBar post={post} />
+            <ShareBar post={post} idSuffix="-mobile" />
           </div>
         </div>
 

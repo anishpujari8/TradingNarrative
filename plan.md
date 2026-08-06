@@ -115,3 +115,9 @@
 - Social share bar works; IG card generator exports valid PNG sizes; OG/Twitter meta present.
 - Sitemap/robots served; analytics events stored and visible in admin.
 - testing_agent_v3 passes core E2E flows with no critical bugs.
+
+---
+## STATUS UPDATE (post Phase 2)
+- Phase 1 (POC): DONE — test_core.py 32/32 passed (server-side paywall, subscription transitions, magic link, newsletter, admin gating).
+- Phase 2 (V1 app): DONE — full frontend + backend built; testing_agent iteration_1: backend 74/74, frontend 59/60; the 1 minor issue (duplicate share-bar testids on hidden mobile bar) FIXED and verified.
+- Next: Phase 3 hardening (password reset, analytics trends) and Phase 4 (real Stripe + email provider when user supplies keys).
