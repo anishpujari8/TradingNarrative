@@ -151,6 +151,11 @@ export default function ArticlePage() {
                   {post.category_label}
                 </Badge>
               </Link>
+              {post.edition && (
+                <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/10 font-mono text-[10px]" data-testid="article-edition-badge">
+                  Edition #{post.edition}
+                </Badge>
+              )}
               {post.tier === "premium" && (
                 <Badge className="bg-accent/10 text-accent border border-accent/30 hover:bg-accent/10 gap-1" data-testid="article-premium-badge">
                   <Lock className="h-3 w-3" /> Premium

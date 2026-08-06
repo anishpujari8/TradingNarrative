@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, CATEGORIES } from "@/lib/api";
@@ -27,7 +27,37 @@ const emptyForm = {
   featured: false,
   status: "draft",
   publish_at: "",
+  edition: "",
 };
+
+const briefingTemplate = (edition) => ({
+  title: "Five Things Commodity Desks Need to Know This Week",
+  excerpt: `Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. Edition #${edition} of The Trading Narrative.`,
+  category: "finance",
+  tier: "free",
+  tags: "ETRM, Commodities, Markets, Risk, Regulation",
+  edition: String(edition),
+  content: [
+    "THE BOARD — Brent $__ ▲ | WTI $__ ▲ | Copper $__ ▲ | Wheat $__ | Corn $__ | Soybeans $__",
+    `Welcome to Edition #${edition}. Every week: five things that actually change how trading and risk teams work — written the way a desk reads them, not the way a press release writes them.`,
+    "## 1. [First headline]",
+    "[What happened, and why it changes how the desk works. End with the tell — the detail that proves the point.] (Sources: …)",
+    "## 2. [Second headline]",
+    "[What happened, and why it matters.] (Sources: …)",
+    "## 3. [Third headline]",
+    "[What happened, and why it matters.] (Sources: …)",
+    "## 4. [Fourth headline]",
+    "[What happened, and why it matters.] (Sources: …)",
+    "## 5. [Fifth headline]",
+    "[What happened, and why it matters.] (Sources: …)",
+    "## Three signals to watch",
+    "1. [Signal one — what to watch and why.]",
+    "2. [Signal two — what to watch and why.]",
+    "3. [Signal three — what to watch and why.]",
+    "If this saved you a morning of reading, subscribe and share it with one person on your desk. What should the Narrative cover next week? Tell me in the comments.",
+    "I'm Anish Pujari, Senior ETRM/CTRM Product Manager & Consultant (Endur, Eka, Triple Point, Azure Databricks). Views my own; prices indicative, not trading advice.",
+  ].join("\n\n"),
+});
 
 export default function AdminEditorPage() {
   const { id } = useParams();
@@ -55,6 +85,7 @@ export default function AdminEditorPage() {
           featured: !!p.featured,
           status: p.status,
           publish_at: p.publish_at ? p.publish_at.slice(0, 16) : "",
+          edition: p.edition ? String(p.edition) : "",
         });
         setLoaded(true);
       }).catch(() => {
@@ -65,6 +96,20 @@ export default function AdminEditorPage() {
   }, [id, user, loading, navigate]);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const applyBriefingTemplate = async () => {
+    if (form.title || form.content) {
+      if (!window.confirm("This will replace the current title and content with the weekly briefing template. Continue?")) return;
+    }
+    let nextEdition = 1;
+    try {
+      const res = await api.get("/admin/posts");
+      const editions = (res.data.posts || res.data || []).map((p) => p.edition).filter(Boolean);
+      if (editions.length) nextEdition = Math.max(...editions) + 1;
+    } catch { /* default to 1 */ }
+    setForm((f) => ({ ...f, ...briefingTemplate(nextEdition) }));
+    toast.success(`Weekly briefing template loaded — Edition #${nextEdition}. Fill in THE BOARD and the five sections.`);
+  };
 
   const save = async (overrideStatus) => {
     const status = overrideStatus || form.status;
@@ -84,6 +129,7 @@ export default function AdminEditorPage() {
       featured: form.featured,
       status,
       publish_at: status === "scheduled" && form.publish_at ? new Date(form.publish_at).toISOString() : null,
+      edition: form.edition && !isNaN(parseInt(form.edition, 10)) ? parseInt(form.edition, 10) : null,
     };
     try {
       if (id) {
@@ -113,7 +159,12 @@ export default function AdminEditorPage() {
         <button onClick={() => navigate("/admin")} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6" data-testid="admin-editor-back">
           <ArrowLeft className="h-4 w-4" /> Back to Admin Studio
         </button>
-        <h1 className="font-serif text-3xl sm:text-4xl font-semibold mb-8">{id ? "Edit post" : "Write a new post"}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <h1 className="font-serif text-3xl sm:text-4xl font-semibold">{id ? "Edit post" : "Write a new post"}</h1>
+          <Button variant="outline" onClick={applyBriefingTemplate} data-testid="admin-briefing-template-button">
+            <LayoutTemplate className="h-4 w-4 mr-2" /> Weekly briefing template
+          </Button>
+        </div>
 
         <Card className="rounded-2xl">
           <CardContent className="p-6 sm:p-8 space-y-6">
@@ -149,9 +200,15 @@ export default function AdminEditorPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="post-tags">Tags <span className="text-muted-foreground font-normal">(comma-separated, max 10)</span></Label>
-              <Input id="post-tags" value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="AI, Investing, Macro" data-testid="admin-post-tags-input" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="post-tags">Tags <span className="text-muted-foreground font-normal">(comma-separated, max 10)</span></Label>
+                <Input id="post-tags" value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="AI, Investing, Macro" data-testid="admin-post-tags-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="post-edition">Edition # <span className="text-muted-foreground font-normal">(briefings)</span></Label>
+                <Input id="post-edition" type="number" min="1" value={form.edition} onChange={(e) => set("edition", e.target.value)} placeholder="e.g. 2" data-testid="admin-post-edition-input" />
+              </div>
             </div>
 
             <div className="space-y-1.5">

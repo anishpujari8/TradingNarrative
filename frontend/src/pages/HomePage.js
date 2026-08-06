@@ -75,8 +75,8 @@ export default function HomePage() {
               Sharp narratives on money, technology, and a life well designed.
             </h1>
             <p className="text-muted-foreground text-base md:text-lg mt-5 max-w-lg">
-              Essays on tech & business, personal finance, lifestyle, and travel — written
-              like a letter from a friend who does the homework.
+              Essays on technology & AI, business and financial mechanics, delivery systems,
+              and personal growth — written like a letter from a colleague who does the homework.
             </p>
             <div className="mt-7 max-w-md">
               <NewsletterForm source="hero" testId="hero-newsletter-form" />

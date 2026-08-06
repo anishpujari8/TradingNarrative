@@ -5,7 +5,7 @@ export const Seo = ({ title, description, image, path = "", type = "website" }) 
   const fullTitle = title ? `${title} — ${SITE_NAME}` : `${SITE_NAME} — Sharp narratives on markets, tech & living well`;
   const desc =
     description ||
-    "A premium publication covering tech & business, personal finance & investing, lifestyle, and travel.";
+    "A publication on technology & AI, business and financial mechanics, delivery systems, and personal growth — from inside commodity trading floors.";
   const url = `${SITE_URL}${path}`;
   const img =
     image ||

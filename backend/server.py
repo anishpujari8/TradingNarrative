@@ -119,7 +119,7 @@ CATEGORIES = {
     'tech-business': 'Tech & AI',
     'finance': 'Business & Finance',
     'lifestyle': 'Personal Growth',
-    'travel': 'Travel',
+    'delivery': 'Delivery & Systems',
 }
 
 PREVIEW_BLOCKS = 3  # paragraphs shown to non-premium users on premium posts
@@ -281,6 +281,7 @@ def post_summary(p):
         'tags': p.get('tags', []),
         'author': p.get('author', AUTHOR), 'published_at': p.get('published_at'),
         'status': p.get('status', 'published'), 'views': p.get('views', 0),
+        'edition': p.get('edition'),
     }
 
 
@@ -432,6 +433,7 @@ class PostIn(BaseModel):
     featured: bool = False
     status: str = 'draft'  # draft | published | scheduled
     publish_at: Optional[str] = None
+    edition: Optional[int] = None  # newsletter edition number for weekly briefings
 
 
 class IssueIn(BaseModel):
@@ -1600,7 +1602,7 @@ async def admin_create_post(body: PostIn, admin=Depends(get_admin_user)):
         'category': body.category, 'tier': body.tier, 'cover_image': body.cover_image,
         'content_blocks': body.content_blocks, 'tags': [t.strip() for t in body.tags if t.strip()][:10],
         'featured': body.featured,
-        'status': body.status, 'publish_at': body.publish_at,
+        'status': body.status, 'publish_at': body.publish_at, 'edition': body.edition,
         'published_at': iso(now_utc()) if body.status == 'published' else (body.publish_at or iso(now_utc())),
         'author': AUTHOR, 'read_time': read_time(body.content_blocks), 'views': 0,
         'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
@@ -1621,6 +1623,7 @@ async def admin_update_post(post_id: str, body: PostIn, admin=Depends(get_admin_
         'tier': body.tier, 'cover_image': body.cover_image, 'content_blocks': body.content_blocks,
         'tags': [t.strip() for t in body.tags if t.strip()][:10],
         'featured': body.featured, 'status': body.status, 'publish_at': body.publish_at,
+        'edition': body.edition,
         'read_time': read_time(body.content_blocks), 'updated_at': iso(now_utc()),
     }
     if body.status == 'published' and post.get('status') != 'published':

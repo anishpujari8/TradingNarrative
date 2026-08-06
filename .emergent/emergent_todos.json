@@ -1,22 +1,18 @@
 [
   {
-    "content": "Download + optimize logo and headshot assets",
+    "content": "Rename Travel pillar to Delivery & Systems + migrate posts",
     "status": "completed"
   },
   {
-    "content": "Update logo in Navbar/footer + favicon",
+    "content": "Weekly briefing template button in admin editor",
     "status": "completed"
   },
   {
-    "content": "Update About page with new bio + headshot",
+    "content": "Edition number field + badges on briefings",
     "status": "completed"
   },
   {
-    "content": "Update author name to Anish Pujari across site",
-    "status": "completed"
-  },
-  {
-    "content": "Import LinkedIn article Edition #1 as free featured post",
+    "content": "Test + verify all changes",
     "status": "completed"
   }
 ]

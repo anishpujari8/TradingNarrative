@@ -95,3 +95,9 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Author identity**: "Jordan Hale" → "Anish Pujari" everywhere (users, posts author incl. bio/avatar, community threads/replies/announcements, seed_data.py).
 - **Article import**: LinkedIn newsletter Edition #1 "Five Things Commodity Desks Need to Know This Week" imported as a FREE featured post (finance pillar, 22 content blocks, section headings via new '## ' block convention in ArticlePage renderer). More articles can be imported the same way when user pastes them.
 - NOTE: production (insight-hub-484.emergent.host) needs a redeploy to receive these changes.
+
+## V2.8 Session Update (Pillar Cleanup, Briefing Template, Edition Badges)
+- **Travel → Delivery & Systems**: pillar renamed (slug 'delivery') in backend CATEGORIES + frontend nav/category data; 3 sample travel posts moved to drafts under the new pillar; hero copy + SEO description updated to the four themes.
+- **Weekly Briefing Template**: "Weekly briefing template" button in admin editor prefills title, excerpt, category (finance), tags, next edition number (auto-computed from existing posts), and a full content skeleton (THE BOARD strip, 5 numbered '## ' sections, Three signals, sign-off).
+- **Edition Numbers**: posts have optional 'edition' int (editor input); "Edition #N" badge on article pages, "#N" badge on post cards. Edition #1 set on the imported briefing.
+- Pending user input: paste further LinkedIn editions for import.

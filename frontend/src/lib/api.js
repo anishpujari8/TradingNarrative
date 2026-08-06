@@ -33,10 +33,10 @@ export const CATEGORIES = [
       "Focus, habits, and the systems behind a deliberately designed life.",
   },
   {
-    slug: "travel",
-    label: "Travel",
+    slug: "delivery",
+    label: "Delivery & Systems",
     description:
-      "Slow travel, remote work, and seeing the world without wrecking your budget or your career.",
+      "The unglamorous systems that let large programmes run on time and under budget — governance, delivery, and the mechanics of execution.",
   },
 ];
 

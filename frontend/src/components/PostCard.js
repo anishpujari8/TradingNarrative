@@ -26,6 +26,11 @@ export const PostCard = ({ post, large = false }) => {
             <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-wider rounded-md">
               {post.category_label}
             </Badge>
+            {post.edition && (
+              <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/10 font-mono text-[10px] rounded-md" data-testid="post-edition-badge">
+                #{post.edition}
+              </Badge>
+            )}
             {post.tier === "premium" && (
               <Badge className="bg-accent/10 text-accent border border-accent/30 hover:bg-accent/10 gap-1 rounded-md" data-testid="post-premium-badge">
                 <Lock className="h-3 w-3" /> Premium
