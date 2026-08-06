@@ -48,6 +48,7 @@ RAZORPAY_ENABLED = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
 
 
 RAZORPAY_SUBS_ENABLED = False  # probed at startup — True when the account has Subscriptions (UPI Autopay) enabled
+RAZORPAY_LAST_PROBE = 0.0  # unix ts of last capability probe (throttles live re-checks)
 
 
 def razorpay_client():
@@ -68,6 +69,20 @@ async def probe_razorpay_subscriptions():
     except Exception:
         RAZORPAY_SUBS_ENABLED = False
         logger.info('Razorpay Subscriptions not enabled on this account — using one-time INR passes')
+
+
+async def maybe_reprobe_razorpay(force: bool = False):
+    """Live re-check of the Subscriptions capability (max once per 10 min) so
+    UPI Autopay switches on automatically once enabled on the Razorpay dashboard,
+    without needing a backend restart."""
+    global RAZORPAY_LAST_PROBE
+    import time as _time
+    if not RAZORPAY_ENABLED or RAZORPAY_SUBS_ENABLED:
+        return
+    if not force and _time.time() - RAZORPAY_LAST_PROBE < 600:
+        return
+    RAZORPAY_LAST_PROBE = _time.time()
+    await probe_razorpay_subscriptions()
 
 
 async def get_or_create_razorpay_plan(plan_id: str) -> str:
@@ -760,6 +775,7 @@ async def activate_premium_from_transaction(txn):
 
 @api_router.get('/billing/config')
 async def billing_config():
+    await maybe_reprobe_razorpay()
     return {'mock_mode': MOCK_BILLING, 'auto_renew': AUTO_RENEW,
             'razorpay_enabled': RAZORPAY_ENABLED, 'razorpay_key_id': RAZORPAY_KEY_ID or None,
             'razorpay_autopay': RAZORPAY_SUBS_ENABLED,
@@ -1035,11 +1051,36 @@ async def admin_traffic(admin=Depends(get_admin_user), days: int = Query(30, le=
         {'$group': {'_id': {'campaign': '$utm_campaign', 'source': '$source'}, 'count': {'$sum': 1}}},
         {'$sort': {'count': -1}}, {'$limit': 10},
     ]).to_list(10)
+    # weekly trend for the top 5 sources (everything else grouped as 'Other')
+    top_sources = [s['source'] for s in sources[:5]]
+    docs = await db.analytics.find(match, {'source': 1, 'created_at': 1}).to_list(20000)
+    weeks = {}
+    for d in docs:
+        try:
+            dt = datetime.fromisoformat(d['created_at'])
+        except Exception:
+            continue
+        week_start = (dt - timedelta(days=dt.weekday())).date()
+        label = week_start.strftime('%b %d')
+        key = (week_start, label)
+        src = d['source'] if d['source'] in top_sources else 'Other'
+        weeks.setdefault(key, {})
+        weeks[key][src] = weeks[key].get(src, 0) + 1
+    trend_series = list(top_sources)
+    if any('Other' in v for v in weeks.values()) and 'Other' not in trend_series:
+        trend_series.append('Other')
+    trend = []
+    for (ws, label) in sorted(weeks.keys()):
+        row = {'week': label}
+        for s in trend_series:
+            row[s] = weeks[(ws, label)].get(s, 0)
+        trend.append(row)
     return {
         'days': days, 'total_visits': total, 'sources': sources,
         'top_referrers': [{'host': r['_id'], 'count': r['count']} for r in referrers],
         'campaigns': [{'campaign': c['_id']['campaign'], 'source': c['_id']['source'],
                        'count': c['count']} for c in campaigns],
+        'trend': trend, 'trend_series': trend_series,
     }
 
 
@@ -1099,7 +1140,8 @@ async def community_delete_announcement(aid: str, admin=Depends(get_admin_user))
 
 @api_router.get('/community/threads')
 async def community_threads(user=Depends(get_premium_user)):
-    threads = await db.community_threads.find({}).sort('last_activity_at', -1).to_list(100)
+    threads = await db.community_threads.find({}).sort(
+        [('pinned', -1), ('last_activity_at', -1)]).to_list(100)
     return {'threads': [clean(t) for t in threads]}
 
 
@@ -1116,7 +1158,7 @@ async def community_create_thread(body: CommunityThreadIn, user=Depends(get_prem
     if recent >= 5:
         raise HTTPException(status_code=429, detail='Slow down — you can start up to 5 discussions per hour.')
     thread = {'id': str(uuid.uuid4()), 'title': title, 'body': text,
-              'author': community_author(user), 'reply_count': 0,
+              'author': community_author(user), 'reply_count': 0, 'pinned': False,
               'created_at': iso(now_utc()), 'last_activity_at': iso(now_utc())}
     await db.community_threads.insert_one(dict(thread))
     return clean(thread)
@@ -1148,7 +1190,24 @@ async def community_reply(tid: str, body: CommunityReplyIn, user=Depends(get_pre
     await db.community_replies.insert_one(dict(reply))
     await db.community_threads.update_one({'id': tid}, {
         '$inc': {'reply_count': 1}, '$set': {'last_activity_at': iso(now_utc())}})
+    # bell notification for the discussion author
+    if thread['author']['id'] != user['id']:
+        await db.notifications.insert_one({
+            'id': str(uuid.uuid4()), 'user_id': thread['author']['id'], 'type': 'lounge_reply',
+            'actor_name': reply['author']['name'], 'thread_id': tid, 'thread_title': thread['title'],
+            'preview': text[:140], 'read': False, 'created_at': iso(now_utc()),
+        })
     return clean(reply)
+
+
+@api_router.post('/community/threads/{tid}/pin')
+async def community_pin_thread(tid: str, admin=Depends(get_admin_user)):
+    thread = await db.community_threads.find_one({'id': tid})
+    if not thread:
+        raise HTTPException(status_code=404, detail='Thread not found')
+    new_state = not thread.get('pinned', False)
+    await db.community_threads.update_one({'id': tid}, {'$set': {'pinned': new_state}})
+    return {'ok': True, 'pinned': new_state}
 
 
 @api_router.delete('/community/threads/{tid}')
@@ -1340,6 +1399,7 @@ async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_u
     plan = PLANS[body.plan]
     amount_paise = int(round(plan['amount_inr'] * 100))
     import asyncio
+    await maybe_reprobe_razorpay()  # switch to Autopay live once enabled on the dashboard
     kind = 'order'
     mock = False
     if RAZORPAY_ENABLED and RAZORPAY_SUBS_ENABLED:

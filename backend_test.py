@@ -931,6 +931,7 @@ def main():
                 thread_id = r.json().get('id')
                 check('Thread has id', thread_id is not None)
                 check('Thread has reply_count=0', r.json().get('reply_count') == 0)
+                check('Thread has pinned=false by default', r.json().get('pinned') is False)
         except Exception as e:
             check('POST /api/community/threads', False, str(e))
 
@@ -1000,6 +1001,154 @@ def main():
                 check('DELETE /api/community/threads/{id} returns 200', r.status_code == 200, r.text)
             except Exception as e:
                 check('DELETE /api/community/threads/{id}', False, str(e))
+
+    # ==================== NEW FEATURES: ITERATION 6 ====================
+    print('\n🆕 23. NEW FEATURES: LOUNGE NOTIFICATIONS, PINNED THREADS, TRAFFIC TRENDS')
+    
+    # Test lounge_reply notifications
+    if admin_token and admin_hdr:
+        # Create a premium user by inserting subscription directly
+        premium_email = f'premium-{uuid.uuid4().hex[:8]}@test.com'
+        premium_password = 'Premium123!'
+        premium_token = None
+        premium_user_id = None
+        
+        try:
+            r = requests.post(f'{BASE}/auth/register', json={
+                'email': premium_email, 'password': premium_password, 'name': 'Premium Test User'
+            }, timeout=10)
+            if r.status_code == 200:
+                premium_token = r.json().get('token')
+                premium_user_id = r.json()['user']['id']
+                print(f'   Created premium test user: {premium_user_id}')
+        except Exception as e:
+            check('Create premium test user', False, str(e))
+        
+        premium_hdr = {'Authorization': f'Bearer {premium_token}'} if premium_token else None
+        
+        # Grant premium by inserting subscription (direct MongoDB insert would be needed, but we'll use admin to create a thread)
+        # For testing, we'll create a thread as admin and reply as another premium user
+        
+        # Create a thread as the premium user (need to grant premium first via MongoDB)
+        # Since we can't directly insert into MongoDB from here, we'll test with admin creating thread
+        # and another user replying
+        
+        test_thread_id = None
+        try:
+            r = requests.post(f'{BASE}/community/threads', json={
+                'title': 'Thread for Notification Test',
+                'body': 'Testing lounge_reply notifications.'
+            }, headers=admin_hdr, timeout=10)
+            if r.status_code == 200:
+                test_thread_id = r.json().get('id')
+                print(f'   Created test thread: {test_thread_id}')
+        except Exception as e:
+            check('Create thread for notification test', False, str(e))
+        
+        # Note: We cannot fully test lounge_reply notifications without granting premium to the second user
+        # This would require direct MongoDB access. We'll document this limitation.
+        print('   ⚠️  Full lounge_reply notification test requires MongoDB access to grant premium')
+        
+    # Test pinned threads feature
+    pin_test_thread_id = None
+    if admin_token and admin_hdr:
+        # Create a thread for pin testing
+        try:
+            r = requests.post(f'{BASE}/community/threads', json={
+                'title': 'Thread for Pin Test',
+                'body': 'Testing pin/unpin functionality.'
+            }, headers=admin_hdr, timeout=10)
+            check('Create thread for pin test returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                pin_test_thread_id = r.json().get('id')
+        except Exception as e:
+            check('Create thread for pin test', False, str(e))
+        
+        # Test admin can pin thread
+        if pin_test_thread_id:
+            try:
+                r = requests.post(f'{BASE}/community/threads/{pin_test_thread_id}/pin', headers=admin_hdr, timeout=10)
+                check('POST /api/community/threads/{id}/pin (admin) returns 200', r.status_code == 200, r.text)
+                if r.status_code == 200:
+                    check('Pin response has pinned=true', r.json().get('pinned') is True)
+            except Exception as e:
+                check('POST /api/community/threads/{id}/pin (admin)', False, str(e))
+            
+            # Test non-admin premium user gets 403
+            if token and hdr:
+                try:
+                    r = requests.post(f'{BASE}/community/threads/{pin_test_thread_id}/pin', headers=hdr, timeout=10)
+                    check('POST /api/community/threads/{id}/pin (non-admin) returns 403', r.status_code == 403)
+                except Exception as e:
+                    check('POST /api/community/threads/{id}/pin (non-admin)', False, str(e))
+            
+            # Test unpinning
+            try:
+                r = requests.post(f'{BASE}/community/threads/{pin_test_thread_id}/pin', headers=admin_hdr, timeout=10)
+                check('POST /api/community/threads/{id}/pin (unpin) returns 200', r.status_code == 200, r.text)
+                if r.status_code == 200:
+                    check('Unpin response has pinned=false', r.json().get('pinned') is False)
+            except Exception as e:
+                check('POST /api/community/threads/{id}/pin (unpin)', False, str(e))
+            
+            # Pin it again for thread list test
+            try:
+                r = requests.post(f'{BASE}/community/threads/{pin_test_thread_id}/pin', headers=admin_hdr, timeout=10)
+            except Exception:
+                pass
+            
+            # Test GET /api/community/threads returns pinned threads first
+            try:
+                r = requests.get(f'{BASE}/community/threads', headers=admin_hdr, timeout=10)
+                check('GET /api/community/threads returns 200', r.status_code == 200, r.text)
+                if r.status_code == 200:
+                    threads = r.json().get('threads', [])
+                    if len(threads) > 0:
+                        # Check if pinned threads appear first
+                        pinned_threads = [t for t in threads if t.get('pinned')]
+                        if len(pinned_threads) > 0:
+                            first_pinned_idx = threads.index(pinned_threads[0])
+                            first_unpinned_idx = next((i for i, t in enumerate(threads) if not t.get('pinned')), len(threads))
+                            check('Pinned threads appear before unpinned threads', first_pinned_idx < first_unpinned_idx, 
+                                  f'first_pinned={first_pinned_idx}, first_unpinned={first_unpinned_idx}')
+            except Exception as e:
+                check('GET /api/community/threads (pinned first)', False, str(e))
+            
+            # Clean up: delete pin test thread
+            try:
+                r = requests.delete(f'{BASE}/community/threads/{pin_test_thread_id}', headers=admin_hdr, timeout=10)
+            except Exception:
+                pass
+    
+    # Test traffic trends feature
+    if admin_token and admin_hdr:
+        try:
+            r = requests.get(f'{BASE}/admin/traffic', params={'days': 30}, headers=admin_hdr, timeout=10)
+            check('GET /api/admin/traffic?days=30 returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                traffic = r.json()
+                check('Traffic response has trend array', 'trend' in traffic and isinstance(traffic['trend'], list))
+                check('Traffic response has trend_series array', 'trend_series' in traffic and isinstance(traffic['trend_series'], list))
+                
+                # Verify trend structure (weekly buckets)
+                if len(traffic.get('trend', [])) > 0:
+                    first_row = traffic['trend'][0]
+                    check('Trend row has week field', 'week' in first_row)
+                    # Check that trend row has source columns
+                    trend_series = traffic.get('trend_series', [])
+                    if len(trend_series) > 0:
+                        check('Trend row has source columns from trend_series', 
+                              any(s in first_row for s in trend_series),
+                              f'trend_series={trend_series}, row_keys={list(first_row.keys())}')
+                
+                # Verify trend_series contains top sources
+                if len(traffic.get('sources', [])) > 0 and len(traffic.get('trend_series', [])) > 0:
+                    top_sources = [s['source'] for s in traffic['sources'][:5]]
+                    trend_series = traffic['trend_series']
+                    check('trend_series contains top sources or Other', 
+                          any(s in trend_series or 'Other' in trend_series for s in top_sources))
+        except Exception as e:
+            check('GET /api/admin/traffic (trend)', False, str(e))
 
     # ==================== SUMMARY ====================
     print('\n' + '=' * 80)

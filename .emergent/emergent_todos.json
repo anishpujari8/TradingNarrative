@@ -1,34 +1,22 @@
 [
   {
-    "content": "Debug Razorpay client init & API auth in server.py",
-    "status": "completed"
+    "content": "Autopay: add live re-probe so autopay switches on without restart",
+    "status": "in_progress"
   },
   {
-    "content": "Fix subscription/plan creation or implement Orders fallback",
-    "status": "completed"
+    "content": "Lounge notifications: notify thread author on new replies",
+    "status": "pending"
   },
   {
-    "content": "Wire INR checkout on PricingPage with Razorpay flow",
-    "status": "completed"
+    "content": "Traffic trends: weekly per-source chart (backend + UI)",
+    "status": "pending"
   },
   {
-    "content": "Backend: referrer/UTM tracking + /api/admin/traffic endpoint",
-    "status": "completed"
+    "content": "Pinned discussions: admin pin/unpin + sort + UI badge",
+    "status": "pending"
   },
   {
-    "content": "Frontend: Traffic Sources UI in admin",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: /api/community endpoints (announcements + threads)",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: CommunityPage (premium-only lounge)",
-    "status": "completed"
-  },
-  {
-    "content": "Comprehensive testing (backend + frontend)",
-    "status": "completed"
+    "content": "Test all four features",
+    "status": "pending"
   }
 ]

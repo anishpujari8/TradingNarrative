@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock } from "lucide-react";
+import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
@@ -39,6 +39,8 @@ const AuthorLine = ({ author, date }) => (
 export default function CommunityPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkDone = useRef(false);
   const isAdmin = user?.role === "admin";
 
   const [announcements, setAnnouncements] = useState(null);
@@ -74,6 +76,17 @@ export default function CommunityPage() {
     if (!user.is_premium && !isAdmin) { setLocked(true); return; }
     loadLounge();
   }, [user, loading, isAdmin, loadLounge]);
+
+  // Deep-link: /lounge?thread=<id> (from bell notifications) opens the discussion
+  useEffect(() => {
+    const tid = searchParams.get("thread");
+    if (!tid || deepLinkDone.current || loading || !user) return;
+    if (!user.is_premium && !isAdmin) return;
+    deepLinkDone.current = true;
+    openThread(tid);
+    setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loading, user, isAdmin]);
 
   const openThread = async (tid) => {
     setDetailBusy(true);
@@ -133,6 +146,19 @@ export default function CommunityPage() {
       toast.error(err?.response?.data?.detail || "Reply failed.");
     } finally {
       setReplying(false);
+    }
+  };
+
+  const togglePin = async (tid) => {
+    try {
+      const res = await api.post(`/community/threads/${tid}/pin`);
+      toast.success(res.data.pinned ? "Discussion pinned to the top." : "Discussion unpinned.");
+      if (selected?.thread?.id === tid) {
+        setSelected({ ...selected, thread: { ...selected.thread, pinned: res.data.pinned } });
+      }
+      loadLounge();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not update the pin.");
     }
   };
 
@@ -199,12 +225,22 @@ export default function CommunityPage() {
           <Card className="rounded-xl">
             <CardContent className="p-6">
               <div className="flex items-start justify-between gap-3">
-                <h1 className="font-serif text-2xl font-semibold leading-snug">{t.title}</h1>
-                {canDeleteThread && (
-                  <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => setDeleteTarget({ type: "thread", id: t.id })} data-testid="community-delete-thread-button" aria-label="Delete discussion">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+                <h1 className="font-serif text-2xl font-semibold leading-snug flex items-start gap-2">
+                  {t.pinned && <Pin className="h-4 w-4 text-accent mt-1.5 shrink-0" data-testid="community-thread-pinned-icon" />}
+                  {t.title}
+                </h1>
+                <div className="flex gap-1 shrink-0">
+                  {isAdmin && (
+                    <Button variant="ghost" size="icon" onClick={() => togglePin(t.id)} data-testid="community-pin-thread-button" aria-label={t.pinned ? "Unpin discussion" : "Pin discussion"}>
+                      <Pin className={`h-4 w-4 ${t.pinned ? "text-accent" : ""}`} />
+                    </Button>
+                  )}
+                  {canDeleteThread && (
+                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteTarget({ type: "thread", id: t.id })} data-testid="community-delete-thread-button" aria-label="Delete discussion">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="mt-3 mb-4"><AuthorLine author={t.author} date={t.created_at} /></div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{t.body}</p>
@@ -343,9 +379,16 @@ export default function CommunityPage() {
                   className="w-full text-left"
                   data-testid={`community-thread-${t.id}`}
                 >
-                  <Card className="rounded-xl transition-colors duration-150 hover:border-accent/40">
+                  <Card className={`rounded-xl transition-colors duration-150 hover:border-accent/40 ${t.pinned ? "border-accent/30 bg-accent/[0.03]" : ""}`}>
                     <CardContent className="p-4">
-                      <h3 className="font-medium">{t.title}</h3>
+                      <div className="flex items-center gap-2">
+                        {t.pinned && (
+                          <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 gap-1 text-[10px] px-1.5 py-0" data-testid={`community-pinned-badge-${t.id}`}>
+                            <Pin className="h-3 w-3" /> Pinned
+                          </Badge>
+                        )}
+                        <h3 className="font-medium">{t.title}</h3>
+                      </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{t.body}</p>
                       <div className="flex items-center justify-between mt-3">
                         <AuthorLine author={t.author} date={t.created_at} />

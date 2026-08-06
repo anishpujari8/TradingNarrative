@@ -18,12 +18,21 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, Legend, ResponsiveContainer } from "recharts";
 import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+
+const TREND_COLORS = [
+  "hsl(168 52% 34%)",
+  "hsl(30 65% 50%)",
+  "hsl(210 55% 48%)",
+  "hsl(280 35% 52%)",
+  "hsl(0 50% 52%)",
+  "hsl(45 60% 42%)",
+];
 
 const StatCard = ({ icon: Icon, label, value, testId }) => (
   <Card className="rounded-xl" data-testid={testId}>
@@ -237,6 +246,35 @@ export default function AdminPage() {
                 <StatCard icon={Send} label="Campaigns" value={traffic.campaigns.length} testId="admin-traffic-campaign-count" />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="rounded-xl lg:col-span-2">
+                  <CardHeader><CardTitle className="font-serif text-xl">Weekly trend by source</CardTitle></CardHeader>
+                  <CardContent className="h-72" data-testid="admin-traffic-trend-chart">
+                    {traffic.trend?.length ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={traffic.trend} margin={{ left: 0, right: 20, top: 5 }}>
+                          <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
+                          <ReTooltip cursor={{ stroke: "hsla(168,52%,34%,0.2)" }} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          {(traffic.trend_series || []).map((s, i) => (
+                            <Line
+                              key={s}
+                              type="monotone"
+                              dataKey={s}
+                              stroke={TREND_COLORS[i % TREND_COLORS.length]}
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                            />
+                          ))}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <p className="text-sm text-muted-foreground pt-8 text-center" data-testid="admin-traffic-no-trend">
+                        Trend appears once visits span more than one week.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
                 <Card className="rounded-xl">
                   <CardHeader><CardTitle className="font-serif text-xl">Visits by source</CardTitle></CardHeader>
                   <CardContent className="h-72" data-testid="admin-traffic-chart">

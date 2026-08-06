@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, MessageCircle } from "lucide-react";
+import { Bell, MessageCircle, MessagesSquare } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -72,16 +72,29 @@ export const NotificationsBell = () => {
             {items.map((n) => (
               <button
                 key={n.id}
-                onClick={() => navigate(`/post/${n.post_slug}`)}
+                onClick={() => navigate(n.type === "lounge_reply" ? `/lounge?thread=${n.thread_id}` : `/post/${n.post_slug}`)}
                 className={`w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-muted/50 transition-colors ${!n.read ? "bg-accent/5" : ""}`}
                 data-testid="notification-item"
               >
                 <div className="flex items-start gap-2.5">
-                  <MessageCircle className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                  {n.type === "lounge_reply" ? (
+                    <MessagesSquare className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                  ) : (
+                    <MessageCircle className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                  )}
                   <div className="min-w-0">
                     <p className="text-sm">
-                      <span className="font-medium">{n.actor_name}</span> replied to your comment on{" "}
-                      <span className="font-medium">"{n.post_title}"</span>
+                      {n.type === "lounge_reply" ? (
+                        <>
+                          <span className="font-medium">{n.actor_name}</span> replied in your Lounge discussion{" "}
+                          <span className="font-medium">"{n.thread_title}"</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-medium">{n.actor_name}</span> replied to your comment on{" "}
+                          <span className="font-medium">"{n.post_title}"</span>
+                        </>
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.preview}</p>
                     <p className="text-[10px] text-muted-foreground font-mono mt-1">{timeAgo(n.created_at)}</p>
