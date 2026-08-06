@@ -5,18 +5,18 @@
   },
   {
     "content": "Pillar digests: per-subscriber pillar prefs + personalized digest",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Announcement editing: PUT endpoint + edit/reschedule UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Funnel plan split: plan on conversions + UI columns",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test all features",
-    "status": "pending"
+    "status": "completed"
   }
 ]

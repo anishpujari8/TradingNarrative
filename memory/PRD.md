@@ -72,3 +72,11 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Lounge Member Profiles**: GET /api/community/members/{uid} (premium-gated). Clicking any author in the Lounge opens a profile dialog: name, badges, member-since, discussion/reply counts, recent discussions (clickable).
 - **Scheduled Announcements**: publish_at on announcements; future ones hidden from members, shown to admin with Scheduled badge + "publishes <date>"; datetime picker in the announcement dialog.
 - Testing: iteration_8.json — backend 100% (261/262), frontend 100%, no regressions.
+
+## V2.5 Session Update (Email LIVE, Pillar Digests, Announcement Editing, Plan Split)
+- **REAL EMAIL SENDING IS LIVE**: Gmail App Password configured — /api/admin/email/status verified:true. Test email + a real pillar-personalized digest delivered to owner's Gmail. Welcome emails, issues, and digests all send for real now (with safe fallback to logging on failure).
+- **Pillar Digests**: Weekly digest personalized per subscriber — only essays from their chosen pillars (Account → Email preferences checkboxes); subscribers with no matching posts are skipped. Digest HTML cached per pillar-combination.
+- **Announcement Editing**: PUT /api/community/announcements/{aid}; pencil buttons on cards open the dialog in edit mode (prefilled incl. schedule); supports reschedule or clear-to-publish-now.
+- **Funnel Plan Split**: conversions_monthly/conversions_annual per source + overall; Monthly/Annual columns in funnel table + split under 'Went Premium' card.
+- Housekeeping: removed 12 fake test emails from newsletter_subscribers so live Gmail sending (incl. Friday autosend) doesn't hit invalid addresses. Owner's Gmail subscribed (tech pillar) as first real subscriber.
+- Testing: iteration_9.json — backend 100%, frontend 100%, regression 100%.
