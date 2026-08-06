@@ -23,6 +23,28 @@ export default function AuthPage() {
   const [regForm, setRegForm] = useState({ name: "", email: "", password: "" });
   const [magicEmail, setMagicEmail] = useState("");
   const [magicLink, setMagicLink] = useState(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetLink, setResetLink] = useState(null);
+
+  const doForgot = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setResetLink(null);
+    try {
+      const res = await api.post("/auth/password-reset/request", { email: forgotEmail });
+      if (res.data.reset_link) {
+        setResetLink(res.data.reset_link);
+        toast.success("Reset link generated.");
+      } else {
+        toast.info(res.data.message);
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not create reset link.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const doLogin = async (e) => {
     e.preventDefault();
@@ -100,6 +122,37 @@ export default function AuthPage() {
                   <Button type="submit" disabled={busy} className="w-full h-11 bg-accent text-accent-foreground hover:bg-accent/90" data-testid="login-submit-button">
                     {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Sign in
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen((v) => !v)}
+                    className="text-xs text-muted-foreground hover:text-accent transition-colors w-full text-center"
+                    data-testid="forgot-password-toggle"
+                  >
+                    Forgot your password?
+                  </button>
+                  {forgotOpen && (
+                    <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/30" data-testid="forgot-password-form">
+                      <Label htmlFor="forgot-email" className="text-sm">Email for reset link</Label>
+                      <div className="flex gap-2">
+                        <Input id="forgot-email" type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="you@example.com" data-testid="forgot-email-input" />
+                        <Button type="button" onClick={doForgot} disabled={busy || !forgotEmail.includes("@")} variant="outline" className="shrink-0" data-testid="forgot-submit-button">
+                          Send
+                        </Button>
+                      </div>
+                      {resetLink && (
+                        <Alert className="border-accent/40" data-testid="reset-link-alert">
+                          <Info className="h-4 w-4" />
+                          <AlertTitle>Email sending is mocked (dev mode)</AlertTitle>
+                          <AlertDescription className="break-all">
+                            In production this arrives by email. For now:{" "}
+                            <Link to={resetLink.replace(/^https?:\/\/[^/]+/, "")} className="editorial-link text-accent font-medium" data-testid="reset-link-anchor">
+                              Open password reset link
+                            </Link>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
                 </form>
               </TabsContent>
 

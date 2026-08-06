@@ -35,7 +35,8 @@ export default function PricingPage() {
   const [annual, setAnnual] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [mockMode, setMockMode] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
+  const [mockMode, setMockMode] = useState(false);
 
   useEffect(() => {
     api.get("/billing/config").then((res) => setMockMode(res.data.mock_mode)).catch(() => {});
@@ -45,7 +46,7 @@ export default function PricingPage() {
   const price = annual ? "$80" : "$8";
   const per = annual ? "/year" : "/month";
 
-  const startCheckout = () => {
+  const startCheckout = async () => {
     trackEvent("subscribe_cta_click", "/pricing", { plan });
     if (!user) {
       toast.info("Create an account or sign in to go Premium.");
@@ -56,13 +57,30 @@ export default function PricingPage() {
       toast.success("You're already Premium!");
       return;
     }
-    setConfirmOpen(true);
+    if (mockMode) {
+      setConfirmOpen(true);
+      return;
+    }
+    // Real Stripe checkout (test mode)
+    setRedirecting(true);
+    try {
+      const res = await api.post("/billing/checkout", { plan, origin_url: window.location.origin });
+      if (res.data.checkout_url) {
+        window.location.href = res.data.checkout_url;
+        return;
+      }
+      toast.error("Could not start checkout. Try again.");
+      setRedirecting(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Checkout failed. Try again.");
+      setRedirecting(false);
+    }
   };
 
   const confirmCheckout = async () => {
     setBusy(true);
     try {
-      await api.post("/billing/checkout", { plan });
+      await api.post("/billing/checkout", { plan, origin_url: window.location.origin });
       await refreshUser();
       setConfirmOpen(false);
       toast.success("Welcome to Premium! Every essay is now unlocked.");
@@ -142,14 +160,19 @@ export default function PricingPage() {
             <Button
               className="w-full mt-6 h-11 bg-accent text-accent-foreground hover:bg-accent/90"
               onClick={startCheckout}
+              disabled={redirecting}
               data-testid="pricing-checkout-button"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
-              {user?.is_premium ? "You're Premium" : `Go Premium ${annual ? "annual" : "monthly"}`}
+              {redirecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {user?.is_premium ? "You're Premium" : redirecting ? "Opening Stripe…" : `Go Premium ${annual ? "annual" : "monthly"}`}
             </Button>
-            {mockMode && (
+            {mockMode ? (
               <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-mock-notice">
                 Test mode — Stripe-ready, no card required yet.
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-stripe-notice">
+                Secure Stripe checkout · Test mode · card 4242 4242 4242 4242
               </p>
             )}
           </CardContent>

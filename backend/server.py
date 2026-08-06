@@ -21,6 +21,9 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from seed_data import SAMPLE_POSTS, AUTHOR  # noqa: E402
+from emergentintegrations.payments.stripe.checkout import (  # noqa: E402
+    StripeCheckout, CheckoutSessionRequest,
+)
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -31,10 +34,11 @@ JWT_ALGO = 'HS256'
 JWT_EXPIRY_DAYS = 30
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 MOCK_BILLING = os.environ.get('MOCK_BILLING', 'true').lower() == 'true'
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
 
 PLANS = {
-    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 8.00, 'currency': 'usd', 'interval': 'month'},
-    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 80.00, 'currency': 'usd', 'interval': 'year'},
+    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 8.00, 'currency': 'usd', 'interval': 'month', 'period_days': 30},
+    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 80.00, 'currency': 'usd', 'interval': 'year', 'period_days': 365},
 }
 
 CATEGORIES = {
@@ -206,6 +210,20 @@ class MagicVerifyIn(BaseModel):
 
 class CheckoutIn(BaseModel):
     plan: str  # monthly | annual
+    origin_url: Optional[str] = None
+
+
+class PasswordResetRequestIn(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirmIn(BaseModel):
+    token: str
+    password: str = Field(min_length=6)
+
+
+class CommentIn(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
 
 
 class NewsletterIn(BaseModel):
@@ -310,6 +328,50 @@ async def me(user=Depends(get_current_user)):
     return {'user': public_user(user, premium)}
 
 
+@api_router.post('/auth/password-reset/request')
+async def password_reset_request(body: PasswordResetRequestIn):
+    email = body.email.lower()
+    # rate limit: max 5 requests per email per hour
+    hour_ago = iso(now_utc() - timedelta(hours=1))
+    count = await db.password_reset_tokens.count_documents({'email': email, 'created_at': {'$gte': hour_ago}})
+    if count >= 5:
+        raise HTTPException(status_code=429, detail='Too many reset requests. Try again later.')
+    user = await db.users.find_one({'email': email})
+    if not user:
+        # do not reveal whether an account exists
+        return {'ok': True, 'dev_mode': True, 'reset_link': None,
+                'message': 'If an account exists for that email, a reset link has been generated.'}
+    token = str(uuid.uuid4())
+    await db.password_reset_tokens.insert_one({
+        'id': str(uuid.uuid4()), 'email': email, 'token': token, 'used': False,
+        'expires_at': iso(now_utc() + timedelta(minutes=15)), 'created_at': iso(now_utc()),
+    })
+    link = f'{FRONTEND_URL}/auth/reset?token={token}'
+    await log_email(email, 'Reset your password — The Trading Narrative',
+                    f'Reset your password here: {link} (expires in 15 minutes)', 'password_reset')
+    logger.info(f'[PASSWORD RESET - MOCKED EMAIL] {email} -> {link}')
+    # MOCKED: no email provider configured, return the link so the UI can display it (dev mode)
+    return {'ok': True, 'dev_mode': True, 'reset_link': link,
+            'message': 'Email sending is mocked — use the link below to reset your password.'}
+
+
+@api_router.post('/auth/password-reset/confirm')
+async def password_reset_confirm(body: PasswordResetConfirmIn):
+    rec = await db.password_reset_tokens.find_one({'token': body.token})
+    if not rec or rec.get('used'):
+        raise HTTPException(status_code=400, detail='Invalid or already used reset link')
+    if rec['expires_at'] < iso(now_utc()):
+        raise HTTPException(status_code=400, detail='Reset link has expired')
+    user = await db.users.find_one({'email': rec['email']})
+    if not user:
+        raise HTTPException(status_code=400, detail='Account no longer exists')
+    await db.password_reset_tokens.update_one({'token': body.token}, {'$set': {'used': True}})
+    await db.users.update_one({'id': user['id']}, {'$set': {'password_hash': hash_password(body.password)}})
+    premium = await is_entitled(user)
+    return {'ok': True, 'token': make_token(user['id']), 'user': public_user(user, premium),
+            'message': 'Password updated. You are now signed in.'}
+
+
 # ---------------------- posts (public) ----------------------
 
 @api_router.get('/categories')
@@ -373,7 +435,92 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     return result
 
 
-# ---------------------- billing (MOCKED - Stripe-ready) ----------------------
+# ---------------------- comments (premium members) ----------------------
+
+@api_router.get('/posts/{slug}/comments')
+async def list_comments(slug: str):
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    comments = await db.comments.find({'post_id': post['id']}).sort('created_at', -1).to_list(500)
+    return {'comments': [clean(c) for c in comments], 'total': len(comments)}
+
+
+@api_router.post('/posts/{slug}/comments')
+async def create_comment(slug: str, body: CommentIn, user=Depends(get_current_user)):
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    entitled = await is_entitled(user)
+    if not entitled:
+        raise HTTPException(status_code=403, detail='Comments are a Premium member perk. Upgrade to join the discussion.')
+    comment = {
+        'id': str(uuid.uuid4()), 'post_id': post['id'], 'post_slug': slug,
+        'user_id': user['id'], 'user_name': user.get('name') or user['email'].split('@')[0],
+        'is_admin': user.get('role') == 'admin',
+        'body': body.body.strip(), 'created_at': iso(now_utc()),
+    }
+    await db.comments.insert_one(dict(comment))
+    return clean(comment)
+
+
+@api_router.delete('/comments/{comment_id}')
+async def delete_comment(comment_id: str, user=Depends(get_current_user)):
+    comment = await db.comments.find_one({'id': comment_id})
+    if not comment:
+        raise HTTPException(status_code=404, detail='Comment not found')
+    if comment['user_id'] != user['id'] and user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail='You can only delete your own comments')
+    await db.comments.delete_one({'id': comment_id})
+    return {'ok': True}
+
+
+# ---------------------- billing (Stripe via emergentintegrations) ----------------------
+
+def stripe_client(webhook_url: Optional[str] = None) -> StripeCheckout:
+    return StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url or f'{FRONTEND_URL}/api/webhook/stripe')
+
+
+async def activate_premium_from_transaction(txn):
+    """Idempotently activate premium for the user who paid for this transaction."""
+    if txn.get('activated'):
+        return
+    res = await db.payment_transactions.update_one(
+        {'session_id': txn['session_id'], 'activated': {'$ne': True}},
+        {'$set': {'activated': True, 'updated_at': iso(now_utc())}},
+    )
+    if res.modified_count == 0:
+        return  # another path won the race
+    plan_id = txn['plan']
+    plan = PLANS[plan_id]
+    user = await db.users.find_one({'id': txn['user_id']})
+    if not user:
+        return
+    existing = await db.subscriptions.find_one({'user_id': user['id'], 'status': 'active'})
+    if not existing:
+        sub = {
+            'id': str(uuid.uuid4()), 'user_id': user['id'], 'plan': plan_id,
+            'status': 'active', 'provider': 'stripe',
+            'stripe_session_id': txn['session_id'],
+            'current_period_start': iso(now_utc()),
+            'current_period_end': iso(now_utc() + timedelta(days=plan['period_days'])),
+            'created_at': iso(now_utc()), 'canceled_at': None,
+        }
+        await db.subscriptions.insert_one(dict(sub))
+    invoice = {
+        'id': str(uuid.uuid4()), 'user_id': user['id'],
+        'subscription_id': txn['session_id'],
+        'number': f"TTN-{now_utc().strftime('%Y%m')}-{random.randint(1000, 9999)}",
+        'amount': plan['amount'], 'currency': plan['currency'], 'plan': plan_id,
+        'status': 'paid', 'created_at': iso(now_utc()),
+    }
+    await db.invoices.insert_one(dict(invoice))
+    await db.analytics.insert_one({'id': str(uuid.uuid4()), 'event': 'checkout_complete',
+                                   'path': '/pricing', 'meta': {'plan': plan_id},
+                                   'user_id': user['id'], 'created_at': iso(now_utc())})
+    await log_email(user['email'], 'Welcome to Premium — The Trading Narrative',
+                    f"Your {plan['label']} pass is active. Enjoy full access.", 'premium_welcome')
+
 
 @api_router.get('/billing/config')
 async def billing_config():
@@ -387,32 +534,101 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
     existing = await db.subscriptions.find_one({'user_id': user['id'], 'status': 'active'})
     if existing:
         raise HTTPException(status_code=400, detail='You already have an active subscription')
-    if not MOCK_BILLING:
-        # TODO: real Stripe checkout session creation goes here (STRIPE_SECRET_KEY)
-        raise HTTPException(status_code=501, detail='Stripe not configured yet')
     plan = PLANS[body.plan]
-    period_days = 365 if body.plan == 'annual' else 30
-    sub = {
-        'id': str(uuid.uuid4()), 'user_id': user['id'], 'plan': body.plan,
-        'status': 'active', 'provider': 'mock',
-        'current_period_start': iso(now_utc()),
-        'current_period_end': iso(now_utc() + timedelta(days=period_days)),
-        'created_at': iso(now_utc()), 'canceled_at': None,
-    }
-    await db.subscriptions.insert_one(dict(sub))
-    invoice = {
-        'id': str(uuid.uuid4()), 'user_id': user['id'], 'subscription_id': sub['id'],
-        'number': f"TTN-{now_utc().strftime('%Y%m')}-{random.randint(1000, 9999)}",
-        'amount': plan['amount'], 'currency': plan['currency'], 'plan': body.plan,
-        'status': 'paid', 'created_at': iso(now_utc()),
-    }
-    await db.invoices.insert_one(dict(invoice))
-    await db.analytics.insert_one({'id': str(uuid.uuid4()), 'event': 'checkout_complete',
-                                   'path': '/pricing', 'meta': {'plan': body.plan},
-                                   'user_id': user['id'], 'created_at': iso(now_utc())})
-    await log_email(user['email'], 'Welcome to Premium — The Trading Narrative',
-                    f"Your {plan['label']} subscription is active. Enjoy full access.", 'premium_welcome')
-    return {'ok': True, 'subscription': clean(sub), 'invoice': clean(invoice)}
+
+    if MOCK_BILLING:
+        # MOCKED fallback path (MOCK_BILLING=true)
+        period_days = plan['period_days']
+        sub = {
+            'id': str(uuid.uuid4()), 'user_id': user['id'], 'plan': body.plan,
+            'status': 'active', 'provider': 'mock',
+            'current_period_start': iso(now_utc()),
+            'current_period_end': iso(now_utc() + timedelta(days=period_days)),
+            'created_at': iso(now_utc()), 'canceled_at': None,
+        }
+        await db.subscriptions.insert_one(dict(sub))
+        invoice = {
+            'id': str(uuid.uuid4()), 'user_id': user['id'], 'subscription_id': sub['id'],
+            'number': f"TTN-{now_utc().strftime('%Y%m')}-{random.randint(1000, 9999)}",
+            'amount': plan['amount'], 'currency': plan['currency'], 'plan': body.plan,
+            'status': 'paid', 'created_at': iso(now_utc()),
+        }
+        await db.invoices.insert_one(dict(invoice))
+        await log_email(user['email'], 'Welcome to Premium — The Trading Narrative',
+                        f"Your {plan['label']} subscription is active.", 'premium_welcome')
+        return {'ok': True, 'mock': True, 'subscription': clean(sub), 'invoice': clean(invoice)}
+
+    # REAL STRIPE CHECKOUT (test mode)
+    origin = (body.origin_url or FRONTEND_URL).rstrip('/')
+    checkout_req = CheckoutSessionRequest(
+        amount=float(plan['amount']),
+        currency=plan['currency'],
+        success_url=f'{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}',
+        cancel_url=f'{origin}/payment/cancel',
+        metadata={'user_id': user['id'], 'plan': body.plan, 'app': 'trading-narrative'},
+    )
+    try:
+        session = await stripe_client().create_checkout_session(checkout_req)
+    except Exception as e:
+        logger.error(f'Stripe checkout creation failed: {e}')
+        raise HTTPException(status_code=502, detail='Could not start Stripe checkout. Please try again.')
+    await db.payment_transactions.insert_one({
+        'session_id': session.session_id, 'user_id': user['id'], 'plan': body.plan,
+        'amount': plan['amount'], 'currency': plan['currency'],
+        'status': 'initiated', 'payment_status': 'pending', 'activated': False,
+        'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
+    })
+    return {'ok': True, 'mock': False, 'checkout_url': session.url, 'session_id': session.session_id}
+
+
+@api_router.get('/payments/status/{session_id}')
+async def payment_status(session_id: str):
+    record = await db.payment_transactions.find_one({'session_id': session_id})
+    if not record:
+        raise HTTPException(status_code=404, detail='Transaction not found')
+    if record.get('payment_status') != 'paid':
+        try:
+            status = await stripe_client().get_checkout_status(session_id)
+            if status.payment_status == 'paid' or status.status == 'complete':
+                await db.payment_transactions.update_one(
+                    {'session_id': session_id, 'payment_status': {'$ne': 'paid'}},
+                    {'$set': {'status': 'completed', 'payment_status': 'paid',
+                              'updated_at': iso(now_utc())}},
+                )
+                record = await db.payment_transactions.find_one({'session_id': session_id})
+            elif status.status == 'expired':
+                await db.payment_transactions.update_one(
+                    {'session_id': session_id},
+                    {'$set': {'status': 'expired', 'payment_status': 'expired',
+                              'updated_at': iso(now_utc())}},
+                )
+                record = await db.payment_transactions.find_one({'session_id': session_id})
+        except Exception as e:
+            logger.warning(f'Stripe status check failed for {session_id}: {e}')
+    if record.get('payment_status') == 'paid':
+        await activate_premium_from_transaction(record)
+    return {'session_id': record['session_id'], 'status': record['status'],
+            'payment_status': record['payment_status']}
+
+
+@api_router.post('/webhook/stripe')
+async def stripe_webhook(request: Request):
+    body = await request.body()
+    signature = request.headers.get('Stripe-Signature')
+    try:
+        event = await stripe_client(str(request.base_url).rstrip('/') + '/api/webhook/stripe').handle_webhook(body, signature)
+    except Exception as e:
+        logger.warning(f'Stripe webhook rejected: {e}')
+        raise HTTPException(status_code=400, detail='Invalid webhook')
+    if event.session_id and event.payment_status == 'paid':
+        await db.payment_transactions.update_one(
+            {'session_id': event.session_id, 'payment_status': {'$ne': 'paid'}},
+            {'$set': {'status': 'completed', 'payment_status': 'paid', 'updated_at': iso(now_utc())}},
+        )
+        record = await db.payment_transactions.find_one({'session_id': event.session_id})
+        if record:
+            await activate_premium_from_transaction(record)
+    return {'status': 'ok'}
 
 
 @api_router.post('/billing/cancel')

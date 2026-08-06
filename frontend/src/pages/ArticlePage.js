@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,8 @@ import { Seo } from "@/components/Seo";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
+import { CommentsSection } from "@/components/CommentsSection";
+import { ReadingProgress } from "@/components/ReadingProgress";
 import { api, formatDate, trackEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -68,6 +70,7 @@ export default function ArticlePage() {
   const { user, loading: authLoading } = useAuth();
   const [post, setPost] = useState(null);
   const [error, setError] = useState(null);
+  const bodyRef = useRef(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -105,6 +108,7 @@ export default function ArticlePage() {
   return (
     <article data-testid="article-page">
       <Seo title={post.title} description={post.excerpt} image={post.cover_image} path={`/post/${post.slug}`} type="article" />
+      <ReadingProgress targetRef={bodyRef} readTime={post.read_time} />
 
       <div className="container-editorial pt-10 sm:pt-14">
         <div className="reading-col">
@@ -150,7 +154,7 @@ export default function ArticlePage() {
           </div>
         </div>
 
-        <div className="relative reading-col mt-10">
+        <div className="relative reading-col mt-10" ref={bodyRef}>
           {/* Desktop share rail */}
           <div className="hidden lg:block absolute -left-24 top-0 h-full">
             <div className="sticky top-28">
@@ -195,6 +199,11 @@ export default function ArticlePage() {
               <Link to="/about" className="editorial-link text-accent text-sm mt-2 inline-block">More about the author</Link>
             </div>
           </div>
+
+          <Separator className="my-10" />
+
+          {/* Member discussion */}
+          <CommentsSection post={post} />
         </div>
 
         {/* Related */}

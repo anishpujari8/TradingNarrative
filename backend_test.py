@@ -161,80 +161,216 @@ def main():
     except Exception as e:
         check('Magic link flow', False, str(e))
 
-    # ==================== BILLING: CHECKOUT ====================
-    print('\n💳 6. MOCK BILLING: CHECKOUT')
+    # ==================== BILLING: REAL STRIPE CHECKOUT ====================
+    print('\n💳 6. REAL STRIPE CHECKOUT (TEST MODE)')
     try:
         r = requests.get(f'{BASE}/billing/config', timeout=10)
         check('GET /api/billing/config returns 200', r.status_code == 200)
-        check('Billing config shows mock_mode=true', r.json().get('mock_mode') is True)
+        check('Billing config shows mock_mode=false', r.json().get('mock_mode') is False, f"mock_mode={r.json().get('mock_mode')}")
     except Exception as e:
         check('GET /api/billing/config', False, str(e))
 
+    session_id = None
     try:
-        r = requests.post(f'{BASE}/billing/checkout', json={'plan': 'monthly'}, headers=hdr, timeout=10)
+        r = requests.post(f'{BASE}/billing/checkout', json={'plan': 'monthly', 'origin_url': BACKEND_URL}, headers=hdr, timeout=10)
         check('POST /api/billing/checkout returns 200', r.status_code == 200, r.text)
         if r.status_code == 200:
             data = r.json()
-            check('Checkout returns subscription', 'subscription' in data)
-            check('Checkout returns invoice', 'invoice' in data)
-            inv = data.get('invoice', {})
-            check('Invoice amount is $8.00 for monthly', inv.get('amount') == 8.0)
-            check('Invoice status is paid', inv.get('status') == 'paid')
+            check('Checkout returns mock=false', data.get('mock') is False)
+            check('Checkout returns checkout_url', 'checkout_url' in data and 'checkout.stripe.com' in data.get('checkout_url', ''))
+            check('Checkout returns session_id', 'session_id' in data)
+            session_id = data.get('session_id')
+            print(f'   Stripe session created: {session_id}')
     except Exception as e:
-        check('POST /api/billing/checkout', False, str(e))
+        check('POST /api/billing/checkout (Stripe)', False, str(e))
 
-    # Verify user is now premium
+    # Test payment status endpoint (unpaid session)
+    if session_id:
+        try:
+            r = requests.get(f'{BASE}/payments/status/{session_id}', timeout=10)
+            check('GET /api/payments/status/{session_id} returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('Payment status is pending for unpaid session', r.json().get('payment_status') == 'pending')
+        except Exception as e:
+            check('GET /api/payments/status/{session_id}', False, str(e))
+
+    # Test payment status for unknown session
+    try:
+        r = requests.get(f'{BASE}/payments/status/cs_test_unknown_session_id', timeout=10)
+        check('GET /api/payments/status for unknown session returns 404', r.status_code == 404)
+    except Exception as e:
+        check('GET /api/payments/status (unknown session)', False, str(e))
+
+    # Note: User is NOT premium yet (payment not completed)
     try:
         r = requests.get(f'{BASE}/auth/me', headers=hdr, timeout=10)
-        check('After checkout, user is_premium=true', r.json()['user']['is_premium'] is True)
+        check('Before payment, user is_premium=false', r.json()['user']['is_premium'] is False)
     except Exception as e:
-        check('Verify premium status after checkout', False, str(e))
+        check('Verify non-premium status before payment', False, str(e))
 
-    # ==================== PREMIUM ACCESS ====================
-    print('\n🎯 7. PREMIUM USER GETS FULL CONTENT')
+    # ==================== PASSWORD RESET FLOW ====================
+    print('\n🔑 7. PASSWORD RESET FLOW')
+    reset_email = f'reset-{uuid.uuid4().hex[:8]}@test.com'
+    reset_password = 'ResetPass123!'
+    
+    # Create a user for password reset testing
     try:
-        r = requests.get(f'{BASE}/posts/{prem_slug}', headers=hdr, timeout=10)
-        d = r.json()
-        check('Premium user: is_locked=false', d.get('is_locked') is False, f"is_locked={d.get('is_locked')}")
-        check('Premium user: shown_blocks == total_blocks', 
-              d.get('shown_blocks') == d.get('total_blocks'),
-              f"shown={d.get('shown_blocks')}, total={d.get('total_blocks')}")
+        r = requests.post(f'{BASE}/auth/register', json={
+            'email': reset_email, 'password': reset_password, 'name': 'Reset Test User'
+        }, timeout=10)
+        check('Create user for password reset test', r.status_code == 200)
     except Exception as e:
-        check('Premium user full access test', False, str(e))
+        check('Create user for password reset', False, str(e))
 
-    # ==================== BILLING: SUBSCRIPTION & INVOICES ====================
-    print('\n📊 8. BILLING: SUBSCRIPTION & INVOICES')
+    # Request password reset for existing user
+    reset_token = None
     try:
-        r = requests.get(f'{BASE}/billing/subscription', headers=hdr, timeout=10)
-        check('GET /api/billing/subscription returns 200', r.status_code == 200)
-        check('Subscription endpoint returns subscription object', r.json().get('subscription') is not None)
+        r = requests.post(f'{BASE}/auth/password-reset/request', json={'email': reset_email}, timeout=10)
+        check('POST /api/auth/password-reset/request (existing user) returns 200', r.status_code == 200, r.text)
+        if r.status_code == 200:
+            data = r.json()
+            check('Password reset response has dev_mode=true', data.get('dev_mode') is True)
+            check('Password reset response has reset_link', 'reset_link' in data and data['reset_link'] is not None)
+            if data.get('reset_link'):
+                reset_token = data['reset_link'].split('token=')[-1]
+                print(f'   Reset token: {reset_token[:20]}...')
     except Exception as e:
-        check('GET /api/billing/subscription', False, str(e))
+        check('POST /api/auth/password-reset/request', False, str(e))
 
+    # Request password reset for unknown email (no account enumeration)
     try:
-        r = requests.get(f'{BASE}/billing/invoices', headers=hdr, timeout=10)
-        check('GET /api/billing/invoices returns 200', r.status_code == 200)
-        invoices = r.json().get('invoices', [])
-        check('Invoices list has at least 1 invoice', len(invoices) >= 1, f'got {len(invoices)}')
+        r = requests.post(f'{BASE}/auth/password-reset/request', json={'email': 'unknown-user@test.com'}, timeout=10)
+        check('POST /api/auth/password-reset/request (unknown email) returns 200', r.status_code == 200)
+        if r.status_code == 200:
+            data = r.json()
+            check('Unknown email: reset_link is None (no enumeration)', data.get('reset_link') is None)
     except Exception as e:
-        check('GET /api/billing/invoices', False, str(e))
+        check('Password reset no enumeration test', False, str(e))
 
-    # ==================== BILLING: CANCEL ====================
-    print('\n❌ 9. BILLING: CANCEL SUBSCRIPTION')
-    try:
-        r = requests.post(f'{BASE}/billing/cancel', headers=hdr, timeout=10)
-        check('POST /api/billing/cancel returns 200', r.status_code == 200, r.text)
-    except Exception as e:
-        check('POST /api/billing/cancel', False, str(e))
+    # Confirm password reset with token
+    new_password = 'NewPassword456!'
+    if reset_token:
+        try:
+            r = requests.post(f'{BASE}/auth/password-reset/confirm', json={
+                'token': reset_token, 'password': new_password
+            }, timeout=10)
+            check('POST /api/auth/password-reset/confirm returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                check('Password reset confirm returns token', 'token' in r.json())
+                check('Password reset confirm returns user', 'user' in r.json())
+        except Exception as e:
+            check('POST /api/auth/password-reset/confirm', False, str(e))
 
-    # Verify premium access revoked
+        # Try to use same token again (should fail - single use)
+        try:
+            r = requests.post(f'{BASE}/auth/password-reset/confirm', json={
+                'token': reset_token, 'password': 'AnotherPass789!'
+            }, timeout=10)
+            check('Password reset token is single-use (2nd confirm fails)', r.status_code == 400)
+        except Exception as e:
+            check('Password reset single-use test', False, str(e))
+
+        # Verify old password no longer works
+        try:
+            r = requests.post(f'{BASE}/auth/login', json={
+                'email': reset_email, 'password': reset_password
+            }, timeout=10)
+            check('Old password no longer works after reset', r.status_code == 401)
+        except Exception as e:
+            check('Old password rejection test', False, str(e))
+
+        # Verify new password works
+        try:
+            r = requests.post(f'{BASE}/auth/login', json={
+                'email': reset_email, 'password': new_password
+            }, timeout=10)
+            check('New password works after reset', r.status_code == 200)
+        except Exception as e:
+            check('New password login test', False, str(e))
+
+    # ==================== ADMIN AUTH (NEEDED FOR COMMENTS TEST) ====================
+    print('\n👑 8. ADMIN AUTH')
+    admin_token = None
+    admin_hdr = None
     try:
-        r = requests.get(f'{BASE}/posts/{prem_slug}', headers=hdr, timeout=10)
-        d = r.json()
-        check('After cancel: premium post is_locked=true again', d.get('is_locked') is True)
-        check('After cancel: only 3 blocks shown again', len(d.get('content_blocks', [])) == 3)
+        r = requests.post(f'{BASE}/auth/login', json={
+            'email': 'admin@tradingnarrative.com',
+            'password': 'Admin@2025'
+        }, timeout=10)
+        check('Admin login returns 200', r.status_code == 200, r.text)
+        if r.status_code == 200:
+            admin_token = r.json().get('token')
+            admin_hdr = {'Authorization': f'Bearer {admin_token}'}
+            user = r.json().get('user', {})
+            check('Admin user has role=admin', user.get('role') == 'admin')
+            check('Admin user is_premium=true (always entitled)', user.get('is_premium') is True)
     except Exception as e:
-        check('Verify paywall after cancel', False, str(e))
+        check('Admin login', False, str(e))
+
+    # ==================== COMMENTS (PREMIUM FEATURE) ====================
+    print('\n💬 9. COMMENTS (PREMIUM MEMBERS ONLY)')
+    
+    # GET comments (public endpoint)
+    try:
+        r = requests.get(f'{BASE}/posts/{prem_slug}/comments', timeout=10)
+        check('GET /api/posts/{slug}/comments (public) returns 200', r.status_code == 200)
+        check('Comments response has comments array', 'comments' in r.json())
+    except Exception as e:
+        check('GET /api/posts/{slug}/comments', False, str(e))
+
+    # POST comment as free user (should fail with 403)
+    try:
+        r = requests.post(f'{BASE}/posts/{prem_slug}/comments', json={'body': 'Test comment from free user'}, headers=hdr, timeout=10)
+        check('POST comment as free user returns 403', r.status_code == 403)
+    except Exception as e:
+        check('POST comment as free user (403)', False, str(e))
+
+    # POST comment as admin (always premium-entitled)
+    comment_id = None
+    if admin_token and admin_hdr:
+        try:
+            r = requests.post(f'{BASE}/posts/{prem_slug}/comments', json={'body': 'Test comment from admin user'}, headers=admin_hdr, timeout=10)
+            check('POST comment as admin returns 200', r.status_code == 200, r.text)
+            if r.status_code == 200:
+                comment_id = r.json().get('id')
+                check('Comment response has id', comment_id is not None)
+                check('Comment response has user_name', 'user_name' in r.json())
+                check('Comment response has is_admin=true', r.json().get('is_admin') is True)
+        except Exception as e:
+            check('POST comment as admin', False, str(e))
+
+    # DELETE own comment (admin deleting their own)
+    if comment_id and admin_token:
+        try:
+            r = requests.delete(f'{BASE}/comments/{comment_id}', headers=admin_hdr, timeout=10)
+            check('DELETE own comment returns 200', r.status_code == 200, r.text)
+        except Exception as e:
+            check('DELETE own comment', False, str(e))
+
+    # Create another comment as admin for testing delete permissions
+    other_comment_id = None
+    if admin_token:
+        try:
+            r = requests.post(f'{BASE}/posts/{prem_slug}/comments', json={'body': 'Another test comment'}, headers=admin_hdr, timeout=10)
+            if r.status_code == 200:
+                other_comment_id = r.json().get('id')
+        except Exception as e:
+            pass
+
+    # Try to delete other's comment as free user (should fail with 403)
+    if other_comment_id:
+        try:
+            r = requests.delete(f'{BASE}/comments/{other_comment_id}', headers=hdr, timeout=10)
+            check("DELETE other's comment as free user returns 403", r.status_code == 403)
+        except Exception as e:
+            check("DELETE other's comment (403)", False, str(e))
+
+        # Admin can delete any comment
+        try:
+            r = requests.delete(f'{BASE}/comments/{other_comment_id}', headers=admin_hdr, timeout=10)
+            check('Admin can delete any comment (200)', r.status_code == 200)
+        except Exception as e:
+            check('Admin delete any comment', False, str(e))
 
     # ==================== NEWSLETTER ====================
     print('\n📧 10. NEWSLETTER SUBSCRIBE')
@@ -264,30 +400,12 @@ def main():
     except Exception as e:
         check('GET /api/sitemap.xml', False, str(e))
 
-    # ==================== ADMIN AUTH ====================
-    print('\n👑 12. ADMIN AUTH & ROUTES')
-    admin_token = None
-    try:
-        r = requests.post(f'{BASE}/auth/login', json={
-            'email': 'admin@tradingnarrative.com',
-            'password': 'Admin@2025'
-        }, timeout=10)
-        check('Admin login returns 200', r.status_code == 200, r.text)
-        if r.status_code == 200:
-            admin_token = r.json().get('token')
-            user = r.json().get('user', {})
-            check('Admin user has role=admin', user.get('role') == 'admin')
-            check('Admin user is_premium=true', user.get('is_premium') is True)
-    except Exception as e:
-        check('Admin login', False, str(e))
-
+    # ==================== ADMIN ROUTES (CONTINUED) ====================
     if not admin_token:
         print('   ⚠️  Cannot test admin routes without admin token')
     else:
-        admin_hdr = {'Authorization': f'Bearer {admin_token}'}
-
         # ==================== ADMIN: POSTS ====================
-        print('\n📝 13. ADMIN: POSTS CRUD')
+        print('\n📝 12. ADMIN: POSTS CRUD')
         try:
             r = requests.get(f'{BASE}/admin/posts', headers=admin_hdr, timeout=10)
             check('GET /api/admin/posts returns 200', r.status_code == 200)
@@ -355,7 +473,7 @@ def main():
                 check('DELETE /api/admin/posts/{id}', False, str(e))
 
         # ==================== ADMIN: ANALYTICS ====================
-        print('\n📊 14. ADMIN: ANALYTICS')
+        print('\n📊 13. ADMIN: ANALYTICS')
         try:
             r = requests.get(f'{BASE}/admin/analytics/stats', headers=admin_hdr, timeout=10)
             check('GET /api/admin/analytics/stats returns 200', r.status_code == 200)
@@ -369,7 +487,7 @@ def main():
             check('GET /api/admin/analytics/stats', False, str(e))
 
         # ==================== ADMIN: NEWSLETTER ====================
-        print('\n📧 15. ADMIN: NEWSLETTER')
+        print('\n📧 14. ADMIN: NEWSLETTER')
         try:
             r = requests.get(f'{BASE}/admin/newsletter/subscribers', headers=admin_hdr, timeout=10)
             check('GET /api/admin/newsletter/subscribers returns 200', r.status_code == 200)
@@ -398,7 +516,7 @@ def main():
                 check('POST /api/admin/newsletter/issues', False, str(e))
 
         # ==================== ADMIN: EMAIL LOGS ====================
-        print('\n📬 16. ADMIN: EMAIL LOGS')
+        print('\n📬 15. ADMIN: EMAIL LOGS')
         try:
             r = requests.get(f'{BASE}/admin/email-logs', headers=admin_hdr, timeout=10)
             check('GET /api/admin/email-logs returns 200', r.status_code == 200)
@@ -409,7 +527,7 @@ def main():
             check('GET /api/admin/email-logs', False, str(e))
 
         # ==================== ADMIN ROUTE PROTECTION ====================
-        print('\n🔒 17. ADMIN ROUTE PROTECTION')
+        print('\n🔒 16. ADMIN ROUTE PROTECTION')
         try:
             r = requests.get(f'{BASE}/admin/posts', headers=hdr, timeout=10)
             check('Non-admin user blocked from /api/admin/posts (403)', r.status_code == 403)
@@ -417,7 +535,7 @@ def main():
             check('Admin route protection', False, str(e))
 
     # ==================== CATEGORIES ====================
-    print('\n🏷️  18. CATEGORIES')
+    print('\n🏷️  17. CATEGORIES')
     try:
         r = requests.get(f'{BASE}/categories', timeout=10)
         check('GET /api/categories returns 200', r.status_code == 200)

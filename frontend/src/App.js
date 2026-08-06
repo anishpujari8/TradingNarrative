@@ -17,6 +17,9 @@ import PricingPage from "@/pages/PricingPage";
 import AboutPage from "@/pages/AboutPage";
 import AuthPage from "@/pages/AuthPage";
 import MagicVerifyPage from "@/pages/MagicVerifyPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
+import PaymentCancelPage from "@/pages/PaymentCancelPage";
 import AccountPage from "@/pages/AccountPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminEditorPage from "@/pages/AdminEditorPage";
@@ -50,6 +53,9 @@ function App() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/auth/magic" element={<MagicVerifyPage />} />
+                  <Route path="/auth/reset" element={<ResetPasswordPage />} />
+                  <Route path="/payment/success" element={<PaymentSuccessPage />} />
+                  <Route path="/payment/cancel" element={<PaymentCancelPage />} />
                   <Route path="/account" element={<AccountPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/editor" element={<AdminEditorPage />} />
