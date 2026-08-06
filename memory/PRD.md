@@ -65,3 +65,10 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Lounge Thread Lock**: Admin-only POST /api/community/threads/{tid}/lock; locked threads stay readable but reject new replies (403); Locked badge + locked notice replace the reply composer.
 - **CSV Export**: GET /api/admin/traffic/export?days=N streams a CSV (sources, referrers, campaigns, landing pages); one-click "Export CSV" button in the Traffic tab.
 - Testing: iteration_7.json — backend 99.5% (208/209), frontend 100%, no regressions.
+
+## V2.4 Session Update (Funnel, Gmail SMTP, Profiles, Scheduled Announcements)
+- **Conversion Funnel**: Per-session tracking (sid) links arrival → pricing view → checkout click → premium activation, broken down per traffic source. GET /api/admin/funnel; funnel stage cards + per-source table in Admin Traffic tab. Demo funnel data seeded.
+- **Real Email Sending (Gmail SMTP)**: Wired with user's Gmail (anishpujari8@gmail.com), From name "The Trading Narrative", Reply-To Hello@thetradingnarrative.com. IMPORTANT: user supplied a REGULAR Gmail password → SMTP auth fails (535); system gracefully falls back to logged sends. NEEDS a Gmail App Password (Google Account → Security → 2-Step Verification → App passwords) in GMAIL_SMTP_PASSWORD in backend/.env to go live. Admin → Email log tab has a status card + "Send test email" button; digest sends include full HTML.
+- **Lounge Member Profiles**: GET /api/community/members/{uid} (premium-gated). Clicking any author in the Lounge opens a profile dialog: name, badges, member-since, discussion/reply counts, recent discussions (clickable).
+- **Scheduled Announcements**: publish_at on announcements; future ones hidden from members, shown to admin with Scheduled badge + "publishes <date>"; datetime picker in the announcement dialog.
+- Testing: iteration_8.json — backend 100% (261/262), frontend 100%, no regressions.

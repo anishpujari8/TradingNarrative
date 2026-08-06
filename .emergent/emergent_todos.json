@@ -1,22 +1,22 @@
 [
   {
     "content": "Gmail SMTP email layer + test endpoint + fallback",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Conversion funnel: session ids + /api/admin/funnel + UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Lounge member profiles: endpoint + profile card UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Scheduled announcements: publish_at + admin UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test all four features",
-    "status": "pending"
+    "status": "completed"
   }
 ]
