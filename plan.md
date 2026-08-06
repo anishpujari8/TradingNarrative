@@ -8,11 +8,14 @@
   - **Razorpay (India)** with automatic capability detection:
     - **UPI Autopay/Subscriptions** when enabled on the Razorpay dashboard
     - **Fallback to one-time Razorpay Orders** (time-bound access) when Subscriptions is not enabled
+    - **Live Autopay switch-on**: throttled capability re-check so Autopay activates automatically once enabled (no backend restart required)
   - Locale detection + **manual currency toggle**.
 - Deliver retention UX: bookmarks/reading list, reading progress indicators, continue-reading strips, notifications bell, weekly digest previews.
 - Add V2 admin + community capabilities:
   - **Traffic Sources Analytics** (referrers + UTM attribution)
+  - **Traffic Trends** (weekly source trend chart)
   - **Private Community Lounge** (premium-only announcements + discussion threads)
+  - **Community enhancements**: pinned discussions + lounge reply notifications
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
 
 ## 2) Implementation Steps
@@ -108,8 +111,8 @@
   - Webhook updates entitlement.
 - Razorpay (DONE):
   - Real Razorpay integration wired into Pricing.
-  - Backend probes Subscriptions capability at startup; if unavailable, uses **one-time Orders**.
-  - Frontend checkout supports both **order_id** and **subscription_id** flows (single unified UI).
+  - Backend probes Subscriptions capability and falls back to **one-time Orders** when unavailable.
+  - Frontend checkout supports both **order_id** and **subscription_id** flows.
   - DB transaction records written on checkout initiation; verification endpoint activates premium.
   - Webhook endpoint exists for gateway-driven confirmation events.
 - Testing (DONE):
@@ -137,13 +140,44 @@
   - Moderation basics and simple rate limits.
   - Tests: access control (401 unauth, 403 free), CRUD verified.
 
+### Phase 6 — V2.2 Enhancements (Autopay Live Switch-On + Lounge Notifications + Traffic Trends + Pinned Threads) ✅ DONE
+**User stories**
+1. As an Indian subscriber, once Razorpay Subscriptions is enabled on the dashboard, the site automatically switches from one-time orders to UPI Autopay without requiring a deployment or restart.
+2. As a Lounge member, when someone replies to my discussion, I get a bell notification and can jump straight into the thread.
+3. As an admin, I can see week-by-week traffic source trends to understand what’s growing.
+4. As an admin, I can pin important discussions so new members see them first.
+
+**Steps**
+- Razorpay Autopay live re-probe (DONE):
+  - Throttled capability re-check (max once / 10 minutes) on `GET /api/billing/config` and `POST /api/billing/razorpay/checkout`.
+  - Automatically flips `razorpay_autopay` to true once the Razorpay account has Subscriptions enabled (no backend restart required).
+- Lounge reply notifications (DONE):
+  - Replying to someone else’s lounge thread creates a notification (`type: lounge_reply`) for the thread author.
+  - Notification click deep-links to `/lounge?thread=<id>` and the Lounge auto-opens the thread detail view.
+- Traffic trends (DONE):
+  - `GET /api/admin/traffic` now returns weekly `trend` buckets and `trend_series`.
+  - Admin Traffic tab renders a multi-line Recharts `LineChart` (“Weekly trend by source”).
+- Pinned discussions (DONE):
+  - Admin-only endpoint: `POST /api/community/threads/{tid}/pin` toggles pinned.
+  - Threads list sorts pinned-first.
+  - UI: “Pinned” badge on pinned thread cards + pin toggle button in thread detail view (admin-only).
+- Testing (DONE):
+  - Iteration 6 report: backend **99.5% (183/184)**, frontend **100%**, no regressions.
+
 ## 3) Next Actions
 All planned phases are complete. Suggested follow-ups (optional enhancements):
-1. **Enable Razorpay Subscriptions in dashboard** to switch from INR one-time Orders to true **UPI Autopay mandates**. The app will auto-detect and switch without code changes.
-2. Configure `RAZORPAY_WEBHOOK_SECRET` and Stripe webhook secrets in production for stronger signature verification.
+1. Configure `RAZORPAY_WEBHOOK_SECRET` and Stripe webhook secrets in production for stronger signature verification.
+2. Configure/enable Razorpay Subscriptions in the dashboard to activate true UPI Autopay mandates.
 3. Consider refactoring `/app/backend/server.py` into modules (billing, community, admin/analytics) to reduce risk from large-file edits.
-4. Add deeper analytics (UTM medium/campaign charts over time, post-level attribution, export CSV).
-5. Add community moderation controls (pin threads, lock threads, admin edit announcements).
+4. Add deeper analytics:
+   - post-level attribution (which article drove conversions)
+   - export CSV
+   - retention cohorts and conversion funnel
+5. Community moderation upgrades:
+   - lock threads
+   - pin announcements
+   - admin edit announcements
+   - basic spam controls (link limits, cooldowns)
 
 ## 4) Success Criteria
 ✅ Premium posts never return full content to non-premium users from the API (verified via network/page source).
@@ -151,15 +185,21 @@ All planned phases are complete. Suggested follow-ups (optional enhancements):
 ✅ Razorpay INR checkout works end-to-end:
 - If Autopay enabled: subscription/mandate flow supported.
 - If not enabled: graceful fallback to one-time Orders.
+✅ Autopay live switch-on works: capability is re-probed and activates without restart once Subscriptions is enabled.
 ✅ Pricing routes correctly between Stripe (USD) and Razorpay (INR) via locale/toggle.
 ✅ Traffic sources visible in Admin with meaningful referrer grouping and UTM campaign visibility.
+✅ Weekly traffic trend chart renders and reflects weekly bucketing.
 ✅ Premium-only Community Lounge works with announcements + threads + replies and correct access control.
-✅ Testing passes (Iteration 5: backend 99.4% and frontend verification completed; earlier flagged issues were false alarms).
+✅ Lounge reply notifications appear in bell and deep-link opens the relevant thread.
+✅ Pinned discussions work (admin toggle + pinned-first sorting + UI badges).
+✅ Testing passes:
+- Iteration 5: backend 99.4% + frontend verification.
+- Iteration 6: backend 99.5% (183/184) + frontend 100%, no regressions.
 
 ---
 ## STATUS UPDATE (post Phase 2)
 - Phase 1 (POC): DONE — server-side paywall, subscription transitions, magic link, newsletter, admin gating.
-- Phase 2 (V1 app): DONE — full frontend + backend built and tested; share-bar testid issue fixed.
+- Phase 2 (V1 app): DONE — full frontend + backend built and tested.
 
 ## STATUS UPDATE (post V1.1 feature batch)
 - Password reset (mocked email, dev-mode link) DONE.
@@ -193,5 +233,17 @@ All planned phases are complete. Suggested follow-ups (optional enhancements):
 - Community Lounge shipped:
   - `/lounge` page premium-only.
   - Announcements + discussion threads + replies + basic moderation/rate limits.
+
+## STATUS UPDATE (V2.2 — Autopay live switch-on + lounge notifications + traffic trends + pinned threads) ✅ COMPLETE
+- Autopay Switch-On:
+  - Added throttled live re-probe on `/api/billing/config` and `/api/billing/razorpay/checkout` so autopay activates automatically once enabled on Razorpay dashboard (no restart required).
+- Lounge Notifications:
+  - Thread-author bell notifications on lounge replies + deep-link support `/lounge?thread=<id>`.
+- Traffic Trends:
+  - Weekly traffic trends returned by backend and displayed as a multi-line chart in Admin → Traffic.
+- Pinned Discussions:
+  - Admin pin/unpin endpoint, pinned-first sorting, Pinned badge on cards, pin toggle in thread detail.
+- Testing:
+  - `iteration_6.json`: backend 99.5% (183/184), frontend 100%, no regressions.
 
 > Engineering note: `/app/backend/server.py` is large. Apply edits sequentially to avoid merge/conflict corruption; consider modularizing next.

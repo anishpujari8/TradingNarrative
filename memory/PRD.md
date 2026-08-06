@@ -51,3 +51,10 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Traffic Sources Analytics**: First-pageview-per-session attribution via referrer + UTM params. Classifies LinkedIn, Instagram, X, Facebook, Google, YouTube, Reddit, WhatsApp, Telegram, Substack, etc. Admin → Traffic tab: stat cards, bar chart, source breakdown, top referring domains, UTM campaigns, 7/30/90-day selector. Endpoint: GET /api/admin/traffic.
 - **Private Community Lounge (/lounge)**: Premium-members-only. Admin announcements (create/delete), member discussion threads with replies, delete own content, admin moderation, rate limits (5 threads/hr, 30 replies/hr). Locked states: signed-out → sign-in CTA; free user → upgrade CTA. Nav link "Lounge" added.
 - Testing: iteration_5.json — backend 99.4%, frontend verified end-to-end.
+
+## V2.2 Session Update (Autopay re-probe, Lounge notifications, Trends, Pins)
+- **Autopay live switch-on**: Backend re-probes Razorpay Subscriptions capability (throttled, 10 min) on /billing/config and razorpay checkout — UPI Autopay activates automatically once enabled on the Razorpay dashboard, no restart needed.
+- **Lounge notifications**: Replies to a member's Lounge discussion create a bell notification (type lounge_reply) for the thread author; clicking deep-links to /lounge?thread=<id> and auto-opens the discussion.
+- **Traffic trends**: /api/admin/traffic now returns weekly 'trend' buckets + 'trend_series' (top 5 sources + Other); Admin Traffic tab shows a multi-line weekly chart.
+- **Pinned discussions**: Admin-only POST /api/community/threads/{tid}/pin toggle; pinned threads sort first with a Pinned badge; pin toggle button in thread detail.
+- Testing: iteration_6.json — backend 99.5% (183/184), frontend 100%, no regressions.

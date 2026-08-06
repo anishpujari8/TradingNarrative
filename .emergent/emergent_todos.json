@@ -1,22 +1,22 @@
 [
   {
     "content": "Autopay: add live re-probe so autopay switches on without restart",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Lounge notifications: notify thread author on new replies",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Traffic trends: weekly per-source chart (backend + UI)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Pinned discussions: admin pin/unpin + sort + UI badge",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test all four features",
-    "status": "pending"
+    "status": "completed"
   }
 ]
