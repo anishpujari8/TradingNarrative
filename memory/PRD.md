@@ -4,7 +4,7 @@
 Subscription-based blog + newsletter ("Substack × premium magazine") covering 4 pillars:
 Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, MongoDB).
 
-## Status: V1.2 COMPLETE (iteration_3: backend 120/120, frontend 43/43)
+## Status: V2.0 COMPLETE (iteration_4: backend 62/62; 2 frontend flags were false positives, verified working via UI)
 
 ## Implemented
 - **Content**: 12 seeded editorial posts (3/category, mixed free/premium, 1 featured), author Jordan Hale.
@@ -20,6 +20,17 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 
 ## Credentials
 - Admin: admin@tradingnarrative.com / Admin@2025 (see /app/memory/test_credentials.md)
+
+## New in V2.0 (user's expanded spec applied to existing build)
+- Pillars relabeled (same slugs/URLs): Tech & AI, Business & Finance, Personal Growth, Travel.
+- Post TAGS: seeded, chips on articles → /archive?tag=X filter, admin editor input (comma-separated, max 10).
+- INR pricing + Razorpay (MOCKED): currency auto-detect (Asia/Kolkata tz or -IN locale) + manual USD/INR toggle on pricing; ₹199/mo, ₹1,999/yr; mocked Razorpay dialog activates premium + INR invoice; REAL Razorpay path (order create, checkout.js, signature verify, webhook) dormant until RAZORPAY_KEY_ID/SECRET set in backend/.env.
+- Email preferences in Account: newsletter on/off + per-pillar checkboxes (shown when subscribed); mocked issue sends filter recipients by category prefs.
+- Comment reply NOTIFICATIONS: navbar bell + unread badge, mark-read on open, links to post.
+- CONTINUE READING: progress saved per-article (localStorage ttn_progress), homepage strip with % bars, resume toast on revisit.
+- WEEKLY DIGEST: admin preview (branded HTML email in iframe) + mocked send to subscribers.
+- QUOTE CARD: third tab in IG share dialog with editable quote text (canvas, downloadable).
+- About page follow-on-LinkedIn/Instagram buttons.
 
 ## New in V1.2
 - Reply threads on comments (1-level nesting, flattened deeper replies, cascade delete), bookmarks/reading list (/reading-list, article Save button + card overlay icon, any logged-in user), 'For you' homepage recommendations (localStorage ttn_read_history + server pageview history, weighted by category via GET /api/recommendations), auto-renew-ready billing: billing/config exposes auto_renew; with shared sk_test_emergent key → one-time passes (proxy blocks Subscription cancel API); paste user's own key into STRIPE_API_KEY → subscription-mode checkout (recurring price_data), Stripe-side cancel, real period end. Branch dormant until key provided.

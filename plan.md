@@ -130,3 +130,8 @@
 ## STATUS UPDATE (post V1.2 feature batch)
 - Reply threads, bookmarks/reading list, For-You recommendations DONE + tested (iteration_3: 120/120 backend, 43/43 frontend).
 - Auto-renew billing branch implemented & dormant: activates automatically when user's own Stripe key replaces STRIPE_API_KEY in backend/.env (user skipped providing key). Shared key verified to allow subscription session creation but NOT Subscription.delete — hence one-time passes remain default.
+
+## STATUS UPDATE (V2.0 — expanded spec applied)
+- Finished notifications/continue-reading/digest; relabeled pillars; added tags, INR+Razorpay(MOCKED), email prefs, quote cards, follow buttons.
+- iteration_4: backend 62/62; both frontend flags (Razorpay dialog, prefs checkboxes) verified working via real UI flow — testing agent auth-timing false positives.
+- Dormant-until-keys: Razorpay real gateway (RAZORPAY_KEY_ID/SECRET), Stripe auto-renew (own STRIPE_API_KEY).

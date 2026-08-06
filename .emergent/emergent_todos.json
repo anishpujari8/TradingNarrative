@@ -1,34 +1,34 @@
 [
   {
     "content": "Finish in-progress: Notifications bell UI, Continue Reading strip + resume, Weekly Digest admin UI",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Get Razorpay integration playbook (placeholder/swap-ready structure)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Relabel pillars: Tech & AI, Business & Finance, Personal Growth, Travel",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Post tags: backend + seed + admin editor + display + archive filter",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "INR pricing + currency auto-detect + toggle + MOCKED Razorpay checkout path",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Email preferences in Account (category opt-ins, respected by mocked sends)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Quote-card generator tab in share dialog",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "End to End Testing using Testing Agent + fix all issues",
-    "status": "pending"
+    "status": "completed"
   }
 ]
