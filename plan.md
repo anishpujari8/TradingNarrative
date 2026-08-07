@@ -15,73 +15,74 @@
     - Live re-probe so Autopay switches on without restart
   - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
     - Target: **Recurring subscription** (user intent confirmed; exact config + credentials pending)
-- Deliver retention UX:
-  - Bookmarks/reading list ✅
-  - Reading progress indicators ✅
-  - Continue-reading strips ✅
-  - Notifications bell (incl. Lounge reply notifications + deep-linking) ✅
-  - **Reader Highlights** ✅
-    - Select-to-highlight in essays
-    - Persistent inline highlight rendering
-    - Highlights library page
-    - **Highlight Notes** ✅ (attach/edit/clear a personal note)
-    - **Highlight Sharing** ✅ (download/share/copy a branded quote card)
-    - **Share From Article** ✅ (share quote card directly from selection popover)
-    - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
-  - Weekly digest preview + send ✅
-  - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
-  - **Weekly Listen Digest Social Proof** ✅ *(digest includes “Most listened this week” block when narration listen data exists)*
-  - **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
-  - **Listen analytics for narration** ✅ *(count plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
-  - **Listen completion rate** ✅ *(milestone funnel: 25% / 50% / 75% / finish + completion % per essay in Admin Narrations)*
-  - **Pre-generated narrations** ✅ *(warm cache on startup + when posts are published/updated so playback is instant when cached)*
-    - **Operational constraint**: if ElevenLabs credits are exhausted, uncached essays return **502** on play until credits are topped up.
-  - **Narration Status Panel** ✅ *(Admin self-service for narration coverage + warmup trigger)*
-    - Shows narrated coverage (X/Y), cached/missing per essay, audio size, listens
-    - Shows completion rate + milestone funnel tooltips
-    - “Generate missing narrations” one-click warmup
-    - Auto-refresh while warmup is running
-    - Credits display depends on ElevenLabs API key permissions (see caveat below)
-- Deliver admin + growth tooling ✅:
-  - Traffic sources attribution + trends
-  - Subscriber growth
-  - Post attribution
-  - Conversion funnels + plan split
-  - Post conversion stats (“Essays that convert”)
-  - CSV export
-  - **Content Sync Tool (Preview → Production)** ✅ *(one-click admin sync for missing published posts)*
-  - **Sync carries normalized author identity** ✅ *(author object is normalized to “Anish Pujari” by startup migration; production will self-heal on next redeploy)*
-- Deliver premium community ✅:
-  - Private Community Lounge
-  - Pins/locks/scheduled announcements/editing
-  - Member profiles
-- Newsletter operations (production-ready) ✅:
-  - Subscriber capture + preferences
-  - **Real email sending via Gmail SMTP is LIVE**
-  - One-click unsubscribe + List-Unsubscribe
-  - Pillar-personalized weekly digests
-  - Friday autosend toggle
-  - Digest preview email to admin
-  - Wednesday briefing reminder toggle
-- Branding + content readiness ✅:
-  - Official logo + favicon
-  - Author identity: Anish Pujari across UI and post metadata ✅ *(enforced via startup migration)*
-  - Weekly briefing tooling: template + edition numbering + `/briefings` archive
-  - Import existing writing (LinkedIn newsletter editions + LinkedIn articles)
-  - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
-  - **Spinning logo** ✅ *(slow, elegant rotation ~9s per turn; respects reduced motion)*
-  - **Demo Cleanup** ✅ *(sample/demo essays auto-drafted so credits are spent on real writing)*
-- Improve editorial discovery ✅:
-  - **Related essays by tags** (shared tags prioritized over category-only)
-  - **Author/Editorial Series** ✅ (config-driven collections like “Trading Operations”)
-- Growth/sharing UX ✅:
-  - **LinkedIn Preview Cards / Social unfurls** ✅ (per-essay OG/Twitter meta served at `/api/share/{slug}`)
-- Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
-- **Stability** ✅: Modular backend (monolith `server.py` split into routers/services) with regression testing.
 
-**ElevenLabs credits visibility caveat**
-- The current ElevenLabs API key lacks the **`user_read`** permission, so the system cannot display credits remaining/used.
-- Narration generation still works (when credits exist). To see credits in the Admin panel, enable **User → Read** permission for the key in ElevenLabs.
+### Reader experience & engagement
+- Bookmarks/reading list ✅
+- Reading progress indicators ✅
+- Continue-reading strips ✅
+- Notifications bell (incl. Lounge reply notifications + deep-linking) ✅
+- **Reader Highlights** ✅
+  - Select-to-highlight in essays
+  - Persistent inline highlight rendering
+  - Highlights library page
+  - **Highlight Notes** ✅ (attach/edit/clear a personal note)
+  - **Highlight Sharing** ✅ (download/share/copy a branded quote card)
+  - **Share From Article** ✅ (share quote card directly from selection popover)
+  - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
+
+### Newsletter & retention
+- Weekly digest preview + send ✅
+- **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
+- **Weekly Listen Digest Social Proof** ✅ *(digest includes “Most listened this week” block when narration listen data exists)*
+
+### Audio narration (ElevenLabs)
+- **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
+- **Listen analytics** ✅ *(count plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
+- **Listen completion rate** ✅ *(milestone funnel: 25% / 50% / 75% / finish + completion % per essay in Admin Narrations)*
+- **Pre-generated narrations** ✅ *(warm cache on startup + when posts are published/updated so playback is instant when cached)*
+- **Narration Status Panel** ✅ *(Admin self-service for narration coverage + warmup trigger)*
+  - Shows narrated coverage (X/Y), cached/missing per essay, audio size, listens
+  - Shows completion rate + milestone funnel tooltips
+  - “Generate missing narrations” one-click warmup
+  - Auto-refresh while warmup is running
+
+**ElevenLabs operational caveats**
+- Credits may be exhausted; uncached essays will be unavailable until credits are topped up.
+- Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
+
+### AI features (Gemini)
+- **Gemini 2.5 Flash integration via emergentintegrations + EMERGENT_LLM_KEY** ✅
+  - **Admin AI Writing Assistant** ✅ (draft / polish / expand; streaming)
+  - **“Ask this essay” reader chat** ✅ (grounded in essay content; paywall-aware; streaming)
+- Note: Gemini usage consumes the Emergent LLM key credits.
+
+### Admin & growth tooling
+- Traffic sources attribution + trends ✅
+- Subscriber growth ✅
+- Post attribution ✅
+- Conversion funnels + plan split ✅
+- Post conversion stats (“Essays that convert”) ✅
+- CSV export ✅
+- **Content Sync Tool (Preview → Production)** ✅ *(one-click admin sync for missing published posts)*
+- **Sync carries normalized author identity** ✅ *(author object normalized to “Anish Pujari” by startup migration; production self-heals on next redeploy)*
+
+### Community
+- Private Community Lounge ✅
+- Pins/locks/scheduled announcements/editing ✅
+- Member profiles ✅
+
+### Branding + content readiness
+- Official logo + favicon ✅
+- Author identity: Anish Pujari across UI and post metadata ✅ *(enforced via startup migration)*
+- Weekly briefing tooling: template + edition numbering + `/briefings` archive ✅
+- Import existing writing (LinkedIn newsletter editions + LinkedIn articles) ✅ *(Edition #1 done; #2 pending)*
+- **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
+- **Spinning logo** ✅ *(slow, elegant rotation ~9s per turn; respects reduced motion)*
+- **Demo Cleanup** ✅ *(sample/demo essays auto-drafted so credits are spent on real writing)*
+
+### Stability
+- Modular backend (monolith `server.py` split into routers/services) ✅
+- Regression testing discipline ✅
 
 ---
 
@@ -187,54 +188,33 @@
   - `/highlights` library page + navbar link
 
 #### B) Related By Tags ✅
-- `GET /api/posts/{slug}` related posts now scored by shared tags (weighted) + category
+- Related posts scored by shared tags + category
 
 ### Phase 18 — Highlight Notes + Highlight Sharing ✅ COMPLETED
 #### A) Highlight Notes ✅
-- Backend:
-  - `HighlightIn` schema gained optional `note` (max 500 chars) stored on create
-  - `PUT /api/highlights/{id}/note` (owner-only; empty string clears)
-- Frontend `/highlights`:
-  - Notes UI + inline editor + toasts
+- Backend: `PUT /api/highlights/{id}/note`
+- Frontend: notes UI + inline editor
 
 #### B) Highlight Sharing ✅
-- Frontend:
-  - `QuoteCardDialog` with branded share card
-  - Actions: Copy image, Share, Download PNG
-  - Share-from-article + share-from-highlights
-- Testing:
-  - Iteration_13: backend 12/12 (100%), frontend 100%
+- Branded quote card sharing (download/copy/share)
 
 ### Phase 19 — PayPal Integration ⛔ NOT STARTED (still blocked)
 **Blocked on user decisions + credentials**
 - Confirm:
-  1) **Recurring subscription** vs one-time timed passes *(user intent: recurring; must confirm definitively)*
-  2) Sandbox vs Live credentials (**Client ID + Secret**)
-  3) Placement on pricing page (always visible vs international-only)
-
-**Planned steps (once unblocked)**
-- Add env vars:
-  - `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_ENV` (sandbox/live)
-- Backend:
-  - Create PayPal service wrapper
-  - Add endpoints:
-    - create subscription
-    - capture/verify
-    - webhooks for lifecycle events
-- Frontend:
-  - Add PayPal option on pricing page
-- Testing:
-  - Sandbox end-to-end flow
+  1) Recurring subscription (confirm definitively)
+  2) Sandbox vs Live
+  3) PayPal Client ID + Secret
+  4) Placement on pricing page
 
 ### Phase 20 — Production Content Bug Fix + Share From Article + Popular Highlights ✅ COMPLETED
-- Fixed production content visibility via production migration
-- Share-from-article popover: Highlight | Share
-- Popular highlights markers + backend aggregation
+- Production content visibility fixed
+- Share-from-article popover
+- Popular highlights markers
 
 ### Phase 21 — Hardcoded Real Content + Highlight Digest + Content Sync Tool ✅ COMPLETED
 - `REAL_POSTS` self-healing content
-- Digest includes “Most highlighted this week” section
-- Admin Sync Tool: preview → production diff + push
+- Digest includes “Most highlighted this week”
+- Sync tool preview → production
 
 ### Phase 22 — Two Article Imports + Production Sync ✅ COMPLETED
 - Imported 2 essays, appended to `REAL_POSTS`, synced to production
@@ -242,167 +222,99 @@
 ### Phase 23 — Series + Social Unfurls + Baseline Essay Audio ✅ COMPLETED
 - Series page + series banner
 - `/api/share/{slug}` unfurl HTML
-- Baseline audio (superseded by ElevenLabs)
 
 ### Phase 24 — ElevenLabs Essay Narration + Caching ✅ COMPLETED
-- High-quality narration via ElevenLabs
-- MongoDB caching keyed by `(slug, voice, scope)`
-- Paywall-aware preview vs full audio
+- ElevenLabs narration + cache
+- Paywall-aware audio scope
 
 ### Phase 25 — Author Normalization + Spinning Logo + Listen Analytics + Pre-Generated Narrations ✅ COMPLETED
-- Author normalized to “Anish Pujari” via startup migration
-- Spinning logo (9s) in navbar + footer
-- Listen tracking endpoint + admin analytics display
-- Startup warmup + publish/update warm hooks; quota-aware
+- Author normalized
+- Spinning logo
+- Listen tracking
+- Startup warmup + publish/update warm hooks
 
 ### Phase 26 — Narration Status Panel + Demo Cleanup + Credit Refill Warmup ✅ COMPLETED
-> Goal: make narration ops fully self-serve for admin and reduce credit burn.
-
-#### A) Narration Status Panel (Admin → Narrations tab) ✅
-- Backend:
-  - `GET /api/admin/narrations` returns warmup state + cache coverage + per-essay narration status
-  - `POST /api/admin/narrations/warm` triggers background warmup (`warm_all_narrations`) guarded by `WARMUP_STATE`
-- Frontend:
-  - New Narrations tab
-  - Table: Cached/Missing status, audio size, listens
-  - Button: Generate missing narrations
-  - Auto-refresh while warming
-
-#### B) Demo Cleanup ✅
-- One-time migration:
-  - Uses `db.migrations` marker `unpublish_demo_posts_v1`
-  - Unpublishes demo/sample essays (sets to `draft`) so they don’t consume narration credits
-- Status:
-  - Preview: unpublished 9 demo essays; now only **4 real essays** are published
-  - Production: same migration will apply once after redeploy
-
-#### C) Credit Refill Warmup ✅
-- Workflow:
-  - Top up ElevenLabs credits
-  - Admin clicks Generate missing narrations
-  - Warmup fills missing caches
-- Current state (preview): **3/4** published essays have cached narration; 1 remains missing and will generate after credit top-up.
+- Narrations tab + warm trigger
+- One-time demo unpublish migration
+- Self-service warmup flow
 
 ### Phase 27 — Listen Completion Rate ✅ COMPLETED
-> Goal: understand how far readers listen into narrations.
-
-#### A) Backend ✅
-- New schema: `AudioProgressIn` in `schemas.py`
-- New endpoint: `POST /api/posts/{slug}/audio/progress` with `{ milestone: 25|50|75|100 }`
-  - Increments `posts.listen_milestones.{milestone}`
-  - Validations: 400 on invalid milestone; 404 on bad slug
-- `GET /api/admin/narrations` now returns per-essay:
-  - `milestones: {25,50,75,100}`
-  - `completion` = `round(100 * min(finished, listens) / listens)` (None if listens=0)
-
-#### B) Frontend ✅
-- `AudioNarrator` reports milestones **once per essay visit**:
-  - 25/50/75 triggered in `ontimeupdate`
-  - 100 triggered on `onended`
-- Admin → Narrations table gained **Completion** column:
-  - Shows `{completion}% finish` or “No listens yet”
-  - Hover tooltip shows milestone funnel counts
-
-#### C) Verification ✅
-- End-to-end verified: playback fired 1 listen + 4 milestone calls; Admin displayed completion.
+- Milestone reporting endpoints + UI completion column
 
 ### Phase 28 — Weekly Listen Digest ✅ COMPLETED
-> Goal: include narration engagement in the Friday weekly digest as social proof.
+- Digest includes “Most listened this week” based on narration listen analytics
+
+### Phase 29 — Gemini AI Integration (Gemini 2.5 Flash) ✅ COMPLETED
+> Two features: Admin writing assistant + “Ask this essay” reader chat.
 
 #### A) Backend ✅
-- `services/digest_service.py`:
-  - Added `get_week_top_listened(limit=3)`
-    - Aggregates `analytics` events `narration_listen` for last 7 days by `meta.slug`
-    - Filters to still-published posts
-  - Added `_listens_section(top_listened, accent)`
-    - Renders branded “Most listened this week” block with numbered essay links + play counts + CTA (“Listen to the narration →”)
-  - `build_digest_html(posts, top_highlights=None, top_listened=None)` updated to include the listens section
-  - Wired into:
-    - `do_send_digest()` (autosend + manual)
-- `routers/newsletter.py`:
-  - `GET /api/admin/newsletter/digest-preview` now returns `top_listened`
-  - `POST /api/admin/newsletter/send-digest-preview` includes listens section in HTML
+- Added `EMERGENT_LLM_KEY` to backend env and config flags:
+  - `AI_ENABLED`, `AI_PROVIDER='gemini'`, `AI_MODEL='gemini-2.5-flash'`
+- New router: `/app/backend/routers/ai.py`
+  - `GET /api/ai/status`
+  - `POST /api/admin/ai/assist` (admin-only; `draft|polish|expand`; SSE streaming)
+  - `POST /api/posts/{slug}/ask` (public; essay-grounded; paywall-aware; SSE streaming)
 
-#### B) Behavior ✅
-- Gracefully omitted when no listen data exists.
+#### B) Frontend ✅
+- `src/lib/aiStream.js`: fetch-based SSE consumer
+- Admin editor:
+  - `AiAssistantDialog` wired into `AdminEditorPage` via an “AI assistant” button next to Content
+  - Streams output; actions: Replace draft / Append / Copy
+- Reader:
+  - `AskEssayWidget` on `ArticlePage` (hidden when AI disabled)
+  - Streams assistant replies; keeps short client-side history
 
-#### C) Verification ✅
-- Verified API returns real top_listened data.
-- Verified Admin UI “Weekly digest preview” renders “Most listened this week” section.
+#### C) Testing ✅
+- Iteration_21: backend 12/12 passed; frontend core features passed.
 
 ---
 
 ## 3) Next Actions
 
 ### A) Immediate
-1) **Production rollout**
-   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–28**.
-   - After redeploy, production will:
-     - Normalize author identity automatically on startup
-     - Draft demo essays via demo cleanup migration
-     - Enable narration status panel + warmup endpoints + completion tracking
-     - Include “Most listened this week” in weekly digests
+1) **Production rollout** ⏳
+   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–29**.
 
-2) **ElevenLabs operations**
+2) **ElevenLabs operations** ⏳
    - Top up ElevenLabs credits.
-   - (Optional) Update the ElevenLabs API key permissions to include **User → Read** so credits show in the Narrations panel.
-   - Then use **Admin → Narrations → Generate missing narrations** to warm everything.
+   - (Optional) Enable `user_read` on the ElevenLabs API key so credits show in the Narrations panel.
+   - Then use **Admin → Narrations → Generate missing narrations**.
 
-3) **Delivery & Systems**: Import a real delivery-focused essay ⛔
-   - Blocked until you paste the article text
-   - After import:
-     - publish under `category="delivery"`
-     - append to `REAL_POSTS` for durability
-     - (optional) sync to production via the Sync tool
+3) **Delivery & Systems essay import** ⛔
+   - Paste your delivery-focused essay text (title + body).
 
-4) **More Editions**: Import LinkedIn newsletter editions as numbered briefings ⛔
-   - Blocked until you paste Edition #2 text.
-   - After import: append to `REAL_POSTS` for durability.
+4) **Edition #2 import** ⛔
+   - Paste Edition #2 newsletter text.
 
-5) **PayPal (Recurring subscriptions)** ⛔
-   - Still blocked until you provide:
-     - Confirm recurring subscription (yes/no)
-     - Sandbox vs Live
-     - PayPal Client ID + Secret
-     - Pricing page placement preference
+5) **PayPal (recurring subscriptions)** ⛔
+   - Provide PayPal decisions + credentials as listed in Phase 19.
 
 ### B) Production note (workflow)
-- Two environments exist:
-  - **Preview** (dev)
-  - **Production** (`https://thetradingnarrative.com`) — requires **redeploy** for code changes.
-- Content migrations/imports can be pushed via the **Sync to production** tool.
-- Ensure production has `ELEVENLABS_API_KEY` set; otherwise narration endpoints return **503**.
+- **Preview**: changes implemented and tested here.
+- **Production** (`https://thetradingnarrative.com`): requires **redeploy** for code changes.
 
 ---
 
 ## 4) Success Criteria
 ✅ Premium posts never return full content to non-premium users from the API.
 ✅ Stripe recurring checkout works and updates entitlements.
-✅ Razorpay INR checkout works (autopay if enabled, fallback order if not).
-✅ Email sending is LIVE (Gmail SMTP) with unsubscribe + digest systems.
+✅ Razorpay INR checkout works.
+✅ Email sending is LIVE with unsubscribe + digest systems.
 ✅ Community lounge features work.
-✅ Briefings tooling and `/briefings` archive works.
-✅ Backend modularization complete with regression tests.
-✅ Highlights system complete (create/list/delete, notes, sharing, popular highlights, digest social proof).
-✅ Content Sync Tool works (preview → production).
-✅ Default content durability via `REAL_POSTS`.
-✅ Series pages and social preview cards work.
-✅ Essay audio narration works with:
-- Paywall-aware scopes (preview vs full)
-- Caching
-- Listen analytics
-- Completion milestones + completion %
-- Pre-generation hooks
-✅ Admin narration ops are self-serve:
-- Narration coverage, cached/missing per essay
-- Completion rate + milestone funnel
-- One-click warmup + auto-refresh
-✅ Weekly digest includes social proof blocks when data exists:
+✅ Highlights system complete (highlights, notes, quote cards, popular highlights).
+✅ Admin analytics complete (traffic, funnels, conversions, listens, completion).
+✅ Narration ops are self-serve (status + warmup) and digest includes:
 - “Most highlighted this week”
 - “Most listened this week”
+✅ AI features:
+- Admin AI writing assistant works (draft/polish/expand; streaming)
+- “Ask this essay” is grounded + paywall-aware; streaming
 
-⚠️ Operational caveat (ElevenLabs quota)
-- If credits are exhausted, uncached essays will 502 on narration play until credits are topped up.
+⚠️ Operational caveats
+- ElevenLabs: uncached narrations may be unavailable if credits are exhausted.
+- Gemini: usage consumes Emergent LLM key credits.
 
-⛔ PayPal integration: blocked until credentials + final decisions.
-⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.
+⛔ Blockers
+- Delivery essay import: awaiting text.
+- Edition #2 import: awaiting text.
+- PayPal: awaiting decisions + credentials.
