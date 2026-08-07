@@ -99,9 +99,18 @@ export const AudioNarrator = ({ slug }) => {
       trackListen();
     } catch (err) {
       setStatus("idle");
-      const detail = err?.response?.status === 502
-        ? "Narration is temporarily unavailable. Try again shortly."
-        : "Could not load the narration. Try again.";
+      let detail = "Could not load the narration. Try again.";
+      const data = err?.response?.data;
+      if (data instanceof Blob) {
+        try {
+          const parsed = JSON.parse(await data.text());
+          if (parsed?.detail) detail = parsed.detail;
+        } catch { /* non-JSON error body — keep the default message */ }
+      } else if (data?.detail) {
+        detail = data.detail;
+      } else if (err?.response?.status === 502) {
+        detail = "Narration is temporarily unavailable. Try again shortly.";
+      }
       toast.error(detail, { action: { label: "Retry", onClick: () => play(v) } });
     }
   };

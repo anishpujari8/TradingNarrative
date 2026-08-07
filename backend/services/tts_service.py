@@ -57,7 +57,15 @@ async def get_or_generate_audio(post, voice: str, blocks, scope: str):
     chunks = chunk_text(post['title'], blocks)
     total_chars = sum(len(c) for c in chunks)
     logger.info(f"TTS generate: {post['slug']} voice={voice} scope={scope} chars={total_chars} chunks={len(chunks)}")
-    audio = await asyncio.to_thread(_synthesize_sync, chunks, voice_id)
+    try:
+        audio = await asyncio.to_thread(_synthesize_sync, chunks, voice_id)
+    except Exception as e:
+        if cached:
+            # RESILIENCE: the essay was edited (cache went stale) but regeneration failed
+            # (e.g. out of credits) — a slightly outdated narration beats an error.
+            logger.warning(f"TTS regeneration failed for {post['slug']} — serving stale cached audio: {e}")
+            return bytes(cached['audio']), True
+        raise
     if len(audio) > 14 * 1024 * 1024:
         # stay under Mongo's 16MB doc limit — serve without caching in the rare oversize case
         logger.warning(f"TTS audio too large to cache ({len(audio)} bytes) for {post['slug']}")

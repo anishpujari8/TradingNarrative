@@ -333,6 +333,9 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
         audio, from_cache = await get_or_generate_audio(post, voice, blocks, scope)
     except Exception as e:
         logger.error(f'TTS generation failed for {slug}: {e}')
+        if 'quota_exceeded' in str(e):
+            raise HTTPException(status_code=503,
+                                detail='Narration for this essay is temporarily unavailable while audio credits are being refilled. Please check back soon.')
         raise HTTPException(status_code=502, detail='Narration is temporarily unavailable. Try again shortly.')
     return Response(content=audio, media_type='audio/mpeg', headers={
         'Cache-Control': 'private, max-age=86400',
