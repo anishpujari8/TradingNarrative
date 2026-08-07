@@ -30,6 +30,7 @@
     - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
   - Weekly digest preview + send ✅
   - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
+  - **Essay Audio** ✅ *(browser TTS narrator at top of every article; no API keys/costs)*
 - Deliver admin + growth tooling ✅:
   - Traffic sources attribution + trends
   - Subscriber growth
@@ -58,6 +59,9 @@
   - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
 - Improve editorial discovery ✅:
   - **Related essays by tags** (shared tags prioritized over category-only)
+  - **Author/Editorial Series** ✅ (config-driven collections like “Trading Operations”)
+- Growth/sharing UX ✅:
+  - **LinkedIn Preview Cards / Social unfurls** ✅ (per-essay OG/Twitter meta served at `/api/share/{slug}`)
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
 - **Stability** ✅: Modular backend (monolith `server.py` split into routers/services) with regression testing.
 
@@ -221,7 +225,7 @@
 - Fix:
   1) Migrated **Edition #1 briefing** + **Freight Management** post to production via production admin API.
   2) Per user choice: demo/sample essays were **kept** on production for now.
-  3) Patched `seed_database` in `server.py` so fresh DBs seed `SAMPLE_POSTS` as **draft** (`status='draft'`, `views=0`) so future deployments start with a clean public site.
+  3) Patched `seed_database` so fresh DBs seed `SAMPLE_POSTS` as **draft** (`status='draft'`, `views=0`) so future deployments start with a clean public site.
 - Verification:
   - Verified live (read-only) on production endpoints:
     - `https://thetradingnarrative.com/api/briefings` includes Edition #1.
@@ -241,23 +245,21 @@
 - Frontend:
   - Article page fetches popular highlights and renders **Kindle-style** markers:
     - `mark.popular-highlight`: dotted accent underline + superscript count + tooltip
-  - Personal highlights visually take precedence over popular markers in the merged renderer.
+  - Personal highlights take precedence over popular markers.
 - Testing:
   - Iteration_14: **100% backend (14/14)**, **100% frontend**
-  - Production checked read-only; preview regression clean; all test data cleaned
 
 ### Phase 21 — Hardcoded Real Content + Highlight Digest + Content Sync Tool ✅ COMPLETED
 #### A) Hardcoded Real Content (self-healing default content) ✅
 - `seed_data.py` includes a `REAL_POSTS` list containing the author’s real, provided content exported verbatim from DB.
-- `server.py` `seed_database()` **always** inserts any missing `REAL_POSTS` (matched by slug) as **PUBLISHED** on every startup.
+- `seed_database()` **always** inserts any missing `REAL_POSTS` (matched by slug) as **PUBLISHED** on every startup.
 - Verified self-healing: deleted Edition #1 in preview DB, restarted backend, and it restored automatically with no duplicates.
 - Demo `SAMPLE_POSTS` remain and seed as **drafts** only on fresh DBs.
-- Process note: future real articles should be appended to `REAL_POSTS` using the same export pattern.
 
 #### B) Highlight Digest (social proof section) ✅
 - `services/digest_service.py`:
   - `get_week_top_highlights()` — last 7 days, >=2 distinct users, top 3
-  - `_highlights_section()` — renders “Most highlighted this week” block (accent-bordered italic quotes + reader count + essay link)
+  - `_highlights_section()` — renders “Most highlighted this week” block
   - `build_digest_html(posts, top_highlights=...)` conditionally includes the section
 - Wired into:
   - `do_send_digest()`
@@ -268,18 +270,17 @@
 #### C) Content Sync Tool (Preview → Production) ✅
 - Backend:
   - Router: `routers/sync.py`
-    - `GET /api/admin/sync/diff` — compares preview published posts vs production public posts by slug
-    - `POST /api/admin/sync/push {password}` — one-time login to production admin API and creates missing posts
+    - `GET /api/admin/sync/diff`
+    - `POST /api/admin/sync/push {password}`
   - Config: `PRODUCTION_SITE_URL` in `config.py` (defaults to `https://thetradingnarrative.com`)
 - Frontend:
   - `components/SyncToProductionDialog.js`
   - Admin header button “Sync to production”
 - Testing:
   - Iteration_15: **100% backend (10/10)**, **100% frontend**
-  - Production only ever read; test data cleaned
 
 ### Phase 22 — Two Article Imports + Production Sync ✅ COMPLETED
-#### A) Imports (user-pasted, untangled interleaved text) ✅
+#### A) Imports ✅
 1) **Business & Finance**:
    - Title: **“The Shipping Industry Is Sitting on a $15 Billion Problem. And Nobody Is Talking About It Honestly.”**
    - Category: `finance`
@@ -287,29 +288,59 @@
    - Blocks: **41**
    - Tags: `[LNG, Demurrage, Shipping, Logistics, CTRM, Commodities]`
    - Slug: `the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a`
-   - Cover: Unsplash `photo-1605745341112` (container ship)
 
 2) **Personal Growth** *(“highlight this article heading” implemented as FEATURED=true)*:
    - Title: **“170 Kilometres, One Green Enfield, and a Lesson in Strategic Momentum”**
    - Category: `lifestyle`
    - Tier: `free`
    - Blocks: **20**
-   - Featured: **true** (leads homepage hero)
+   - Featured: **true**
    - Tags: `[Leadership, Clarity, Motorcycling, Product Management, Momentum]`
    - Slug: `170-kilometres-one-green-enfield-and-a-lesson-in-strategic-momentum`
-   - Cover: Unsplash `photo-1558981403` (best thematic fit after vetting multiple candidates via image analysis)
-
-- Verified rendering: both articles render correctly; Enfield appears as featured hero on homepage.
 
 #### B) Default content durability ✅
-- Both new posts were appended to `REAL_POSTS` in `seed_data.py`.
-- `REAL_POSTS` now totals **4** real, hardcoded articles.
-- Verified no duplication on restart (exactly 1 copy per fixed slug).
+- Both new posts appended to `REAL_POSTS` (now totals **4** real, hardcoded posts).
 
-#### C) Production sync (dogfooded sync tool) ✅
-- Ran `GET /api/admin/sync/diff` → correctly showed the 2 missing posts.
-- Ran `POST /api/admin/sync/push` → pushed **2/2** successfully.
-- Production now includes both new articles and preserved the featured flag.
+#### C) Production sync ✅
+- Sync tool diff identified 2 missing → pushed **2/2** successfully.
+
+### Phase 23 — Essay Audio + LinkedIn Preview Cards + Trading Operations Series ✅ COMPLETED
+#### A) Essay Audio ✅
+- New component: `frontend/src/components/AudioNarrator.js`
+- Uses browser `speechSynthesis` (no external APIs / keys).
+- UX:
+  - Play/Pause/Resume
+  - Restart
+  - Speed select: `0.85×`, `1×`, `1.25×`, `1.5×` (re-speaks current paragraph)
+  - Paragraph-by-paragraph utterances (avoids Chrome long-text bug)
+  - Progress bar + status label
+  - Cancels narration on unmount
+- Rendered at the top of every article.
+
+#### B) Trading Operations Series ✅
+- New config: `SERIES` in `backend/config.py`
+  - Series `trading-operations` contains (in order):
+    1) Edition #1 briefing
+    2) Freight Management
+    3) Demurrage ($15B) essay
+- Backend:
+  - `GET /api/series` (list)
+  - `GET /api/series/{slug}` (ordered posts)
+  - `GET /api/posts/{slug}` returns `series: {slug,title}` for member essays
+- Frontend:
+  - New page: `frontend/src/pages/SeriesPage.js`
+  - Route: `/series/:slug`
+  - Member article pages show a “Part of the Trading Operations series” banner linking to the series.
+
+#### C) LinkedIn Preview Cards ✅
+- Backend:
+  - `GET /api/share/{slug}` returns crawler-readable HTML with per-essay OG/Twitter meta
+  - Includes meta-refresh + JS redirect for humans
+- Frontend:
+  - `ShareBar` now shares the `/api/share/{slug}` URL so LinkedIn/X unfurl the correct card
+  - `public/index.html` default OG description updated to current pillars (removed “travel”)
+- Testing:
+  - Iteration_16: **100% backend (29/29)**, **100% frontend (23/23)**
 
 ---
 
@@ -317,7 +348,7 @@
 
 ### A) Immediate
 1. **More Editions**: Import LinkedIn newsletter editions as numbered briefings
-   - ⛔ Blocked until you paste the next edition text (we’ll publish as Edition #2).
+   - ⛔ Blocked until you paste Edition #2 text.
    - After import: append to `REAL_POSTS` for durability.
 2. **Delivery & Systems**: Import a real delivery-focused essay
    - ⛔ Blocked until you paste the article text.
@@ -333,6 +364,7 @@
   - **Preview** (dev): changes are implemented + tested here.
   - **Production** (`https://thetradingnarrative.com`): code changes require **redeploy** to go live.
 - Content migrations/imports can be pushed via the **Sync to production** tool.
+- Note: Phase 23 code (series, share/unfurl endpoint, audio narrator) is **preview-only until redeploy**; production currently has the content, but will 404 these routes until redeploy.
 
 ---
 
@@ -360,11 +392,12 @@
 ✅ Default content durability:
 - Real provided articles are hardcoded in `seed_data.py` as `REAL_POSTS`
 - Backend self-heals and restores missing `REAL_POSTS` on startup
-✅ Phase 22 imports complete:
-- Demurrage essay published under Business & Finance
-- Enfield essay published under Personal Growth and featured
-- Both appended to `REAL_POSTS`
-- Both synced to production via Sync tool
+✅ Trading Operations Series:
+- `/series/:slug` page exists and member essays show series banner
+✅ Social preview cards:
+- `/api/share/{slug}` returns OG/Twitter meta suitable for LinkedIn/X unfurl
+✅ Essay audio:
+- Each article includes an audio narrator bar (browser TTS)
 
 ⛔ PayPal integration: blocked until credentials + mode decisions.
 ⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.

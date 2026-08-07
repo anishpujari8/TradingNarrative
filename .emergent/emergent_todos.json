@@ -1,26 +1,30 @@
 [
   {
-    "content": "Backend: SERIES config + /api/series endpoints + series info on get_post",
-    "status": "in_progress"
+    "content": "Backend: SERIES config + endpoints + series info on get_post",
+    "status": "completed"
   },
   {
-    "content": "Backend: /api/share/{slug} OG-rich share page for LinkedIn/X unfurls",
+    "content": "Backend: /api/share/{slug} OG-rich share page",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: AudioNarrator on articles (browser TTS)",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: SeriesPage + series banner + ShareBar unfurl URLs + OG defaults",
+    "status": "completed"
+  },
+  {
+    "content": "Testing agent: 100% pass (29/29 backend, 23/23 frontend)",
+    "status": "completed"
+  },
+  {
+    "content": "Edition #2 import (still waiting for pasted text)",
     "status": "pending"
   },
   {
-    "content": "Frontend: AudioNarrator component (browser TTS) on article pages",
-    "status": "pending"
-  },
-  {
-    "content": "Frontend: SeriesPage + route + series banner on member articles",
-    "status": "pending"
-  },
-  {
-    "content": "Frontend: copy-share-link button + default OG tags in index.html",
-    "status": "pending"
-  },
-  {
-    "content": "Compile, smoke test, testing agent run",
+    "content": "PayPal integration (still waiting for setup answers)",
     "status": "pending"
   }
 ]
