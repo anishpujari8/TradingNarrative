@@ -51,3 +51,19 @@ MARKETING_KINDS = {'digest', 'issue', 'welcome'}
 
 # Production deployment of this app (used by the admin Content Sync tool)
 PRODUCTION_SITE_URL = os.environ.get('PRODUCTION_SITE_URL', 'https://thetradingnarrative.com').rstrip('/')
+
+# Editorial series: curated, ordered collections of essays
+SERIES = {
+    'trading-operations': {
+        'slug': 'trading-operations',
+        'title': 'Trading Operations',
+        'description': ('A running series on the operational backbone of commodity trading — '
+                        'freight, demurrage, market structure, and the data discipline that '
+                        'separates good desks from great ones.'),
+        'post_slugs': [
+            'five-things-commodity-desks-need-to-know-this-week',
+            'freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr',
+            'the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a',
+        ],
+    },
+}

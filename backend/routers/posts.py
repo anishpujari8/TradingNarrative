@@ -5,9 +5,9 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from fastapi.responses import Response
+from fastapi.responses import Response, HTMLResponse
 
-from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL
+from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES
 from db import db
 from utils import now_utc, iso, clean, post_summary, published_query
 from security import get_optional_user, get_current_user, is_entitled
@@ -83,12 +83,16 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     # increment views (fire & forget semantics)
     await db.posts.update_one({'slug': slug}, {'$inc': {'views': 1}})
     result = post_summary(post)
+    # editorial series membership (e.g. Trading Operations)
+    series_info = next(({'slug': s['slug'], 'title': s['title']}
+                        for s in SERIES.values() if slug in s['post_slugs']), None)
     result.update({
         'content_blocks': blocks,
         'is_locked': is_locked,
         'total_blocks': total_blocks,
         'shown_blocks': len(blocks),
         'related': related,
+        'series': series_info,
     })
     return result
 
@@ -246,6 +250,65 @@ async def list_briefings():
     """All published weekly briefings (posts with an edition number), newest edition first."""
     posts = await db.posts.find({**published_query(), 'edition': {'$ne': None}}).sort('edition', -1).to_list(200)
     return {'briefings': [post_summary(p) for p in posts]}
+
+
+# ---------------------- editorial series ----------------------
+
+@router.get('/series')
+async def list_series():
+    out = []
+    for s in SERIES.values():
+        count = await db.posts.count_documents({'slug': {'$in': s['post_slugs']}, **published_query()})
+        out.append({'slug': s['slug'], 'title': s['title'], 'description': s['description'], 'count': count})
+    return {'series': out}
+
+
+@router.get('/series/{series_slug}')
+async def get_series(series_slug: str):
+    s = SERIES.get(series_slug)
+    if not s:
+        raise HTTPException(status_code=404, detail='Series not found')
+    posts = await db.posts.find({'slug': {'$in': s['post_slugs']}, **published_query()}).to_list(50)
+    by_slug = {p['slug']: post_summary(clean(p)) for p in posts}
+    ordered = [by_slug[sl] for sl in s['post_slugs'] if sl in by_slug]
+    return {'slug': s['slug'], 'title': s['title'], 'description': s['description'],
+            'count': len(ordered), 'posts': ordered}
+
+
+# ---------------------- social share (OG unfurl) ----------------------
+
+@router.get('/share/{slug}')
+async def share_page(slug: str):
+    """Crawler-readable HTML with per-essay Open Graph / Twitter cards.
+    LinkedIn & X bots read the meta tags; humans are redirected to the article."""
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    title = post['title'].replace('"', '&quot;')
+    desc = (post.get('excerpt') or '').replace('"', '&quot;')[:300]
+    image = post.get('cover_image', '')
+    canonical = f'{FRONTEND_URL}/post/{slug}'
+    html = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<title>{title} — The Trading Narrative</title>
+<meta property="og:site_name" content="The Trading Narrative">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{desc}">
+<meta property="og:image" content="{image}">
+<meta property="og:url" content="{canonical}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc}">
+<meta name="twitter:image" content="{image}">
+<meta name="description" content="{desc}">
+<link rel="canonical" href="{canonical}">
+<meta http-equiv="refresh" content="0;url=/post/{slug}">
+<script>window.location.replace('/post/{slug}');</script>
+</head><body>
+<p>Redirecting to <a href="/post/{slug}">{title}</a>&hellip;</p>
+</body></html>"""
+    return HTMLResponse(content=html)
 
 
 # ---------------------- SEO ----------------------

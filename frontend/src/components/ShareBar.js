@@ -223,26 +223,27 @@ const IgCardDialog = ({ post }) => {
 };
 
 export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) => {
-  const url = `${SITE_URL}/post/${post.slug}`;
+  // OG-rich share URL: crawlers read per-essay meta tags, humans get redirected to the article
+  const unfurlUrl = `${SITE_URL}/api/share/${post.slug}`;
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(unfurlUrl);
     } catch {
       const ta = document.createElement("textarea");
-      ta.value = url;
+      ta.value = unfurlUrl;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
     }
-    toast.success("Link copied — paste it into your Instagram bio, story, or DM.");
+    toast.success("Link copied — it unfurls with a rich preview card on LinkedIn and X.");
     trackEvent("share_copy_link", `/post/${post.slug}`);
   };
 
   const shareLinkedIn = () => {
     window.open(
-      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(unfurlUrl)}`,
       "_blank",
       "noopener,width=600,height=600"
     );
@@ -251,7 +252,7 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
 
   const shareX = () => {
     window.open(
-      `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(post.title)}`,
+      `https://twitter.com/intent/tweet?url=${encodeURIComponent(unfurlUrl)}&text=${encodeURIComponent(post.title)}`,
       "_blank",
       "noopener,width=600,height=600"
     );
@@ -261,7 +262,7 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
   const webShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: post.title, text: post.excerpt, url });
+        await navigator.share({ title: post.title, text: post.excerpt, url: unfurlUrl });
         trackEvent("share_native", `/post/${post.slug}`);
       } catch {
         /* user dismissed */

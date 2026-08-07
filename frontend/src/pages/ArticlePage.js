@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Clock, Check, Sparkles, Highlighter, Share2 } from "lucide-react";
+import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
@@ -16,6 +16,7 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { QuoteCardDialog } from "@/components/QuoteCardDialog";
+import { AudioNarrator } from "@/components/AudioNarrator";
 import { toast } from "sonner";
 import { api, formatDate, trackEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -346,6 +347,22 @@ export default function ArticlePage() {
               <ShareBar post={post} orientation="vertical" />
             </div>
           </div>
+
+          {post.series && (
+            <Link
+              to={`/series/${post.series.slug}`}
+              className="group flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 mb-5 text-sm hover:border-accent/60 transition-colors"
+              data-testid="article-series-banner"
+            >
+              <Layers className="h-4 w-4 text-accent shrink-0" />
+              <span>Part of the <strong className="font-semibold">{post.series.title}</strong> series</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-accent font-medium">
+                View all <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          )}
+
+          <AudioNarrator title={post.title} blocks={visibleBlocks} />
 
           <div className="article-body" data-testid="article-body" onMouseUp={handleSelection} onTouchEnd={handleSelection}>
             {visibleBlocks.map((block, i) =>

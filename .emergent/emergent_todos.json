@@ -1,22 +1,26 @@
 [
   {
-    "content": "Import demurrage article (finance) + Enfield article (lifestyle, featured)",
-    "status": "completed"
+    "content": "Backend: SERIES config + /api/series endpoints + series info on get_post",
+    "status": "in_progress"
   },
   {
-    "content": "Append both to REAL_POSTS in seed_data.py (durability)",
-    "status": "completed"
-  },
-  {
-    "content": "Sync both to production via the new Sync tool (2/2 pushed)",
-    "status": "completed"
-  },
-  {
-    "content": "Edition #2 import (still waiting for pasted text)",
+    "content": "Backend: /api/share/{slug} OG-rich share page for LinkedIn/X unfurls",
     "status": "pending"
   },
   {
-    "content": "PayPal integration (still waiting for setup answers)",
+    "content": "Frontend: AudioNarrator component (browser TTS) on article pages",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: SeriesPage + route + series banner on member articles",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: copy-share-link button + default OG tags in index.html",
+    "status": "pending"
+  },
+  {
+    "content": "Compile, smoke test, testing agent run",
     "status": "pending"
   }
 ]

@@ -1,9 +1,9 @@
-"""Backend API tests for The Trading Narrative - Bug Fix & Popular Highlights Feature"""
+"""Backend API tests for The Trading Narrative - Series, Share, and Audio Features"""
 import requests
 import sys
+import re
 
 PREVIEW_URL = "https://insight-hub-484.preview.emergentagent.com"
-PRODUCTION_URL = "https://thetradingnarrative.com"
 
 class TestRunner:
     def __init__(self):
@@ -41,175 +41,293 @@ class TestRunner:
         return self.tests_failed == 0
 
 
-def test_production_api_readonly(runner):
-    """Test production API - READ ONLY (no modifications)"""
+def test_series_endpoints(runner):
+    """Test editorial series endpoints"""
     print("\n" + "="*60)
-    print("PRODUCTION API TESTS (READ-ONLY)")
+    print("SERIES ENDPOINTS TESTS")
     print("="*60)
     
-    # Test 1: Edition #1 in briefings
+    # Test 1: GET /api/series returns trading-operations with count 3
     try:
-        resp = requests.get(f"{PRODUCTION_URL}/api/briefings", timeout=10)
-        briefings = resp.json().get("briefings", [])
-        edition_1 = next((b for b in briefings if b.get("edition") == 1), None)
+        resp = requests.get(f"{PREVIEW_URL}/api/series", timeout=10)
         runner.test(
-            "Production: Edition #1 exists in /api/briefings",
-            edition_1 is not None and "Five Things Commodity Desks Need to Know This Week" in edition_1.get("title", ""),
-            f"Edition #1 not found or title mismatch. Found: {edition_1.get('title') if edition_1 else 'None'}"
+            "Series list: Status 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
         )
-    except Exception as e:
-        runner.test("Production: Edition #1 in briefings", False, str(e))
-
-    # Test 2: Posts include Freight Management and Edition #1
-    try:
-        resp = requests.get(f"{PRODUCTION_URL}/api/posts?limit=5", timeout=10)
-        posts = resp.json().get("posts", [])
-        freight_post = next((p for p in posts if "freight-management" in p.get("slug", "").lower()), None)
-        edition_post = next((p for p in posts if p.get("edition") == 1), None)
+        
+        data = resp.json()
+        series_list = data.get("series", [])
         
         runner.test(
-            "Production: Freight Management article in /api/posts",
-            freight_post is not None,
-            f"Freight Management article not found in first 5 posts"
+            "Series list: Returns 1 series",
+            len(series_list) == 1,
+            f"Expected 1 series, got {len(series_list)}"
         )
+        
+        if series_list:
+            s = series_list[0]
+            runner.test(
+                "Series list: Slug is 'trading-operations'",
+                s.get("slug") == "trading-operations",
+                f"Expected 'trading-operations', got {s.get('slug')}"
+            )
+            runner.test(
+                "Series list: Title is 'Trading Operations'",
+                s.get("title") == "Trading Operations",
+                f"Expected 'Trading Operations', got {s.get('title')}"
+            )
+            runner.test(
+                "Series list: Count is 3",
+                s.get("count") == 3,
+                f"Expected count 3, got {s.get('count')}"
+            )
+    except Exception as e:
+        runner.test("Series list endpoint", False, str(e))
+
+    # Test 2: GET /api/series/trading-operations returns posts in exact order
+    try:
+        resp = requests.get(f"{PREVIEW_URL}/api/series/trading-operations", timeout=10)
         runner.test(
-            "Production: Edition #1 post in /api/posts",
-            edition_post is not None,
-            f"Edition #1 post not found in first 5 posts"
+            "Series detail: Status 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+        
+        data = resp.json()
+        posts = data.get("posts", [])
+        
+        runner.test(
+            "Series detail: Returns 3 posts",
+            len(posts) == 3,
+            f"Expected 3 posts, got {len(posts)}"
+        )
+        
+        expected_order = [
+            "five-things-commodity-desks-need-to-know-this-week",
+            "freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr",
+            "the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a"
+        ]
+        
+        if len(posts) >= 3:
+            actual_order = [p.get("slug") for p in posts[:3]]
+            runner.test(
+                "Series detail: Post 1 is 'Five Things Commodity Desks...'",
+                actual_order[0] == expected_order[0],
+                f"Expected {expected_order[0]}, got {actual_order[0]}"
+            )
+            runner.test(
+                "Series detail: Post 2 is 'Freight Management...'",
+                actual_order[1] == expected_order[1],
+                f"Expected {expected_order[1]}, got {actual_order[1]}"
+            )
+            runner.test(
+                "Series detail: Post 3 is 'The Shipping Industry...'",
+                actual_order[2] == expected_order[2],
+                f"Expected {expected_order[2]}, got {actual_order[2]}"
+            )
+    except Exception as e:
+        runner.test("Series detail endpoint", False, str(e))
+
+    # Test 3: GET /api/series/unknown returns 404
+    try:
+        resp = requests.get(f"{PREVIEW_URL}/api/series/unknown-series", timeout=10)
+        runner.test(
+            "Series 404: Unknown series returns 404",
+            resp.status_code == 404,
+            f"Expected 404, got {resp.status_code}"
         )
     except Exception as e:
-        runner.test("Production: Posts check", False, str(e))
+        runner.test("Series 404 test", False, str(e))
 
 
-def test_preview_backend(runner):
-    """Test preview environment backend"""
+def test_posts_with_series(runner):
+    """Test posts include series information"""
     print("\n" + "="*60)
-    print("PREVIEW BACKEND TESTS")
+    print("POSTS WITH SERIES INFO TESTS")
     print("="*60)
     
-    # Test 1: Edition #1 in briefings
-    try:
-        resp = requests.get(f"{PREVIEW_URL}/api/briefings", timeout=10)
-        briefings = resp.json().get("briefings", [])
-        edition_1 = next((b for b in briefings if b.get("edition") == 1), None)
-        runner.test(
-            "Preview: Edition #1 in /api/briefings",
-            edition_1 is not None,
-            f"Edition #1 not found"
-        )
-    except Exception as e:
-        runner.test("Preview: Edition #1 in briefings", False, str(e))
-
-    # Test 2: Total published posts >= 11
-    try:
-        resp = requests.get(f"{PREVIEW_URL}/api/posts", timeout=10)
-        data = resp.json()
-        total = data.get("total", 0)
-        published = len([p for p in data.get("posts", []) if p.get("status") == "published"])
-        runner.test(
-            "Preview: Total posts >= 11",
-            total >= 11,
-            f"Expected >= 11, got {total}"
-        )
-        runner.test(
-            "Preview: All posts published",
-            published >= 11,
-            f"Expected >= 11 published, got {published}"
-        )
-    except Exception as e:
-        runner.test("Preview: Posts count", False, str(e))
-
-    # Test 3: Popular highlights API - with highlights
+    # Test 1: Freight article includes series info
     try:
         slug = "freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr"
-        resp = requests.get(f"{PREVIEW_URL}/api/posts/{slug}/popular-highlights", timeout=10)
-        data = resp.json()
-        popular = data.get("popular", [])
-        
+        resp = requests.get(f"{PREVIEW_URL}/api/posts/{slug}", timeout=10)
         runner.test(
-            "Preview: Popular highlights API returns data",
-            len(popular) > 0,
-            f"Expected highlights, got empty list"
+            "Post with series: Status 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
         )
         
-        if popular:
-            first = popular[0]
-            has_block_index = "block_index" in first
-            has_text = "text" in first
-            has_count = "count" in first
-            correct_shape = has_block_index and has_text and has_count
-            
+        data = resp.json()
+        series = data.get("series")
+        
+        runner.test(
+            "Post with series: Has series field",
+            series is not None,
+            "Expected series field, got None"
+        )
+        
+        if series:
             runner.test(
-                "Preview: Popular highlights correct shape (block_index, text, count)",
-                correct_shape,
-                f"Missing fields. Has: {list(first.keys())}"
+                "Post with series: Slug is 'trading-operations'",
+                series.get("slug") == "trading-operations",
+                f"Expected 'trading-operations', got {series.get('slug')}"
             )
-            
             runner.test(
-                "Preview: Popular highlights count >= 2",
-                first.get("count", 0) >= 2,
-                f"Expected count >= 2, got {first.get('count')}"
-            )
-            
-            runner.test(
-                "Preview: Popular highlights text matches",
-                first.get("text") == "This is not a small firm problem.",
-                f"Expected specific text, got: {first.get('text')}"
+                "Post with series: Title is 'Trading Operations'",
+                series.get("title") == "Trading Operations",
+                f"Expected 'Trading Operations', got {series.get('title')}"
             )
     except Exception as e:
-        runner.test("Preview: Popular highlights API", False, str(e))
+        runner.test("Post with series info", False, str(e))
 
-    # Test 4: Popular highlights API - no highlights
+    # Test 2: Non-series article has series=null
     try:
-        slug = "five-things-commodity-desks-need-to-know-this-week"
-        resp = requests.get(f"{PREVIEW_URL}/api/posts/{slug}/popular-highlights", timeout=10)
+        slug = "170-kilometres-one-green-enfield-and-a-lesson-in-strategic-momentum"
+        resp = requests.get(f"{PREVIEW_URL}/api/posts/{slug}", timeout=10)
+        runner.test(
+            "Post without series: Status 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+        
         data = resp.json()
-        popular = data.get("popular", [])
+        series = data.get("series")
         
         runner.test(
-            "Preview: Popular highlights empty for slug with no highlights",
-            len(popular) == 0 and "popular" in data,
-            f"Expected {{popular: []}}, got {data}"
+            "Post without series: series is None",
+            series is None,
+            f"Expected None, got {series}"
         )
     except Exception as e:
-        runner.test("Preview: Popular highlights empty", False, str(e))
+        runner.test("Post without series info", False, str(e))
 
 
-def test_seed_code_review(runner):
-    """Verify seed_database code sets status='draft' and views=0"""
+def test_share_endpoint(runner):
+    """Test LinkedIn/X preview card endpoint"""
     print("\n" + "="*60)
-    print("SEED CODE REVIEW")
+    print("SHARE ENDPOINT (OG CARDS) TESTS")
     print("="*60)
     
+    # Test 1: Valid slug returns HTML with OG tags
     try:
-        with open("/app/backend/server.py", "r") as f:
-            content = f.read()
-            
-        # Check for status='draft' in seed
-        has_draft_status = "'status': 'draft'" in content
+        slug = "the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a"
+        resp = requests.get(f"{PREVIEW_URL}/api/share/{slug}", timeout=10)
         runner.test(
-            "Seed code: Sets status='draft' for sample posts",
-            has_draft_status,
-            "status='draft' not found in seed_database"
+            "Share endpoint: Status 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
         )
         
-        # Check for views=0
-        has_zero_views = "'views': 0" in content
+        html = resp.text
+        
+        # Check for og:title
+        has_og_title = 'property="og:title"' in html and "The Shipping Industry" in html
         runner.test(
-            "Seed code: Sets views=0 for sample posts",
-            has_zero_views,
-            "views=0 not found in seed_database"
+            "Share endpoint: Contains og:title with essay title",
+            has_og_title,
+            "og:title not found or doesn't contain essay title"
         )
         
-        # Check comment explaining the change
-        has_comment = "Demo essays seed as DRAFTS" in content or "demo essays seed as drafts" in content.lower()
+        # Check for og:image
+        has_og_image = 'property="og:image"' in html and 'unsplash.com' in html
         runner.test(
-            "Seed code: Has explanatory comment",
-            has_comment,
-            "Explanatory comment about draft seeding not found"
+            "Share endpoint: Contains og:image with unsplash URL",
+            has_og_image,
+            "og:image not found or doesn't contain unsplash URL"
+        )
+        
+        # Check for og:url
+        has_og_url = 'property="og:url"' in html and f'/post/{slug}' in html
+        runner.test(
+            "Share endpoint: Contains og:url ending in /post/[slug]",
+            has_og_url,
+            f"og:url not found or doesn't end with /post/{slug}"
+        )
+        
+        # Check for twitter:card
+        has_twitter_card = 'name="twitter:card"' in html and 'summary_large_image' in html
+        runner.test(
+            "Share endpoint: Contains twitter:card summary_large_image",
+            has_twitter_card,
+            "twitter:card summary_large_image not found"
+        )
+        
+        # Check for meta refresh redirect
+        has_meta_refresh = 'http-equiv="refresh"' in html and f'/post/{slug}' in html
+        runner.test(
+            "Share endpoint: Contains meta refresh redirect",
+            has_meta_refresh,
+            "meta refresh redirect not found"
+        )
+        
+        # Check for JS redirect
+        has_js_redirect = 'window.location.replace' in html and f'/post/{slug}' in html
+        runner.test(
+            "Share endpoint: Contains JS redirect",
+            has_js_redirect,
+            "window.location.replace redirect not found"
+        )
+        
+    except Exception as e:
+        runner.test("Share endpoint valid slug", False, str(e))
+
+    # Test 2: Unknown slug returns 404
+    try:
+        resp = requests.get(f"{PREVIEW_URL}/api/share/unknown-slug-12345", timeout=10)
+        runner.test(
+            "Share endpoint 404: Unknown slug returns 404",
+            resp.status_code == 404,
+            f"Expected 404, got {resp.status_code}"
         )
     except Exception as e:
-        runner.test("Seed code review", False, str(e))
+        runner.test("Share endpoint 404 test", False, str(e))
+
+
+def test_regression_endpoints(runner):
+    """Test that existing endpoints still work"""
+    print("\n" + "="*60)
+    print("REGRESSION TESTS")
+    print("="*60)
+    
+    # Test 1: /api/posts still works
+    try:
+        resp = requests.get(f"{PREVIEW_URL}/api/posts?limit=5", timeout=10)
+        runner.test(
+            "Regression: /api/posts returns 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+        
+        data = resp.json()
+        runner.test(
+            "Regression: /api/posts has posts array",
+            "posts" in data and isinstance(data["posts"], list),
+            "posts array not found"
+        )
+    except Exception as e:
+        runner.test("Regression: /api/posts", False, str(e))
+
+    # Test 2: /api/briefings still works
+    try:
+        resp = requests.get(f"{PREVIEW_URL}/api/briefings", timeout=10)
+        runner.test(
+            "Regression: /api/briefings returns 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+    except Exception as e:
+        runner.test("Regression: /api/briefings", False, str(e))
+
+    # Test 3: /api/categories still works
+    try:
+        resp = requests.get(f"{PREVIEW_URL}/api/categories", timeout=10)
+        runner.test(
+            "Regression: /api/categories returns 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+    except Exception as e:
+        runner.test("Regression: /api/categories", False, str(e))
 
 
 def main():
@@ -217,13 +335,14 @@ def main():
     
     print("\n" + "="*60)
     print("THE TRADING NARRATIVE - BACKEND API TESTS")
-    print("Bug Fix Verification + Popular Highlights Feature")
+    print("Series, Share (OG Cards), and Audio Features")
     print("="*60)
     
     # Run all test suites
-    test_production_api_readonly(runner)
-    test_preview_backend(runner)
-    test_seed_code_review(runner)
+    test_series_endpoints(runner)
+    test_posts_with_series(runner)
+    test_share_endpoint(runner)
+    test_regression_endpoints(runner)
     
     # Print summary
     success = runner.summary()
