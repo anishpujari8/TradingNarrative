@@ -1,12 +1,15 @@
 """Admin routes: post CRUD, subscribers, issues, stats, email status/test/logs."""
 import asyncio
+import base64
 import uuid
 from datetime import timedelta
 
+from bson import Binary
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel, Field
 
 from config import (CATEGORIES, FRONTEND_URL, EMAIL_ENABLED, EMAIL_FROM_NAME,
-                    EMAIL_REPLY_TO, GMAIL_SMTP_USER, TTS_ENABLED)
+                    EMAIL_REPLY_TO, GMAIL_SMTP_USER, TTS_ENABLED, TTS_VOICES)
 from db import db
 from utils import now_utc, iso, clean, slugify, read_time, post_summary, published_query
 from security import get_admin_user
@@ -136,6 +139,40 @@ async def admin_issues(admin=Depends(get_admin_user)):
 
 
 # ---------------------- narration status panel ----------------------
+
+class AudioCacheImportIn(BaseModel):
+    post_slug: str = Field(min_length=1)
+    voice: str
+    scope: str
+    audio_b64: str = Field(min_length=1)
+    chars: int = 0
+
+
+@router.post('/admin/audio-cache/import')
+async def import_audio_cache(body: AudioCacheImportIn, admin=Depends(get_admin_user)):
+    """Accept a pre-generated narration pushed from another environment (preview -> production).
+    Stored against THIS environment's post version so it is served as a fresh cache hit."""
+    if body.voice not in TTS_VOICES or body.scope not in ('full', 'preview'):
+        raise HTTPException(status_code=400, detail='Invalid voice or scope')
+    post = await db.posts.find_one({'slug': body.post_slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail=f'Post {body.post_slug} is not published here')
+    try:
+        audio = base64.b64decode(body.audio_b64)
+    except Exception:
+        raise HTTPException(status_code=400, detail='Invalid audio payload')
+    if not audio or len(audio) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail='Audio payload empty or too large')
+    key = {'post_slug': body.post_slug, 'voice': body.voice, 'scope': body.scope}
+    await db.audio_cache.update_one(key, {'$set': {
+        **key,
+        'post_version': post.get('updated_at') or post.get('published_at') or '',
+        'audio': Binary(audio), 'bytes': len(audio), 'chars': body.chars,
+        'created_at': iso(now_utc()),
+    }}, upsert=True)
+    logger_bytes = len(audio)
+    return {'ok': True, 'bytes': logger_bytes}
+
 
 @router.get('/admin/narrations')
 async def admin_narrations(admin=Depends(get_admin_user)):

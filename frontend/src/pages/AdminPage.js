@@ -24,6 +24,7 @@ import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Glob
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { SyncToProductionDialog } from "@/components/SyncToProductionDialog";
+import { SyncNarrationsDialog } from "@/components/SyncNarrationsDialog";
 import { api, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -830,6 +831,7 @@ export default function AdminPage() {
                 <Button variant="outline" size="sm" onClick={loadNarrations} data-testid="admin-narrations-refresh-button">
                   <RefreshCw className="h-4 w-4 mr-2" /> Refresh
                 </Button>
+                <SyncNarrationsDialog cachedCount={narrations?.cached_count ?? 0} />
                 <Button
                   size="sm"
                   className="bg-accent text-accent-foreground hover:bg-accent/90"

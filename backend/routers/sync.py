@@ -89,3 +89,75 @@ async def sync_push(body: SyncPushIn, admin=Depends(get_admin_user)):
             results.append({'title': p['title'], 'slug': p['slug'], 'ok': False, 'detail': str(e)[:150]})
     logger.info(f'Sync to production: pushed {pushed}/{len(missing)} articles')
     return {'ok': True, 'pushed': pushed, 'total': len(missing), 'results': results}
+
+
+# ---------------------- narration sync (preview cache -> production cache) ----------------------
+
+@router.post('/admin/sync/narrations')
+async def sync_narrations(body: SyncPushIn, admin=Depends(get_admin_user)):
+    """Push locally cached narrations to production so the live site serves them instantly —
+    without spending any new ElevenLabs credits. Skips narrations production already has."""
+    import base64
+
+    def _login():
+        return requests.post(f'{PRODUCTION_SITE_URL}/api/auth/login',
+                             json={'email': admin['email'], 'password': body.password}, timeout=20)
+
+    resp = await asyncio.to_thread(_login)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail='Production sign-in failed — check the production admin password.')
+    headers = {'Authorization': f"Bearer {resp.json()['token']}"}
+
+    # what does production already have cached, and which posts exist there?
+    def _prod_narrations():
+        return requests.get(f'{PRODUCTION_SITE_URL}/api/admin/narrations', headers=headers, timeout=20)
+
+    prod_cached_full = set()
+    prod_slugs = None
+    try:
+        r = await asyncio.to_thread(_prod_narrations)
+        if r.status_code == 200:
+            data = r.json()
+            prod_slugs = {e['slug'] for e in data.get('essays', [])}
+            prod_cached_full = {(e['slug'], s) for e in data.get('essays', []) for s in e.get('scopes', [])}
+    except Exception as e:
+        logger.warning(f'Narration sync: could not read production narration status: {e}')
+    if prod_slugs is None:
+        try:
+            prod_slugs = {p['slug'] for p in await asyncio.to_thread(_prod_get_posts)}
+        except Exception:
+            raise HTTPException(status_code=502, detail='Could not reach the production site. Try again in a minute.')
+
+    local = await db.audio_cache.find({}).to_list(200)
+    results, pushed, skipped = [], 0, 0
+    for doc in local:
+        slug, voice, scope = doc['post_slug'], doc.get('voice', 'male'), doc.get('scope', 'full')
+        label = f'{slug} ({voice}/{scope})'
+        if slug not in prod_slugs:
+            continue  # essay not on production — nothing to attach the audio to
+        if (slug, scope) in prod_cached_full:
+            skipped += 1
+            results.append({'label': label, 'ok': True, 'skipped': True, 'detail': 'Already on production'})
+            continue
+        payload = {'post_slug': slug, 'voice': voice, 'scope': scope,
+                   'audio_b64': base64.b64encode(bytes(doc['audio'])).decode(),
+                   'chars': doc.get('chars', 0)}
+
+        def _push(pl=payload):
+            return requests.post(f'{PRODUCTION_SITE_URL}/api/admin/audio-cache/import',
+                                 json=pl, headers=headers, timeout=120)
+
+        try:
+            r = await asyncio.to_thread(_push)
+            if r.status_code == 200:
+                pushed += 1
+                results.append({'label': label, 'ok': True, 'detail': None})
+            elif r.status_code == 404 and 'not published' not in r.text:
+                results.append({'label': label, 'ok': False,
+                                'detail': 'Production does not have the import endpoint yet — redeploy first.'})
+            else:
+                results.append({'label': label, 'ok': False, 'detail': r.text[:150]})
+        except Exception as e:
+            results.append({'label': label, 'ok': False, 'detail': str(e)[:150]})
+    logger.info(f'Narration sync: pushed {pushed}, skipped {skipped} (already live)')
+    return {'ok': True, 'pushed': pushed, 'skipped': skipped, 'results': results}
