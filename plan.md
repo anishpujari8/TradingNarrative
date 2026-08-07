@@ -14,7 +14,7 @@
     - Fallback to one-time Razorpay Orders when Subscriptions is not enabled
     - Live re-probe so Autopay switches on without restart
   - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
-    - Target: **Recurring subscription** (user intent confirmed; exact config + credentials pending)
+    - Target: **Recurring subscription** *(user intent indicated but must confirm definitively + provide credentials)*
 
 ### Reader experience & engagement
 - Bookmarks/reading list ✅
@@ -35,20 +35,29 @@
 - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
 - **Weekly Listen Digest Social Proof** ✅ *(digest includes “Most listened this week” block when narration listen data exists)*
 
+### Email sending (provider)
+- **Gmail SMTP (LIVE)** ✅
+- **Resend** ⛔ *(planned; blocked pending user decisions + API key + sender domain verification)*
+
 ### Audio narration (ElevenLabs)
 - **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
-- **Listen analytics** ✅ *(count plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
+- **Listen analytics** ✅ *(count narration plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
 - **Listen completion rate** ✅ *(milestone funnel: 25% / 50% / 75% / finish + completion % per essay in Admin Narrations)*
-- **Pre-generated narrations** ✅ *(warm cache on startup + when posts are published/updated so playback is instant when cached)*
+- **Pre-generated narrations** ✅ *(warm cache on startup + when posts are published/updated so playback is instant when cached; quota-aware)*
 - **Narration Status Panel** ✅ *(Admin self-service for narration coverage + warmup trigger)*
   - Shows narrated coverage (X/Y), cached/missing per essay, audio size, listens
   - Shows completion rate + milestone funnel tooltips
   - “Generate missing narrations” one-click warmup
   - Auto-refresh while warmup is running
+- **Narration sync (Preview → Production)** ✅ *(push cached audio blobs to live site without spending new ElevenLabs credits)*
+  - Admin endpoint to import cached audio on the receiver
+  - Admin sync endpoint to push preview cache to production
+  - Frontend button + dialog in Admin → Narrations
 
 **ElevenLabs operational caveats**
 - Credits may be exhausted; uncached essays will be unavailable until credits are topped up.
 - Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
+- Production narration can be restored without credits by syncing existing preview cache to production.
 
 ### AI features (Gemini)
 - **Gemini 2.5 Flash integration via emergentintegrations + EMERGENT_LLM_KEY** ✅
@@ -64,7 +73,7 @@
 - Post conversion stats (“Essays that convert”) ✅
 - CSV export ✅
 - **Content Sync Tool (Preview → Production)** ✅ *(one-click admin sync for missing published posts)*
-- **Sync carries normalized author identity** ✅ *(author object normalized to “Anish Pujari” by startup migration; production self-heals on next redeploy)*
+- **Sync carries normalized author identity** ✅ *(author object normalized to “Anish Pujari” by startup migration; production self-heals on redeploy)*
 
 ### Community
 - Private Community Lounge ✅
@@ -78,7 +87,7 @@
 - Import existing writing (LinkedIn newsletter editions + LinkedIn articles) ✅ *(Edition #1 done; #2 pending)*
 - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
 - **Spinning logo** ✅ *(slow, elegant rotation ~9s per turn; respects reduced motion)*
-- **Demo Cleanup** ✅ *(sample/demo essays auto-drafted so credits are spent on real writing)*
+- **Demo Cleanup** ✅ *(sample/demo essays auto-drafted/unpublished so credits are spent on real writing)*
 
 ### Stability
 - Modular backend (monolith `server.py` split into routers/services) ✅
@@ -267,27 +276,69 @@
 #### C) Testing ✅
 - Iteration_21: backend 12/12 passed; frontend core features passed.
 
+### Phase 30 — Narration Bug RCA + Narration Sync Tool ✅ COMPLETED
+**User bug:** “audio essay not working / Cloudflare invalid response”
+
+**RCA**
+- Preview: transient 502 due to backend restart; verified healthy after restart.
+- Production: audio cache empty + ElevenLabs credits exhausted → narration unavailable.
+
+**Fix delivered (works without new credits): Narration Sync (Preview → Production)**
+- Backend:
+  - `POST /api/admin/audio-cache/import` *(production receiver)*
+    - Validates voice/scope, post exists and is published
+    - Accepts base64 audio (≤20MB)
+    - Stores against receiving env post version so it serves as a fresh cache hit
+  - `POST /api/admin/sync/narrations` *(preview sender)*
+    - Logs into production admin
+    - Reads production `/api/admin/narrations` to skip already-cached
+    - Pushes cached audio blobs with 120s timeout
+    - Emits explicit “redeploy first” guidance if production lacks the import endpoint
+- Frontend:
+  - New Admin → Narrations button: **“Send narrations to live site”**
+  - Password dialog + per-item results list
+- Testing:
+  - Iteration_22: 100% pass (12/12 backend + all frontend).
+
+### Phase 31 — Resend Integration ⛔ NOT STARTED (blocked)
+**Blocked on user decisions + credentials**
+- Need:
+  1) Scope: replace Gmail SMTP for everything vs only newsletter sends
+  2) Fallback behavior: keep Gmail SMTP as fallback or Resend-only
+  3) Resend API key (`re_...`)
+  4) Sender domain status: verified `thetradingnarrative.com` vs `onboarding@resend.dev` test sender
+
 ---
 
 ## 3) Next Actions
 
 ### A) Immediate
 1) **Production rollout** ⏳
-   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–29**.
+   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–30**.
+   - Note: recent production deploy attempts may hit Cloud Build rate limits; retry after a cooldown window.
 
-2) **ElevenLabs operations** ⏳
-   - Top up ElevenLabs credits.
-   - (Optional) Enable `user_read` on the ElevenLabs API key so credits show in the Narrations panel.
+2) **Restore narration on production without credits** ✅ (user action)
+   - After production redeploy includes Phase 30 endpoints:
+     - Go to **Admin → Narrations → Send narrations to live site**
+     - Enter the production admin password
+     - This will push the 3 cached narrations from preview to production instantly.
+
+3) **ElevenLabs operations** ⏳
+   - Top up ElevenLabs credits (to generate narration for the one remaining uncached essay).
+   - (Optional) Enable `user_read` on the ElevenLabs API key so credit balance shows in the Narrations panel.
    - Then use **Admin → Narrations → Generate missing narrations**.
 
-3) **Delivery & Systems essay import** ⛔
+4) **Delivery & Systems essay import** ⛔
    - Paste your delivery-focused essay text (title + body).
 
-4) **Edition #2 import** ⛔
+5) **Edition #2 import** ⛔
    - Paste Edition #2 newsletter text.
 
-5) **PayPal (recurring subscriptions)** ⛔
+6) **PayPal (recurring subscriptions)** ⛔
    - Provide PayPal decisions + credentials as listed in Phase 19.
+
+7) **Resend integration** ⛔
+   - Answer the 4 setup decisions + provide Resend API key.
 
 ### B) Production note (workflow)
 - **Preview**: changes implemented and tested here.
@@ -306,6 +357,8 @@
 ✅ Narration ops are self-serve (status + warmup) and digest includes:
 - “Most highlighted this week”
 - “Most listened this week”
+✅ Narration production restore path works:
+- Production can receive cached audio via narration sync without spending new ElevenLabs credits.
 ✅ AI features:
 - Admin AI writing assistant works (draft/polish/expand; streaming)
 - “Ask this essay” is grounded + paywall-aware; streaming
@@ -313,8 +366,10 @@
 ⚠️ Operational caveats
 - ElevenLabs: uncached narrations may be unavailable if credits are exhausted.
 - Gemini: usage consumes Emergent LLM key credits.
+- Deployments can be rate-limited by Cloud Build quotas; retry after cooldown.
 
 ⛔ Blockers
 - Delivery essay import: awaiting text.
 - Edition #2 import: awaiting text.
 - PayPal: awaiting decisions + credentials.
+- Resend: awaiting decisions + API key + sender domain verification.
