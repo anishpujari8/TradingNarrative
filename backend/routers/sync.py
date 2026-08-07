@@ -133,6 +133,9 @@ async def sync_narrations(body: SyncPushIn, admin=Depends(get_admin_user)):
     for doc in local:
         slug, voice, scope = doc['post_slug'], doc.get('voice', 'male'), doc.get('scope', 'full')
         label = f'{slug} ({voice}/{scope})'
+        audio_bytes = bytes(doc.get('audio') or b'')
+        if len(audio_bytes) < 50 * 1024:
+            continue  # never ship corrupt/truncated audio to the live site
         if slug not in prod_slugs:
             continue  # essay not on production — nothing to attach the audio to
         if (slug, scope) in prod_cached_full:
@@ -140,7 +143,7 @@ async def sync_narrations(body: SyncPushIn, admin=Depends(get_admin_user)):
             results.append({'label': label, 'ok': True, 'skipped': True, 'detail': 'Already on production'})
             continue
         payload = {'post_slug': slug, 'voice': voice, 'scope': scope,
-                   'audio_b64': base64.b64encode(bytes(doc['audio'])).decode(),
+                   'audio_b64': base64.b64encode(audio_bytes).decode(),
                    'chars': doc.get('chars', 0)}
 
         def _push(pl=payload):

@@ -45,12 +45,28 @@ def _synthesize_sync(chunks, voice_id):
     return audio
 
 
+def _valid_cached_audio(cached) -> bool:
+    """Guard against corrupt/truncated cache entries: real narration is a sizeable MP3."""
+    if not cached or not cached.get('audio'):
+        return False
+    audio = bytes(cached['audio'])
+    if len(audio) < 50 * 1024:
+        return False
+    return audio[:3] == b'ID3' or (audio[0] == 0xFF and (audio[1] & 0xE0) == 0xE0)
+
+
 async def get_or_generate_audio(post, voice: str, blocks, scope: str):
     """Return cached MP3 bytes for (post, voice, scope) or synthesize and cache them.
     scope: 'full' (entitled readers) or 'preview' (paywalled preview only)."""
     voice_id = TTS_VOICES[voice]['id']
     key = {'post_slug': post['slug'], 'voice': voice, 'scope': scope}
     cached = await db.audio_cache.find_one(key)
+    if cached and not _valid_cached_audio(cached):
+        # purge corrupt/truncated entries so they are never served or used as stale fallback
+        logger.warning(f"TTS cache: purging corrupt entry for {post['slug']} ({voice}/{scope}, "
+                       f"{cached.get('bytes', 0)} bytes)")
+        await db.audio_cache.delete_one(key)
+        cached = None
     post_version = post.get('updated_at') or post.get('published_at') or ''
     if cached and cached.get('post_version') == post_version:
         return bytes(cached['audio']), True

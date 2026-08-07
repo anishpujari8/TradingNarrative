@@ -148,6 +148,13 @@ class AudioCacheImportIn(BaseModel):
     chars: int = 0
 
 
+def _looks_like_mp3(audio: bytes) -> bool:
+    """Sanity check: real narration is a sizeable MP3 (ID3 tag or MPEG frame sync)."""
+    if not audio or len(audio) < 50 * 1024:  # every real essay narration is well above 50KB
+        return False
+    return audio[:3] == b'ID3' or (audio[0] == 0xFF and (audio[1] & 0xE0) == 0xE0)
+
+
 @router.post('/admin/audio-cache/import')
 async def import_audio_cache(body: AudioCacheImportIn, admin=Depends(get_admin_user)):
     """Accept a pre-generated narration pushed from another environment (preview -> production).
@@ -161,9 +168,16 @@ async def import_audio_cache(body: AudioCacheImportIn, admin=Depends(get_admin_u
         audio = base64.b64decode(body.audio_b64)
     except Exception:
         raise HTTPException(status_code=400, detail='Invalid audio payload')
-    if not audio or len(audio) > 20 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail='Audio payload empty or too large')
+    if len(audio) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail='Audio payload too large')
+    if not _looks_like_mp3(audio):
+        raise HTTPException(status_code=400, detail='Audio payload rejected — not a valid MP3 narration')
     key = {'post_slug': body.post_slug, 'voice': body.voice, 'scope': body.scope}
+    existing = await db.audio_cache.find_one(key, {'audio': 0})
+    if existing and existing.get('bytes', 0) > 4 * len(audio):
+        # never let a suspiciously small payload clobber a full-length narration
+        raise HTTPException(status_code=409,
+                            detail='Refusing to overwrite a much larger existing narration')
     await db.audio_cache.update_one(key, {'$set': {
         **key,
         'post_version': post.get('updated_at') or post.get('published_at') or '',
