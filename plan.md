@@ -19,6 +19,7 @@
   - Reading progress indicators
   - Continue-reading strips
   - Notifications bell (incl. **Lounge reply notifications + deep-linking**)
+  - **Reader Highlights** (select-to-highlight, persistent saved lines, highlights library page) ✅
   - Weekly digest preview + send
 - Deliver admin + growth tooling:
   - **Traffic Sources Analytics** (referrers + UTM attribution)
@@ -49,6 +50,8 @@
     - **Weekly briefing template** (THE BOARD + five numbered sections) ✅
     - **Edition numbering** (Edition #1, #2…) with UI badges ✅
     - **Briefings series archive page** `/briefings` ✅
+- Improve editorial discovery:
+  - **Related essays by tags** (shared tags prioritized over category-only) ✅
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
 - **Stability objective (COMPLETED)**: Remove large-file edit risk by modularizing the backend monolith (`/app/backend/server.py`) into routers/services with regression testing. ✅
 
@@ -147,18 +150,11 @@
   - Updated hero copy + SEO description to match the 4 themes.
   - Migrated 3 sample travel posts → drafts under `delivery` to avoid mismatched public content.
 - **Weekly briefing template**:
-  - Added one-click button in Admin Editor that loads a full weekly briefing skeleton:
-    - THE BOARD strip
-    - Five `##` numbered sections
-    - Three signals to watch
-    - Sign-off
+  - Added one-click button in Admin Editor that loads a full weekly briefing skeleton.
   - Auto-computes the next edition number by scanning existing posts.
 - **Edition numbers**:
   - Added optional `edition` field on posts (admin editor input + API serialization).
-  - UI badges:
-    - Article page: “Edition #N”
-    - Post cards: “#N”
-  - Set Edition #1 on the imported briefing.
+  - UI badges in article page + cards.
 
 ### Phase 13 — Briefings Series Page + Wednesday Reminder ✅ DONE
 **User stories**
@@ -168,60 +164,31 @@
 **Steps (DONE)**
 - **Series archive**:
   - Backend: `GET /api/briefings` returns published posts with `edition` sorted by edition desc.
-  - Frontend: `/briefings` page showing edition tiles + metadata, with navigation link (desktop + mobile).
-  - Article edition badge now links into `/briefings`.
+  - Frontend: `/briefings` page showing edition tiles + metadata.
 - **Wednesday reminder**:
-  - Background loop emails owner Wednesday ≥07:00 UTC if the week’s briefing (post with `edition`) isn’t published.
-  - Runs at most once per ISO week.
-  - Admin toggle in Admin → Newsletter tab (ON by default):
-    - `GET/POST /api/admin/newsletter/briefing-reminder`
+  - Background loop emails owner Wednesday ≥07:00 UTC if the week’s briefing isn’t published.
+  - Admin toggle in Admin → Newsletter tab.
 
 ### Phase 14 — Article Import: “Freight Management and Tracking Visibility” (Tech & AI) ✅ COMPLETED
 **What was done**
 - Executed `python /tmp/import_freight.py`.
-- Verified via API that the post exists and is published:
-  - `slug`: `freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr`
-  - `category`: `tech-business`
-  - `tier`: `free`
-  - Correct author + 46 content blocks.
-- Verified via frontend screenshots that:
-  - The article renders correctly at `/post/{slug}` with Tech & AI badge, cover image, tags, author.
-  - It appears in `/category/tech-business` (and effectively at the top of the listing).
-
-**Exit criteria met**
-- Script exits cleanly.
-- Post visible on the site and renders correctly.
+- Verified via API and frontend screenshots:
+  - Published under `category=tech-business`, `tier=free`.
+  - Renders correctly at `/post/{slug}` and appears in `/category/tech-business`.
 
 ### Phase 15 — Backend Modularization Refactor (server.py → routers/services) ✅ COMPLETED
 **Goal**: Reduce merge/conflict risk and improve maintainability by extracting the ~2170-line monolith into modules.
 
 **What was done**
 - Split backend into modules (behavior preserved):
-  - `/app/backend/server.py` now a slim entrypoint (app assembly, seed, startup loops, CORS).
-  - New modules:
-    - `config.py`, `db.py`, `utils.py`, `security.py`, `schemas.py`
-    - `services/`:
-      - `emailer.py` (Gmail SMTP live + unsubscribe)
-      - `razorpay_service.py` (capability probe + plans)
-      - `stripe_service.py` (stripe config + entitlement activation)
-      - `digest_service.py` (digest build/send + background loops)
-    - `routers/`:
-      - `auth.py`, `posts.py`, `billing.py`, `razorpay_routes.py`, `newsletter.py`, `analytics.py`, `community.py`, `admin.py`
-- **Route parity verified exactly**: 71/71 routes matched vs the monolith.
-- **Background loops confirmed running**:
-  - Friday digest autosend loop
-  - Wednesday briefing reminder loop
-
-**Regression testing**
-- Comprehensive regression test “iteration_12”:
-  - Backend: **63/66 passed** (remaining 3 were test artifacts: Stripe timeout in the test harness later verified OK; plus two incorrect test assumptions)
-  - Frontend: **100% pass** on critical pages (home, category, article, briefings, pricing, lounge)
-- Housekeeping: cleaned all leftover test data from DB (throwaway subscribers, test threads/replies, test announcements, test users, stale notifications). Subscriber list restored to only the real subscriber.
-
-**Exit criteria met**
-- No route paths changed.
-- Backend + frontend smoke/regression tests pass.
-- `server.py` reduced to a small entrypoint.
+  - `/app/backend/server.py` now a slim entrypoint.
+  - New modules: `config.py`, `db.py`, `utils.py`, `security.py`, `schemas.py`.
+  - `services/`: `emailer.py`, `razorpay_service.py`, `stripe_service.py`, `digest_service.py`.
+  - `routers/`: `auth.py`, `posts.py`, `billing.py`, `razorpay_routes.py`, `newsletter.py`, `analytics.py`, `community.py`, `admin.py`.
+- Route parity verified exactly (71/71).
+- Background loops confirmed running.
+- Regression testing passed (iteration_12: backend 63/66 with remaining as test artifacts; frontend 100%).
+- Housekeeping: cleaned leftover test data; subscriber list restored to only real subscriber.
 
 ### Phase 16 — Delivery & Systems Article Import ⛔ BLOCKED (waiting on user content)
 **Context**: User will paste a Delivery-focused article after the freight import.
@@ -235,13 +202,52 @@
 - Import into `posts` with `category = "delivery"`.
 - Verify frontend listing + article render.
 
+### Phase 17 — Reader Highlights + Related By Tags ✅ COMPLETED
+#### A) Reader Highlights ✅
+**Backend**
+- New router: `/app/backend/routers/highlights.py`
+  - `POST /api/highlights`
+    - Validates the selected `text` is an exact substring of the referenced `content_blocks[block_index]`.
+    - Enforces paywall: non-premium users can only highlight within the **3-block preview** for premium posts.
+    - Dedupe per user+post+text.
+    - Caps: **500 highlights/user**, **50 highlights/post**.
+  - `GET /api/highlights` (optional `?slug=` filter), newest-first.
+  - `DELETE /api/highlights/{id}` (owner or admin).
+- Schema: `HighlightIn` added.
+- Router registered in `server.py`.
+- New DB collection: `highlights`:
+  - `{id, user_id, post_id, post_slug, post_title, category, category_label, block_index, text, created_at}`
+
+**Frontend**
+- Article page:
+  - Text selection in the essay body shows a floating **“Highlight”** pill.
+  - Save action persists via API and shows a toast with **View** shortcut.
+  - Signed-out users get a sign-in prompt toast.
+  - Saved highlights render inline as `<mark class="reader-highlight">...</mark>` and persist across reloads.
+- New page: `/highlights` (`HighlightsPage.js`)
+  - Groups quotes by essay, shows category badge, saved date, delete w/ optimistic UI, empty state.
+- Navbar account dropdown now includes **Highlights**.
+- CSS: `mark.reader-highlight` style added in `index.css`.
+
+#### B) Related By Tags ✅
+- `GET /api/posts/{slug}` now computes related posts by scoring candidates:
+  - **+2 per shared tag**, **+1 if same category**.
+  - Uses a tags-or-category filter to gather candidates, then sorts by score.
+- Verified: the freight article now surfaces a cross-category finance essay that shares the `Commodities` tag.
+
+**Testing**
+- Iteration_13 focused regression:
+  - Backend: **18/19** (single non-bug: FastAPI validation ordering on malformed unauth bodies).
+  - Frontend: **12/12**.
+- Housekeeping: cleaned all test data (highlights collection emptied; no test users; subscriber list intact).
+
 ---
 
 ## 3) Next Actions
 
 ### A) Immediate (this week)
 1. **Phase 16**: Import the first real **Delivery & Systems** article (blocked until you paste the text).
-2. Continue importing additional LinkedIn editions/articles you paste (choose pillar + free/premium per post).
+2. **More Editions**: Continue importing LinkedIn newsletter editions as **numbered briefings** (Edition #2, #3…) — **blocked until you paste the next edition text**.
 
 ### B) Required setup actions (to fully go-live)
 1. **Enable Razorpay Subscriptions** in the Razorpay dashboard to activate true UPI Autopay mandates.
@@ -256,11 +262,11 @@
 1. Import remaining LinkedIn newsletter editions and any standalone LinkedIn articles.
    - Input format: paste title + full text.
    - Choose per article: Free vs Premium, pillar/category, featured flag, edition number.
-2. Fill the new **Delivery & Systems** pillar with real essays (currently drafts only).
+2. Fill **Delivery & Systems** pillar with real essays (currently drafts only).
 3. Establish “Weekly Briefing” cadence:
    - Use template in Admin Editor.
-   - Ensure edition increments (Edition #2, #3…).
-   - Use **Briefings series page** `/briefings` as the canonical archive.
+   - Ensure edition increments.
+   - Use `/briefings` as the canonical archive.
 
 ### D) Optional enhancements (nice-to-haves)
 1. Configure `RAZORPAY_WEBHOOK_SECRET` and Stripe webhook secrets in production for stronger signature verification.
@@ -270,6 +276,10 @@
 3. Newsletter upgrades:
    - Double opt-in
    - Dedicated sender domain + SPF/DKIM/DMARC hardening
+4. Highlights upgrades (optional):
+   - Highlighting across multiple paragraphs (range spanning blocks)
+   - Note/annotation per highlight
+   - Export highlights (CSV/Markdown)
 
 ---
 
@@ -315,12 +325,23 @@
 - Background loops confirmed running
 - Backend + frontend smoke/regression tests pass
 
+✅ Reader Highlights + Related-by-tags complete:
+- Highlights API + UI + persistence implemented
+- Paywall-respecting highlight validation enforced
+- `/highlights` library page implemented
+- Related posts are tag-scored and can surface cross-category matches
+- Focused regression tests pass; test data cleaned
+
 ⛔ Delivery & Systems import:
 - Blocked until user provides the article text
 
+⛔ More Editions import:
+- Blocked until user pastes the next LinkedIn edition text
+
 ✅ Testing passes (key iterations):
 - Iteration 5–11: feature-level tests from earlier work
-- **Iteration 12**: modularization regression test (backend 63/66 with remaining items as test artifacts; frontend 100%)
+- **Iteration 12**: modularization regression test
+- **Iteration 13**: highlights + related-by-tags regression test
 
 ---
 

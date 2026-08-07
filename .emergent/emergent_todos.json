@@ -1,22 +1,22 @@
 [
   {
-    "content": "Import freight article and verify rendering (Phase 14)",
+    "content": "Related By Tags: smarter related-essay scoring (backend)",
     "status": "completed"
   },
   {
-    "content": "Refactor server.py into modular routers/services (Phase 15)",
+    "content": "Reader Highlights: backend router (create/list/delete, paywall-aware)",
     "status": "completed"
   },
   {
-    "content": "Comprehensive regression testing (backend 63/66, frontend 100%, no real bugs)",
+    "content": "Reader Highlights: article selection UX + inline marks + /highlights page + nav",
     "status": "completed"
   },
   {
-    "content": "Clean up testing agent's leftover test data from DB",
+    "content": "Focused regression testing (backend 18/19, frontend 12/12) + cleanup",
     "status": "completed"
   },
   {
-    "content": "Import Delivery & Systems article (waiting for user to paste text)",
+    "content": "More Editions import (waiting for user to paste LinkedIn newsletter text)",
     "status": "pending"
   }
 ]
