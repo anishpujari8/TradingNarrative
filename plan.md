@@ -30,7 +30,7 @@
     - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
   - Weekly digest preview + send ✅
   - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
-  - **Essay Audio** ✅ *(browser TTS narrator at top of every article; no API keys/costs)*
+  - **Essay Audio Narration** ✅ *(high-quality ElevenLabs TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
 - Deliver admin + growth tooling ✅:
   - Traffic sources attribution + trends
   - Subscriber growth
@@ -304,20 +304,8 @@
 #### C) Production sync ✅
 - Sync tool diff identified 2 missing → pushed **2/2** successfully.
 
-### Phase 23 — Essay Audio + LinkedIn Preview Cards + Trading Operations Series ✅ COMPLETED
-#### A) Essay Audio ✅
-- New component: `frontend/src/components/AudioNarrator.js`
-- Uses browser `speechSynthesis` (no external APIs / keys).
-- UX:
-  - Play/Pause/Resume
-  - Restart
-  - Speed select: `0.85×`, `1×`, `1.25×`, `1.5×` (re-speaks current paragraph)
-  - Paragraph-by-paragraph utterances (avoids Chrome long-text bug)
-  - Progress bar + status label
-  - Cancels narration on unmount
-- Rendered at the top of every article.
-
-#### B) Trading Operations Series ✅
+### Phase 23 — Series + Social Unfurls + Baseline Essay Audio ✅ COMPLETED
+#### A) Trading Operations Series ✅
 - New config: `SERIES` in `backend/config.py`
   - Series `trading-operations` contains (in order):
     1) Edition #1 briefing
@@ -332,15 +320,65 @@
   - Route: `/series/:slug`
   - Member article pages show a “Part of the Trading Operations series” banner linking to the series.
 
-#### C) LinkedIn Preview Cards ✅
+#### B) LinkedIn Preview Cards ✅
 - Backend:
   - `GET /api/share/{slug}` returns crawler-readable HTML with per-essay OG/Twitter meta
   - Includes meta-refresh + JS redirect for humans
 - Frontend:
-  - `ShareBar` now shares the `/api/share/{slug}` URL so LinkedIn/X unfurl the correct card
+  - `ShareBar` shares the `/api/share/{slug}` URL so LinkedIn/X unfurl the correct card
   - `public/index.html` default OG description updated to current pillars (removed “travel”)
+
+#### C) Baseline Essay Audio ✅
+- Implemented browser speechSynthesis narrator as the initial version.
+
 - Testing:
-  - Iteration_16: **100% backend (29/29)**, **100% frontend (23/23)**
+  - Iteration_16: **100% backend**, **100% frontend**
+
+### Phase 24 — ElevenLabs Essay Narration (voice quality upgrade) ✅ COMPLETED
+> Goal: upgrade from browser voice quality to studio-grade narration with caching.
+
+#### A) Provider selection ✅
+- User selected **ElevenLabs** and provided an API key.
+- Key stored in `/app/backend/.env` as `ELEVENLABS_API_KEY` (**never log it**).
+- `elevenlabs` SDK installed; backend requirements frozen.
+
+#### B) Backend: TTS service + caching ✅
+- `config.py` gained:
+  - `ELEVENLABS_API_KEY`, `TTS_ENABLED`
+  - `TTS_MODEL = eleven_turbo_v2_5` (high quality, lower credit cost than multilingual)
+  - `TTS_OUTPUT_FORMAT = mp3_44100_64`
+  - `TTS_VOICES`:
+    - `male` → George (`JBFqnCBsd6RMkjVDRZzb`)
+    - `female` → Rachel (`21m00Tcm4TlvDq8ikWAM`)
+    - `documentary` → Daniel (`onwK4e9ZLuTAKqWW03F9`)
+- New service: `services/tts_service.py`
+  - Paragraph-boundary chunking (≤ 4,000 chars)
+  - Sequential synth via `asyncio.to_thread`
+  - MP3 byte concatenation
+  - MongoDB cache: `db.audio_cache` keyed by `(post_slug, voice, scope)`
+  - Cache invalidation via `post_version = updated_at/published_at`
+  - 14MB guard to stay below Mongo 16MB doc limit
+- New endpoints in `routers/posts.py`:
+  - `GET /api/posts/{slug}/audio?voice=male|female|documentary`
+    - **Paywall-aware**: premium essays narrate only preview blocks for non-entitled listeners
+    - Response headers: `X-Audio-Cache` (hit/generated), `X-Audio-Scope` (preview/full)
+  - `GET /api/audio/voices`
+
+#### C) Frontend: audio player rewrite ✅
+- `AudioNarrator` replaced speechSynthesis with real MP3 streaming:
+  - Authenticated blob fetch (axios `responseType=blob`, 180s timeout for first generation)
+  - In-browser objectURL cache per voice; revokes on unmount
+  - Loading state: “Preparing narration — first play takes a moment…”
+  - Play/pause/resume/restart
+  - Seekable progress bar + `m:ss / m:ss`
+  - Voice select (switching voice refetches and resumes)
+  - Speed select via HTML audio `playbackRate`
+
+#### D) Performance & verification ✅
+- First generation ~6s for a 4:18 essay; cache hit ~0.2s.
+- Verified paywall audio scopes: ~439KB (preview) vs ~1.3MB (full).
+- Testing:
+  - Iteration_17: **100% backend (7/7)**, **100% frontend** with strict credit-conservation.
 
 ---
 
@@ -364,7 +402,9 @@
   - **Preview** (dev): changes are implemented + tested here.
   - **Production** (`https://thetradingnarrative.com`): code changes require **redeploy** to go live.
 - Content migrations/imports can be pushed via the **Sync to production** tool.
-- Note: Phase 23 code (series, share/unfurl endpoint, audio narrator) is **preview-only until redeploy**; production currently has the content, but will 404 these routes until redeploy.
+- **Phase 24 deployment requirement**:
+  - Production must have `ELEVENLABS_API_KEY` set in its deployment environment variables.
+  - Without it, `/api/posts/{slug}/audio` returns **503** on production.
 
 ---
 
@@ -397,7 +437,8 @@
 ✅ Social preview cards:
 - `/api/share/{slug}` returns OG/Twitter meta suitable for LinkedIn/X unfurl
 ✅ Essay audio:
-- Each article includes an audio narrator bar (browser TTS)
+- Each article includes a high-quality narration bar powered by ElevenLabs
+- Paywall-aware audio scoping for premium posts (preview vs full)
 
 ⛔ PayPal integration: blocked until credentials + mode decisions.
 ⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.

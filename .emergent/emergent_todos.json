@@ -1,22 +1,22 @@
 [
   {
-    "content": "Backend: SERIES config + endpoints + series info on get_post",
+    "content": "ElevenLabs playbook + key setup + SDK install",
     "status": "completed"
   },
   {
-    "content": "Backend: /api/share/{slug} OG-rich share page",
+    "content": "TTS service: chunked synthesis + Mongo cache + paywall scopes",
     "status": "completed"
   },
   {
-    "content": "Frontend: AudioNarrator on articles (browser TTS)",
+    "content": "Audio endpoint + voices endpoint",
     "status": "completed"
   },
   {
-    "content": "Frontend: SeriesPage + series banner + ShareBar unfurl URLs + OG defaults",
+    "content": "AudioNarrator rewrite: blob playback, voice picker, seek, speeds",
     "status": "completed"
   },
   {
-    "content": "Testing agent: 100% pass (29/29 backend, 23/23 frontend)",
+    "content": "Testing agent: 100% pass with credit conservation",
     "status": "completed"
   },
   {
