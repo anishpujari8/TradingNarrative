@@ -1,22 +1,26 @@
 [
   {
-    "content": "Related By Tags: smarter related-essay scoring (backend)",
-    "status": "completed"
+    "content": "Backend: note field on highlights (create + edit endpoint)",
+    "status": "in_progress"
   },
   {
-    "content": "Reader Highlights: backend router (create/list/delete, paywall-aware)",
-    "status": "completed"
+    "content": "Frontend: add/edit note UI on highlights page",
+    "status": "pending"
   },
   {
-    "content": "Reader Highlights: article selection UX + inline marks + /highlights page + nav",
-    "status": "completed"
+    "content": "Frontend: shareable quote card dialog (canvas render, download/copy/share)",
+    "status": "pending"
   },
   {
-    "content": "Focused regression testing (backend 18/19, frontend 12/12) + cleanup",
-    "status": "completed"
+    "content": "Test both features (curl + screenshots + testing agent)",
+    "status": "pending"
   },
   {
-    "content": "More Editions import (waiting for user to paste LinkedIn newsletter text)",
+    "content": "PayPal integration (waiting for user's setup answers)",
+    "status": "pending"
+  },
+  {
+    "content": "Edition #2 + Delivery essay imports (waiting for pasted text)",
     "status": "pending"
   }
 ]

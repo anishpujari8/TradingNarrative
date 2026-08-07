@@ -110,6 +110,11 @@ class HighlightIn(BaseModel):
     slug: str
     block_index: int = Field(ge=0)
     text: str = Field(min_length=3, max_length=500)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class HighlightNoteIn(BaseModel):
+    note: str = Field(max_length=500)  # empty string clears the note
 
 
 class DigestSendIn(BaseModel):

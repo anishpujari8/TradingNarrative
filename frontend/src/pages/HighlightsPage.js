@@ -4,9 +4,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Highlighter, Trash2, ArrowUpRight } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Highlighter, Trash2, ArrowUpRight, StickyNote, Pencil, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
+import { QuoteCardDialog } from "@/components/QuoteCardDialog";
 import { api, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -14,6 +16,10 @@ export default function HighlightsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [highlights, setHighlights] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [shareTarget, setShareTarget] = useState(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,6 +40,23 @@ export default function HighlightsPage() {
       setHighlights(prev);
       toast.error("Could not remove the highlight. Try again.");
     });
+  };
+
+  const startNote = (h) => {
+    setEditingId(h.id);
+    setNoteDraft(h.note || "");
+  };
+
+  const saveNote = (hid) => {
+    setSavingNote(true);
+    api.put(`/highlights/${hid}/note`, { note: noteDraft })
+      .then((res) => {
+        setHighlights((hs) => hs.map((x) => (x.id === hid ? { ...x, note: res.data.note } : x)));
+        setEditingId(null);
+        toast.success(noteDraft.trim() ? "Note saved" : "Note removed");
+      })
+      .catch(() => toast.error("Could not save the note. Try again."))
+      .finally(() => setSavingNote(false));
   };
 
   if (loading || !user) {
@@ -91,18 +114,70 @@ export default function HighlightsPage() {
                       <blockquote className="font-serif text-lg leading-relaxed" data-testid="highlight-text">
                         &ldquo;{h.text}&rdquo;
                       </blockquote>
-                      <div className="text-xs text-muted-foreground font-mono mt-2">Saved {formatDate(h.created_at)}</div>
+
+                      {editingId === h.id ? (
+                        <div className="mt-3 space-y-2" data-testid="highlight-note-editor">
+                          <Textarea
+                            value={noteDraft}
+                            onChange={(e) => setNoteDraft(e.target.value)}
+                            maxLength={500}
+                            rows={2}
+                            placeholder="Why did this line stick with you?"
+                            className="text-sm"
+                            data-testid="highlight-note-input"
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 h-8" onClick={() => saveNote(h.id)} disabled={savingNote} data-testid="highlight-note-save">
+                              Save note
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditingId(null)} data-testid="highlight-note-cancel">
+                              Cancel
+                            </Button>
+                            <span className="text-[11px] text-muted-foreground font-mono ml-auto">{noteDraft.length}/500</span>
+                          </div>
+                        </div>
+                      ) : h.note ? (
+                        <div className="mt-3 flex items-start gap-2 rounded-lg bg-muted/50 border border-border/60 px-3 py-2" data-testid="highlight-note">
+                          <StickyNote className="h-3.5 w-3.5 text-accent mt-0.5 shrink-0" />
+                          <p className="text-sm text-foreground/80 flex-1">{h.note}</p>
+                          <button className="text-muted-foreground hover:text-accent transition-colors" onClick={() => startNote(h)} aria-label="Edit note" data-testid="highlight-note-edit">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : null}
+
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-xs text-muted-foreground font-mono">Saved {formatDate(h.created_at)}</span>
+                        {!h.note && editingId !== h.id && (
+                          <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent transition-colors" onClick={() => startNote(h)} data-testid="highlight-add-note">
+                            <StickyNote className="h-3 w-3" /> Add note
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => remove(h.id)}
-                      aria-label="Remove highlight"
-                      data-testid={`highlight-delete-${h.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-accent"
+                        onClick={() => setShareTarget(h)}
+                        aria-label="Share as quote card"
+                        data-testid={`highlight-share-${h.id}`}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => remove(h.id)}
+                        aria-label="Remove highlight"
+                        data-testid={`highlight-delete-${h.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -110,6 +185,8 @@ export default function HighlightsPage() {
           ))}
         </div>
       )}
+
+      <QuoteCardDialog highlight={shareTarget} open={!!shareTarget} onOpenChange={(o) => !o && setShareTarget(null)} />
     </div>
   );
 }

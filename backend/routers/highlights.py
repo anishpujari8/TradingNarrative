@@ -8,7 +8,7 @@ from config import CATEGORIES, PREVIEW_BLOCKS
 from db import db
 from utils import now_utc, iso, clean, published_query
 from security import get_current_user, is_entitled
-from schemas import HighlightIn
+from schemas import HighlightIn, HighlightNoteIn
 
 router = APIRouter(prefix='/api')
 
@@ -46,6 +46,7 @@ async def create_highlight(body: HighlightIn, user=Depends(get_current_user)):
         'category': post['category'],
         'category_label': CATEGORIES.get(post['category'], post['category']),
         'block_index': body.block_index, 'text': text,
+        'note': (body.note or '').strip(),
         'created_at': iso(now_utc()),
     }
     await db.highlights.insert_one(dict(item))
@@ -59,6 +60,19 @@ async def list_highlights(user=Depends(get_current_user), slug: Optional[str] = 
         query['post_slug'] = slug
     items = await db.highlights.find(query).sort('created_at', -1).to_list(MAX_HIGHLIGHTS_PER_USER)
     return {'highlights': [clean(h) for h in items], 'total': len(items)}
+
+
+@router.put('/highlights/{hid}/note')
+async def set_highlight_note(hid: str, body: HighlightNoteIn, user=Depends(get_current_user)):
+    h = await db.highlights.find_one({'id': hid})
+    if not h:
+        raise HTTPException(status_code=404, detail='Highlight not found')
+    if h['user_id'] != user['id']:
+        raise HTTPException(status_code=403, detail='You can only annotate your own highlights')
+    note = body.note.strip()
+    await db.highlights.update_one({'id': hid}, {'$set': {'note': note, 'note_updated_at': iso(now_utc())}})
+    updated = await db.highlights.find_one({'id': hid})
+    return clean(updated)
 
 
 @router.delete('/highlights/{hid}')
