@@ -33,7 +33,12 @@
   - **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
   - **Listen analytics for narration** ✅ *(count plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
   - **Pre-generated narrations** ✅ *(warm cache on startup + when posts are published/updated so playback is instant when cached)*
-    - **Operational constraint**: current ElevenLabs credits are **0** → uncached essays will return **502** on play until credits are topped up.
+    - **Operational constraint**: if ElevenLabs credits are exhausted, uncached essays return **502** on play until credits are topped up.
+  - **Narration Status Panel** ✅ *(Admin self-service for narration coverage + warmup trigger)*
+    - Shows narrated coverage (X/Y), cached/missing per essay, audio size, listens
+    - “Generate missing narrations” one-click warmup
+    - Auto-refresh while warmup is running
+    - Credits display depends on ElevenLabs API key permissions (see caveat below)
 - Deliver admin + growth tooling ✅:
   - Traffic sources attribution + trends
   - Subscriber growth
@@ -57,11 +62,12 @@
   - Wednesday briefing reminder toggle
 - Branding + content readiness ✅:
   - Official logo + favicon
-  - Author identity: Anish Pujari across UI and post metadata ✅ *(now enforced via startup migration)*
+  - Author identity: Anish Pujari across UI and post metadata ✅ *(enforced via startup migration)*
   - Weekly briefing tooling: template + edition numbering + `/briefings` archive
   - Import existing writing (LinkedIn newsletter editions + LinkedIn articles)
   - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
   - **Spinning logo** ✅ *(slow, elegant rotation ~9s per turn; respects reduced motion)*
+  - **Demo Cleanup** ✅ *(sample/demo essays auto-drafted so credits are spent on real writing)*
 - Improve editorial discovery ✅:
   - **Related essays by tags** (shared tags prioritized over category-only)
   - **Author/Editorial Series** ✅ (config-driven collections like “Trading Operations”)
@@ -69,6 +75,10 @@
   - **LinkedIn Preview Cards / Social unfurls** ✅ (per-essay OG/Twitter meta served at `/api/share/{slug}`)
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
 - **Stability** ✅: Modular backend (monolith `server.py` split into routers/services) with regression testing.
+
+**ElevenLabs credits visibility caveat**
+- The current ElevenLabs API key lacks the **`user_read`** permission, so the system cannot display credits remaining/used.
+- Narration generation still works (when credits exist). To see credits in the Admin panel, enable **User → Read** permission for the key in ElevenLabs.
 
 ---
 
@@ -92,7 +102,7 @@
 
 ### Phase 4 — Payments Integrations (Stripe + Razorpay) ✅ DONE
 - Stripe Checkout + entitlement via webhooks/status checks
-- Razorpay checkout (autopay detection + fallback to orders)
+- Razorpay checkout (autopay detection + fallback order if not enabled)
 - Frontend supports both checkout modes
 
 ### Phase 5 — V2 Admin Analytics + Community ✅ DONE
@@ -188,17 +198,11 @@
 
 #### B) Highlight Sharing ✅
 - Frontend:
-  - New component: `QuoteCardDialog` (`/app/frontend/src/components/QuoteCardDialog.js`)
-  - Canvas quote card (1200×630 @2x) with:
-    - Branded paper background, frame, masthead, accent square
-    - Oversized quote mark
-    - Adaptive serif quote sizing + word-wrap
-    - Footer: essay title + “— Anish Pujari · {pillar}”
-  - Actions: Copy image (ClipboardItem), Share (navigator.share w/ file, fallback), Download PNG
-  - Share button added to each highlight card
+  - `QuoteCardDialog` with branded share card
+  - Actions: Copy image, Share, Download PNG
+  - Share-from-article + share-from-highlights
 - Testing:
   - Iteration_13: backend 12/12 (100%), frontend 100%
-  - All test data cleaned (highlights purged; throwaway users removed; subscriber list intact)
 
 ### Phase 19 — PayPal Integration ⛔ NOT STARTED (blocked)
 **Blocked on user decisions + credentials**
@@ -214,224 +218,77 @@
   - Create PayPal service wrapper
   - Add endpoints:
     - checkout/create (order or subscription)
-    - capture/verify (order capture or subscription activation)
-    - webhooks for lifecycle events (if using subscriptions)
-  - Map PayPal purchase → existing `payment_transactions` → `activate_premium_from_transaction`
+    - capture/verify
+    - webhooks (if using subscriptions)
 - Frontend:
   - Add PayPal option on pricing page
-  - Payment success/cancel routes consistent with current Stripe/Razorpay UX
 - Testing:
   - Sandbox end-to-end flow
 
 ### Phase 20 — Production Content Bug Fix + Share From Article + Popular Highlights ✅ COMPLETED
-#### A) Production content bug fix (Edition #1 missing; “random” demo articles) ✅
-- User-reported bug: “where is my edition 1” and production showed only demo posts.
-- Root cause: **production uses a separate fresh DB**, auto-seeded demo/sample essays; real content existed only in preview.
-- Fix:
-  1) Migrated **Edition #1 briefing** + **Freight Management** post to production via production admin API.
-  2) Per user choice: demo/sample essays were **kept** on production for now.
-  3) Patched `seed_database` so fresh DBs seed `SAMPLE_POSTS` as **draft** (`status='draft'`, `views=0`) so future deployments start with a clean public site.
-- Verification:
-  - Verified live (read-only) on production endpoints:
-    - `https://thetradingnarrative.com/api/briefings` includes Edition #1.
-    - `https://thetradingnarrative.com/api/posts` includes both migrated posts.
-
-#### B) Share From Article ✅
-- Article selection popover is now a **two-button pill**: **Highlight | Share**
-  - Test IDs: `selection-popover`, `selection-share-button`
-- “Share” opens `QuoteCardDialog` directly with the selected text.
-- Works for **anonymous** visitors (no need to save a highlight).
-
-#### C) Popular Highlights ✅
-- Backend:
-  - Public endpoint: `GET /api/posts/{slug}/popular-highlights`
-  - Aggregates by `(block_index, text)` counting **distinct users**
-  - Threshold: `count >= 2`, returns **top 5**
-- Frontend:
-  - Article page fetches popular highlights and renders **Kindle-style** markers:
-    - `mark.popular-highlight`: dotted accent underline + superscript count + tooltip
-  - Personal highlights take precedence over popular markers.
-- Testing:
-  - Iteration_14: **100% backend (14/14)**, **100% frontend**
+- Fixed production content visibility via production migration
+- Share-from-article popover: Highlight | Share
+- Popular highlights markers + backend aggregation
 
 ### Phase 21 — Hardcoded Real Content + Highlight Digest + Content Sync Tool ✅ COMPLETED
-#### A) Hardcoded Real Content (self-healing default content) ✅
-- `seed_data.py` includes a `REAL_POSTS` list containing the author’s real, provided content exported verbatim from DB.
-- `seed_database()` **always** inserts any missing `REAL_POSTS` (matched by slug) as **PUBLISHED** on every startup.
-- Verified self-healing: deleted Edition #1 in preview DB, restarted backend, and it restored automatically with no duplicates.
-- Demo `SAMPLE_POSTS` remain and seed as **drafts** only on fresh DBs.
-
-#### B) Highlight Digest (social proof section) ✅
-- `services/digest_service.py`:
-  - `get_week_top_highlights()` — last 7 days, >=2 distinct users, top 3
-  - `_highlights_section()` — renders “Most highlighted this week” block
-  - `build_digest_html(posts, top_highlights=...)` conditionally includes the section
-- Wired into:
-  - `do_send_digest()`
-  - `GET /api/admin/newsletter/digest-preview` (returns `top_highlights`)
-  - `POST /api/admin/newsletter/send-digest-preview`
-- Graceful omission when no highlight data exists.
-
-#### C) Content Sync Tool (Preview → Production) ✅
-- Backend:
-  - Router: `routers/sync.py`
-    - `GET /api/admin/sync/diff`
-    - `POST /api/admin/sync/push {password}`
-  - Config: `PRODUCTION_SITE_URL` in `config.py` (defaults to `https://thetradingnarrative.com`)
-- Frontend:
-  - `components/SyncToProductionDialog.js`
-  - Admin header button “Sync to production”
-- Testing:
-  - Iteration_15: **100% backend (10/10)**, **100% frontend**
+- `REAL_POSTS` self-healing content
+- Digest includes “Most highlighted this week” section
+- Admin Sync Tool: preview → production diff + push
 
 ### Phase 22 — Two Article Imports + Production Sync ✅ COMPLETED
-#### A) Imports ✅
-1) **Business & Finance**:
-   - Title: **“The Shipping Industry Is Sitting on a $15 Billion Problem. And Nobody Is Talking About It Honestly.”**
-   - Category: `finance`
-   - Tier: `free`
-   - Blocks: **41**
-   - Tags: `[LNG, Demurrage, Shipping, Logistics, CTRM, Commodities]`
-   - Slug: `the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a`
-
-2) **Personal Growth** *(“highlight this article heading” implemented as FEATURED=true)*:
-   - Title: **“170 Kilometres, One Green Enfield, and a Lesson in Strategic Momentum”**
-   - Category: `lifestyle`
-   - Tier: `free`
-   - Blocks: **20**
-   - Featured: **true**
-   - Tags: `[Leadership, Clarity, Motorcycling, Product Management, Momentum]`
-   - Slug: `170-kilometres-one-green-enfield-and-a-lesson-in-strategic-momentum`
-
-#### B) Default content durability ✅
-- Both new posts appended to `REAL_POSTS` (now totals **4** real, hardcoded posts).
-
-#### C) Production sync ✅
-- Sync tool diff identified 2 missing → pushed **2/2** successfully.
+- Imported 2 essays, appended to `REAL_POSTS`, synced to production
 
 ### Phase 23 — Series + Social Unfurls + Baseline Essay Audio ✅ COMPLETED
-#### A) Trading Operations Series ✅
-- New config: `SERIES` in `backend/config.py`
-  - Series `trading-operations` contains (in order):
-    1) Edition #1 briefing
-    2) Freight Management
-    3) Demurrage ($15B) essay
-- Backend:
-  - `GET /api/series` (list)
-  - `GET /api/series/{slug}` (ordered posts)
-  - `GET /api/posts/{slug}` returns `series: {slug,title}` for member essays
-- Frontend:
-  - New page: `frontend/src/pages/SeriesPage.js`
-  - Route: `/series/:slug`
-  - Member article pages show a “Part of the Trading Operations series” banner linking to the series.
+- Series page + series banner
+- `/api/share/{slug}` unfurl HTML
+- Baseline audio (superseded by ElevenLabs)
 
-#### B) LinkedIn Preview Cards ✅
-- Backend:
-  - `GET /api/share/{slug}` returns crawler-readable HTML with per-essay OG/Twitter meta
-  - Includes meta-refresh + JS redirect for humans
-- Frontend:
-  - `ShareBar` shares the `/api/share/{slug}` URL so LinkedIn/X unfurl the correct card
-  - `public/index.html` default OG description updated to current pillars (removed “travel”)
-
-#### C) Baseline Essay Audio ✅
-- Implemented browser speechSynthesis narrator as the initial version.
-- Testing:
-  - Iteration_16: **100% backend**, **100% frontend**
-
-### Phase 24 — ElevenLabs Essay Narration (voice quality upgrade) ✅ COMPLETED
-> Goal: upgrade from browser voice quality to studio-grade narration with caching.
-
-#### A) Provider selection ✅
-- User selected **ElevenLabs** and provided an API key.
-- Key stored in `/app/backend/.env` as `ELEVENLABS_API_KEY` (**never log it**).
-- `elevenlabs` SDK installed; backend requirements frozen.
-
-#### B) Backend: TTS service + caching ✅
-- `config.py` gained:
-  - `ELEVENLABS_API_KEY`, `TTS_ENABLED`
-  - `TTS_MODEL = eleven_turbo_v2_5` (high quality, lower credit cost than multilingual)
-  - `TTS_OUTPUT_FORMAT = mp3_44100_64`
-  - `TTS_VOICES`:
-    - `male` → George (`JBFqnCBsd6RMkjVDRZzb`)
-    - `female` → Rachel (`21m00Tcm4TlvDq8ikWAM`)
-    - `documentary` → Daniel (`onwK4e9ZLuTAKqWW03F9`)
-- Service: `services/tts_service.py`
-  - Paragraph-boundary chunking (≤ 4,000 chars)
-  - Sequential synth via `asyncio.to_thread`
-  - MP3 byte concatenation
-  - MongoDB cache: `db.audio_cache` keyed by `(post_slug, voice, scope)`
-  - Cache invalidation via `post_version = updated_at/published_at`
-  - 14MB guard to stay below Mongo 16MB doc limit
-- Endpoints in `routers/posts.py`:
-  - `GET /api/posts/{slug}/audio?voice=male|female|documentary`
-    - **Paywall-aware**: premium essays narrate only preview blocks for non-entitled listeners
-    - Response headers: `X-Audio-Cache` (hit/generated), `X-Audio-Scope` (preview/full)
-  - `GET /api/audio/voices`
-
-#### C) Frontend: audio player rewrite ✅
-- `AudioNarrator` uses real MP3 streaming:
-  - Authenticated blob fetch (axios `responseType=blob`, 180s timeout for first generation)
-  - In-browser objectURL cache per voice; revokes on unmount
-  - Loading state: “Preparing narration — first play takes a moment…”
-  - Play/pause/resume/restart
-  - Seekable progress bar + `m:ss / m:ss`
-  - Voice select + speed select
-
-#### D) Performance & verification ✅
-- First generation ~6s for a 4:18 essay; cache hit ~0.2s.
-- Verified paywall audio scopes: ~439KB (preview) vs ~1.3MB (full).
-- Testing:
-  - Iteration_17: **100% backend (7/7)**, **100% frontend** with strict credit-conservation.
+### Phase 24 — ElevenLabs Essay Narration + Caching ✅ COMPLETED
+- High-quality narration via ElevenLabs
+- MongoDB caching keyed by `(slug, voice, scope)`
+- Paywall-aware preview vs full audio
 
 ### Phase 25 — Author Normalization + Spinning Logo + Listen Analytics + Pre-Generated Narrations ✅ COMPLETED
-> Goal: brand consistency (“Anish Pujari” everywhere), premium polish (logo), and audio ops maturity (analytics + instant playback).
+- Author normalized to “Anish Pujari” via startup migration
+- Spinning logo (9s) in navbar + footer
+- Listen tracking endpoint + admin analytics display
+- Startup warmup + publish/update warm hooks; quota-aware
 
-#### A) Normalize all post authors to “Anish Pujari” ✅
-- Implementation:
-  - Startup migration in `seed_database()` normalizes any post where `author.name != "Anish Pujari"` by setting `author = AUTHOR`.
-- Status:
-  - Preview DB verified: all posts normalized.
-  - Production will self-heal on next **redeploy** (its demo posts will normalize on startup).
-- Testing:
-  - Iteration_18 verified all published posts have author.name = “Anish Pujari”.
+### Phase 26 — Narration Status Panel + Demo Cleanup + Credit Refill Warmup ✅ COMPLETED
+> Goal: make narration ops fully self-serve for admin and reduce credit burn.
 
-#### B) Spinning logo — slow, elegant rotation (~9s/turn) ✅
-- Implementation:
-  - Navbar (both desktop and mobile instances) + Footer logo updated with:
-    - `animate-[spin_9s_linear_infinite] motion-reduce:animate-none`
-- Testing:
-  - Verified via computed style: `animationName=spin`, `duration=9s`, `linear`, `infinite`.
-
-#### C) Listen Analytics (narration plays) + Admin display ✅
+#### A) Narration Status Panel (Admin → Narrations tab) ✅
 - Backend:
-  - `POST /api/posts/{slug}/audio/listen`:
-    - Increments `posts.listens`
-    - Logs analytics event `narration_listen`
-  - `GET /api/admin/analytics/stats` now returns:
-    - `listens`, `listens_7d`, and `top_posts[].listens`
-  - `utils.post_summary()` updated to include `listens` in post summaries.
+  - `GET /api/admin/narrations` returns:
+    - warmup running state, credit status (when permitted), cached coverage counts, and per-essay cache status
+  - `POST /api/admin/narrations/warm` triggers background warmup (`warm_all_narrations`) guarded by `WARMUP_STATE`
 - Frontend:
-  - `AudioNarrator` fires exactly **one** listen per essay visit (doesn’t double count pause/resume).
-  - `AdminPage` shows:
-    - Stat cards: **Listens**, **Listens (7d)**
-    - Chart: **Top posts — views & listens**
-- Testing:
-  - Iteration_18: backend 12/12 and frontend 3/3 passed.
+  - New **Narrations** tab in Admin Studio
+  - Stat cards:
+    - Credits remaining / used *(shows “—” if key lacks `user_read` permission)*
+    - Essays narrated X/Y
+    - Total listens
+  - Table:
+    - Cached/Missing status, audio size, listens per essay
+  - Button:
+    - “Generate missing narrations” (self-serve after credit top-up)
+  - Auto-refresh:
+    - Refresh every 8s while warmup is running
 
-#### D) Pre-generate ElevenLabs narrations (startup + on publish) ✅
-- Backend:
-  - Startup task `warm_all_narrations()`:
-    - 15s delay after boot
-    - Sequential warmup with ~2s gaps between generations
-    - Skips already-cached audio (no credit usage)
-    - Quota-aware: stops early and logs when credits are exhausted.
-  - On publish/create/update hooks:
-    - When admin creates/updates a **published** post, a background task warms that essay’s narration.
-- Current operational status:
-  - ElevenLabs credits are **0**, so warmup completes only for essays already cached.
-  - Cached in preview includes the 4 real essays (and one premium essay cache variants). Remaining essays/briefings may 502 until credits are topped up.
-- Testing:
-  - Iteration_18 validated at least one cached essay returns `X-Audio-Cache: hit`.
+#### B) Demo Cleanup ✅
+- One-time migration:
+  - Uses `db.migrations` marker `unpublish_demo_posts_v1`
+  - Unpublishes demo/sample essays (sets them to `draft`) so they don’t consume narration credits
+- Status:
+  - Preview: unpublished 9 demo essays; now only **4 real essays** are published
+  - Production: same migration will apply once after redeploy (drafting demo posts there too)
+
+#### C) Credit Refill Warmup (self-service) ✅
+- Workflow:
+  - Top up ElevenLabs credits
+  - Admin clicks **Generate missing narrations**
+  - Warmup fills missing caches (no agent needed)
+- Current state (preview): **3/4** published essays have cached narration; 1 remains missing and will generate after credit top-up.
 
 ---
 
@@ -439,12 +296,16 @@
 
 ### A) Immediate
 1) **Production rollout**
-   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phase 25 code changes.
-   - After redeploy, production will auto-normalize demo post authors to “Anish Pujari” on startup.
+   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–26**.
+   - After redeploy, production will:
+     - Normalize author identity automatically on startup
+     - Draft demo essays via demo cleanup migration
+     - Enable narration status panel + warmup endpoints
 
 2) **ElevenLabs operations**
    - Top up ElevenLabs credits.
-   - Restart backend to resume/complete narration warmup for any uncached published essays.
+   - (Optional) Update the ElevenLabs API key permissions to include **User → Read** so credits show in the panel.
+   - Then use **Admin → Narrations → Generate missing narrations** to warm everything.
 
 3) **More Editions**: Import LinkedIn newsletter editions as numbered briefings
    - ⛔ Blocked until you paste Edition #2 text.
@@ -460,14 +321,11 @@
    - pricing-page placement
 
 ### B) Production note (workflow)
-- The app is deployed to production at a custom domain.
-- **Two environments exist**:
-  - **Preview** (dev): changes are implemented + tested here.
-  - **Production** (`https://thetradingnarrative.com`): code changes require **redeploy** to go live.
+- Two environments exist:
+  - **Preview** (dev)
+  - **Production** (`https://thetradingnarrative.com`) — requires **redeploy** for code changes.
 - Content migrations/imports can be pushed via the **Sync to production** tool.
-- **Phase 24+ deployment requirement**:
-  - Production must have `ELEVENLABS_API_KEY` set in its deployment environment variables.
-  - Without it, `/api/posts/{slug}/audio` returns **503** on production.
+- Ensure production has `ELEVENLABS_API_KEY` set; otherwise narration endpoints return **503**.
 
 ---
 
@@ -479,35 +337,20 @@
 ✅ Community lounge features work.
 ✅ Briefings tooling and `/briefings` archive works.
 ✅ Backend modularization complete with regression tests.
-✅ Related essays scored by tags.
-✅ Highlights system complete:
-- Highlight create/list/delete
-- Paywall-aware validation
-- Inline mark rendering
-- Highlights page
-- Notes + quote-card sharing
-- Share-from-article
-- Popular highlights
-✅ Highlight Digest:
-- Weekly digest includes “Most highlighted this week” section when highlight data exists
-✅ Content Sync Tool:
-- Admin can diff and push missing published preview posts to production without manual scripts
-✅ Default content durability:
-- Real provided articles are hardcoded in `seed_data.py` as `REAL_POSTS`
-- Backend self-heals and restores missing `REAL_POSTS` on startup
-✅ Trading Operations Series:
-- `/series/:slug` page exists and member essays show series banner
-✅ Social preview cards:
-- `/api/share/{slug}` returns OG/Twitter meta suitable for LinkedIn/X unfurl
-✅ Essay audio:
-- Each article includes a high-quality narration bar powered by ElevenLabs
-- Paywall-aware audio scoping for premium posts (preview vs full)
-
-✅ Phase 25 success criteria
-- All posts have author.name = “Anish Pujari” (auto-normalized on startup).
-- Navbar/footer logo rotates smoothly (~9 seconds per turn) and respects reduced motion.
-- Each narration play increments a **listens** metric and Admin analytics shows **Listens** next to **Views**.
-- TTS pre-generation exists (startup + on publish/update) and provides instant playback for cached essays.
+✅ Highlights system complete (create/list/delete, notes, sharing, popular highlights, digest social proof).
+✅ Content Sync Tool works (preview → production).
+✅ Default content durability via `REAL_POSTS`.
+✅ Series pages and social preview cards work.
+✅ Essay audio narration works with:
+- Paywall-aware scopes (preview vs full)
+- Caching
+- Listen analytics
+- Pre-generation hooks
+✅ Phase 26 success criteria
+- Admin can view narration coverage and cached/missing status per essay.
+- Admin can start a warmup run from the UI.
+- Demo essays do not consume narration credits (auto-drafted once).
+- Credits display is available when ElevenLabs API key includes `user_read` permission.
 
 ⚠️ Operational caveat (ElevenLabs quota)
 - If credits are exhausted, uncached essays will 502 on narration play until credits are topped up.
