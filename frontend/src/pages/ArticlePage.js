@@ -17,6 +17,7 @@ import { ReadingProgress } from "@/components/ReadingProgress";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { QuoteCardDialog } from "@/components/QuoteCardDialog";
 import { AudioNarrator } from "@/components/AudioNarrator";
+import { AskEssayWidget } from "@/components/AskEssayWidget";
 import { toast } from "sonner";
 import { api, formatDate, trackEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -380,6 +381,8 @@ export default function ArticlePage() {
           </div>
 
           {post.is_locked && <Paywall post={post} />}
+
+          <AskEssayWidget slug={slug} />
 
           {!post.is_locked && (
             <div className="mt-12 bg-muted/40 border border-border rounded-2xl p-6 sm:p-8" data-testid="article-inline-newsletter">

@@ -63,6 +63,12 @@ TTS_VOICES = {
 # Production deployment of this app (used by the admin Content Sync tool)
 PRODUCTION_SITE_URL = os.environ.get('PRODUCTION_SITE_URL', 'https://thetradingnarrative.com').rstrip('/')
 
+# AI features (Gemini via the Emergent universal LLM key)
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+AI_ENABLED = bool(EMERGENT_LLM_KEY)
+AI_PROVIDER = 'gemini'
+AI_MODEL = 'gemini-2.5-flash'
+
 # Editorial series: curated, ordered collections of essays
 SERIES = {
     'trading-operations': {

@@ -20,7 +20,7 @@ from services.razorpay_service import probe_razorpay_subscriptions
 from services.digest_service import digest_autosend_loop, briefing_reminder_loop
 from services.tts_service import warm_all_narrations
 
-from routers import auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync
+from routers import auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync, ai
 
 app = FastAPI(title='The Trading Narrative API')
 
@@ -120,6 +120,7 @@ app.include_router(community.router)
 app.include_router(admin.router)
 app.include_router(highlights.router)
 app.include_router(sync.router)
+app.include_router(ai.router)
 
 app.add_middleware(
     CORSMiddleware,

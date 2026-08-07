@@ -10,9 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2, LayoutTemplate } from "lucide-react";
+import { ArrowLeft, Save, Loader2, LayoutTemplate, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
+import { AiAssistantDialog } from "@/components/AiAssistantDialog";
 import { api, CATEGORIES } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -66,6 +67,7 @@ export default function AdminEditorPage() {
   const [form, setForm] = useState(emptyForm);
   const [loaded, setLoaded] = useState(!id);
   const [saving, setSaving] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -222,7 +224,12 @@ export default function AdminEditorPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="post-content">Content <span className="text-muted-foreground font-normal">(separate paragraphs with a blank line)</span></Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="post-content">Content <span className="text-muted-foreground font-normal">(separate paragraphs with a blank line)</span></Label>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAiOpen(true)} data-testid="admin-ai-assistant-button">
+                  <Wand2 className="h-4 w-4 mr-2 text-accent" /> AI assistant
+                </Button>
+              </div>
               <Textarea id="post-content" value={form.content} onChange={(e) => set("content", e.target.value)} rows={14} placeholder={"First paragraph…\n\nSecond paragraph…"} className="font-serif text-base leading-7" data-testid="admin-post-content-input" />
               <p className="text-xs text-muted-foreground font-mono">
                 {form.content.split(/\n\s*\n/).filter((b) => b.trim()).length} paragraphs · premium posts show the first 3 free
@@ -270,6 +277,13 @@ export default function AdminEditorPage() {
             </div>
           </CardContent>
         </Card>
+        <AiAssistantDialog
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          content={form.content}
+          onReplace={(text) => set("content", text)}
+          onAppend={(text) => set("content", form.content ? `${form.content.trimEnd()}\n\n${text}` : text)}
+        />
       </div>
     </div>
   );
