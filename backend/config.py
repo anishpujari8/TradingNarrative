@@ -48,3 +48,6 @@ EMAIL_REPLY_TO = os.environ.get('EMAIL_REPLY_TO', '')
 EMAIL_ENABLED = bool(GMAIL_SMTP_USER and GMAIL_SMTP_PASSWORD)
 
 MARKETING_KINDS = {'digest', 'issue', 'welcome'}
+
+# Production deployment of this app (used by the admin Content Sync tool)
+PRODUCTION_SITE_URL = os.environ.get('PRODUCTION_SITE_URL', 'https://thetradingnarrative.com').rstrip('/')

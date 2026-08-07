@@ -23,6 +23,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, Leg
 import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
+import { SyncToProductionDialog } from "@/components/SyncToProductionDialog";
 import { api, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -244,9 +245,12 @@ export default function AdminPage() {
           <span className="section-label">Admin Studio</span>
           <h1 className="font-serif text-3xl sm:text-4xl font-semibold mt-2">Run the publication</h1>
         </div>
-        <Button onClick={() => navigate("/admin/editor")} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="admin-new-post-button">
-          <Plus className="h-4 w-4 mr-2" /> New post
-        </Button>
+        <div className="flex items-center gap-2">
+          <SyncToProductionDialog />
+          <Button onClick={() => navigate("/admin/editor")} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="admin-new-post-button">
+            <Plus className="h-4 w-4 mr-2" /> New post
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="overview">

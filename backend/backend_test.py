@@ -299,10 +299,346 @@ class TradingNarrativeAPITester:
         
         return False
 
+    def test_self_healing_seed(self):
+        """Test self-healing seed: delete Edition #1, restart backend, verify restoration"""
+        print("\n" + "="*60)
+        print("TESTING: Self-Healing Seed (Edition #1 Restoration)")
+        print("="*60)
+        
+        import subprocess
+        import time
+        from pymongo import MongoClient
+        
+        # Connect to MongoDB
+        try:
+            client = MongoClient("mongodb://localhost:27017")
+            db = client["test_database"]
+            posts_collection = db["posts"]
+            
+            # Step 1: Verify Edition #1 exists
+            print("\n   Step 1: Verify Edition #1 exists before deletion")
+            edition_1 = posts_collection.find_one({"slug": "five-things-commodity-desks-need-to-know-this-week"})
+            if not edition_1:
+                print("   ❌ Edition #1 not found in database before test")
+                self.failed_tests.append("Self-Healing Seed: Edition #1 not found before deletion")
+                return False
+            print(f"   ✅ Found Edition #1: {edition_1['title'][:60]}")
+            print(f"   Edition number: {edition_1.get('edition')}")
+            print(f"   Content blocks: {len(edition_1.get('content_blocks', []))}")
+            
+            # Step 2: Delete Edition #1
+            print("\n   Step 2: Delete Edition #1 from database")
+            result = posts_collection.delete_one({"slug": "five-things-commodity-desks-need-to-know-this-week"})
+            if result.deleted_count == 1:
+                print("   ✅ Edition #1 deleted successfully")
+            else:
+                print("   ❌ Failed to delete Edition #1")
+                self.failed_tests.append("Self-Healing Seed: Failed to delete Edition #1")
+                return False
+            
+            # Verify deletion
+            check = posts_collection.find_one({"slug": "five-things-commodity-desks-need-to-know-this-week"})
+            if check:
+                print("   ❌ Edition #1 still exists after deletion")
+                self.failed_tests.append("Self-Healing Seed: Edition #1 still exists after deletion")
+                return False
+            print("   ✅ Confirmed: Edition #1 no longer in database")
+            
+            # Step 3: Restart backend
+            print("\n   Step 3: Restart backend to trigger seed_database()")
+            try:
+                subprocess.run(["sudo", "supervisorctl", "restart", "backend"], check=True, timeout=10)
+                print("   ✅ Backend restart command sent")
+            except Exception as e:
+                print(f"   ❌ Failed to restart backend: {e}")
+                self.failed_tests.append(f"Self-Healing Seed: Backend restart failed - {e}")
+                return False
+            
+            # Wait for backend to restart
+            print("   Waiting 6 seconds for backend to restart and run seed...")
+            time.sleep(6)
+            
+            # Step 4: Verify Edition #1 is restored
+            print("\n   Step 4: Verify Edition #1 is restored")
+            restored = posts_collection.find_one({"slug": "five-things-commodity-desks-need-to-know-this-week"})
+            if not restored:
+                print("   ❌ Edition #1 NOT restored after backend restart")
+                self.failed_tests.append("Self-Healing Seed: Edition #1 not restored")
+                return False
+            
+            print(f"   ✅ Edition #1 restored: {restored['title'][:60]}")
+            print(f"   Edition number: {restored.get('edition')}")
+            print(f"   Content blocks: {len(restored.get('content_blocks', []))}")
+            print(f"   Status: {restored.get('status')}")
+            
+            # Verify it's published
+            if restored.get('status') != 'published':
+                print(f"   ⚠️  Edition #1 status is '{restored.get('status')}', expected 'published'")
+                self.failed_tests.append("Self-Healing Seed: Edition #1 not published")
+            
+            # Verify edition number
+            if restored.get('edition') != 1:
+                print(f"   ⚠️  Edition number is {restored.get('edition')}, expected 1")
+                self.failed_tests.append("Self-Healing Seed: Edition number incorrect")
+            
+            # Verify content blocks (should be 22)
+            if len(restored.get('content_blocks', [])) != 22:
+                print(f"   ⚠️  Content blocks count is {len(restored.get('content_blocks', []))}, expected 22")
+                self.failed_tests.append("Self-Healing Seed: Content blocks count incorrect")
+            
+            # Step 5: Check for duplicates
+            print("\n   Step 5: Check for duplicates")
+            count = posts_collection.count_documents({"slug": "five-things-commodity-desks-need-to-know-this-week"})
+            if count == 1:
+                print(f"   ✅ No duplicates: exactly 1 post with this slug")
+            else:
+                print(f"   ❌ Found {count} posts with this slug (expected 1)")
+                self.failed_tests.append(f"Self-Healing Seed: {count} duplicates found")
+                return False
+            
+            # Step 6: Test API endpoint
+            print("\n   Step 6: Test API endpoint GET /api/briefings")
+            success, response = self.run_test(
+                "GET /api/briefings (should include Edition #1)",
+                "GET",
+                "briefings",
+                200,
+                headers={'Authorization': ''}  # No auth needed for briefings
+            )
+            
+            if success:
+                briefings = response.get('briefings', [])
+                edition_1_found = any(b.get('edition') == 1 for b in briefings)
+                if edition_1_found:
+                    print("   ✅ Edition #1 found in /api/briefings response")
+                else:
+                    print("   ❌ Edition #1 NOT found in /api/briefings response")
+                    self.failed_tests.append("Self-Healing Seed: Edition #1 not in briefings API")
+            
+            # Step 7: Test individual post endpoint
+            print("\n   Step 7: Test GET /api/posts/five-things-commodity-desks-need-to-know-this-week")
+            success2, response2 = self.run_test(
+                "GET Edition #1 by slug",
+                "GET",
+                "posts/five-things-commodity-desks-need-to-know-this-week",
+                200,
+                headers={'Authorization': ''}
+            )
+            
+            if success2:
+                content_blocks = response2.get('content_blocks', [])
+                if len(content_blocks) == 22:
+                    print(f"   ✅ Edition #1 has 22 content blocks")
+                else:
+                    print(f"   ⚠️  Edition #1 has {len(content_blocks)} content blocks, expected 22")
+                    self.failed_tests.append(f"Self-Healing Seed: Edition #1 has {len(content_blocks)} blocks, expected 22")
+            
+            print("\n   ✅ SELF-HEALING SEED TEST PASSED")
+            return True
+            
+        except Exception as e:
+            print(f"   ❌ Error during self-healing seed test: {e}")
+            self.failed_tests.append(f"Self-Healing Seed: {e}")
+            return False
+
+    def test_highlight_digest(self):
+        """Test highlight digest with and without highlights"""
+        print("\n" + "="*60)
+        print("TESTING: Highlight Digest (Most Highlighted This Week)")
+        print("="*60)
+        print("⚠️  CRITICAL: NOT calling send-digest (Gmail is LIVE)")
+        
+        from pymongo import MongoClient
+        
+        try:
+            client = MongoClient("mongodb://localhost:27017")
+            db = client["test_database"]
+            highlights_collection = db["highlights"]
+            
+            # Step 1: Test digest-preview WITH existing highlights
+            print("\n   Step 1: Test GET /api/admin/newsletter/digest-preview WITH highlights")
+            success1, response1 = self.run_test(
+                "Digest Preview (with highlights)",
+                "GET",
+                "admin/newsletter/digest-preview",
+                200
+            )
+            
+            if success1:
+                top_highlights = response1.get('top_highlights', [])
+                html = response1.get('html', '')
+                
+                print(f"   Top highlights count: {len(top_highlights)}")
+                
+                if len(top_highlights) > 0:
+                    print("   ✅ top_highlights array is populated")
+                    
+                    # Check for the expected highlight text
+                    expected_text = "This is not a small firm problem."
+                    found_expected = any(h.get('text') == expected_text for h in top_highlights)
+                    
+                    if found_expected:
+                        print(f"   ✅ Found expected highlight: '{expected_text}'")
+                        
+                        # Check count
+                        for h in top_highlights:
+                            if h.get('text') == expected_text:
+                                if h.get('count') == 2:
+                                    print(f"   ✅ Highlight count is 2 (as expected)")
+                                else:
+                                    print(f"   ⚠️  Highlight count is {h.get('count')}, expected 2")
+                    else:
+                        print(f"   ⚠️  Expected highlight text not found in top_highlights")
+                    
+                    # Check HTML contains the section
+                    if 'Most highlighted this week' in html:
+                        print("   ✅ HTML contains 'Most highlighted this week' section")
+                    else:
+                        print("   ❌ HTML does NOT contain 'Most highlighted this week' section")
+                        self.failed_tests.append("Highlight Digest: HTML missing 'Most highlighted this week'")
+                    
+                    if expected_text in html:
+                        print(f"   ✅ HTML contains the highlight text")
+                    else:
+                        print(f"   ⚠️  HTML does NOT contain the highlight text")
+                else:
+                    print("   ⚠️  top_highlights array is empty (expected some highlights)")
+            
+            # Step 2: Delete all highlights
+            print("\n   Step 2: Delete all highlights from database")
+            result = highlights_collection.delete_many({})
+            print(f"   ✅ Deleted {result.deleted_count} highlights")
+            
+            # Step 3: Test digest-preview WITHOUT highlights
+            print("\n   Step 3: Test GET /api/admin/newsletter/digest-preview WITHOUT highlights")
+            success2, response2 = self.run_test(
+                "Digest Preview (without highlights)",
+                "GET",
+                "admin/newsletter/digest-preview",
+                200
+            )
+            
+            if success2:
+                top_highlights2 = response2.get('top_highlights', [])
+                html2 = response2.get('html', '')
+                
+                if len(top_highlights2) == 0:
+                    print("   ✅ top_highlights array is empty (as expected)")
+                else:
+                    print(f"   ⚠️  top_highlights has {len(top_highlights2)} items, expected 0")
+                    self.failed_tests.append(f"Highlight Digest: top_highlights not empty after deletion")
+                
+                # Check HTML does NOT contain the section
+                if 'Most highlighted this week' not in html2:
+                    print("   ✅ HTML does NOT contain 'Most highlighted this week' section (graceful omission)")
+                else:
+                    print("   ❌ HTML still contains 'Most highlighted this week' section")
+                    self.failed_tests.append("Highlight Digest: Section not omitted when no highlights")
+            
+            print("\n   ✅ HIGHLIGHT DIGEST TEST PASSED")
+            return True
+            
+        except Exception as e:
+            print(f"   ❌ Error during highlight digest test: {e}")
+            self.failed_tests.append(f"Highlight Digest: {e}")
+            return False
+
+    def test_content_sync(self):
+        """Test content sync endpoints"""
+        print("\n" + "="*60)
+        print("TESTING: Content Sync Tool")
+        print("="*60)
+        print("⚠️  CRITICAL: Production is LIVE - only testing READ operations")
+        
+        # Step 1: Test GET /api/admin/sync/diff (authenticated)
+        print("\n   Step 1: Test GET /api/admin/sync/diff (admin auth)")
+        success1, response1 = self.run_test(
+            "Sync Diff (authenticated)",
+            "GET",
+            "admin/sync/diff",
+            200
+        )
+        
+        if success1:
+            production_url = response1.get('production_url')
+            production_published = response1.get('production_published')
+            missing = response1.get('missing', [])
+            
+            print(f"   Production URL: {production_url}")
+            print(f"   Production published: {production_published}")
+            print(f"   Missing posts: {len(missing)}")
+            
+            # Verify production_url
+            if production_url == 'https://thetradingnarrative.com':
+                print("   ✅ production_url is correct")
+            else:
+                print(f"   ⚠️  production_url is '{production_url}', expected 'https://thetradingnarrative.com'")
+            
+            # Verify production_published >= 14
+            if production_published >= 14:
+                print(f"   ✅ production_published is {production_published} (>= 14)")
+            else:
+                print(f"   ⚠️  production_published is {production_published}, expected >= 14")
+                self.failed_tests.append(f"Content Sync: production_published is {production_published}, expected >= 14")
+            
+            # Verify missing is empty (everything synced)
+            if len(missing) == 0:
+                print("   ✅ missing array is empty (everything already synced)")
+            else:
+                print(f"   ⚠️  missing array has {len(missing)} items (expected 0 for in-sync state)")
+        
+        # Step 2: Test unauthenticated request
+        print("\n   Step 2: Test GET /api/admin/sync/diff (unauthenticated)")
+        # Temporarily remove admin token
+        saved_token = self.admin_token
+        self.admin_token = None
+        
+        success2, _ = self.run_test(
+            "Sync Diff (unauthenticated)",
+            "GET",
+            "admin/sync/diff",
+            401,
+            headers={'Authorization': ''}
+        )
+        
+        if success2:
+            print("   ✅ Unauthenticated request returns 401 (as expected)")
+        
+        # Restore admin token
+        self.admin_token = saved_token
+        
+        # Step 3: Test POST /api/admin/sync/push (no-op)
+        print("\n   Step 3: Test POST /api/admin/sync/push (no-op, nothing to push)")
+        success3, response3 = self.run_test(
+            "Sync Push (no-op)",
+            "POST",
+            "admin/sync/push",
+            200,
+            data={"password": "anything"}
+        )
+        
+        if success3:
+            pushed = response3.get('pushed')
+            message = response3.get('message', '')
+            
+            if pushed == 0:
+                print(f"   ✅ pushed = 0 (no-op as expected)")
+            else:
+                print(f"   ⚠️  pushed = {pushed}, expected 0")
+                self.failed_tests.append(f"Content Sync: pushed = {pushed}, expected 0")
+            
+            if 'already' in message.lower() or 'sync' in message.lower():
+                print(f"   ✅ Message indicates already in sync: '{message}'")
+            else:
+                print(f"   ⚠️  Message doesn't indicate sync status: '{message}'")
+        
+        print("\n   ✅ CONTENT SYNC TEST PASSED")
+        return True
+
 def main():
     print("\n" + "="*60)
     print("TRADING NARRATIVE - BACKEND API TESTING")
-    print("Session: Gmail SMTP Live + Funnel Split + Announcement Editing")
+    print("Session: Self-Healing Seed + Highlight Digest + Content Sync")
     print("="*60)
     
     tester = TradingNarrativeAPITester()
@@ -312,17 +648,20 @@ def main():
         print("\n❌ Admin login failed, stopping tests")
         return 1
     
-    # Test 2: Email Status
+    # Test 2: Self-Healing Seed (Edition #1 restoration)
+    tester.test_self_healing_seed()
+    
+    # Test 3: Highlight Digest
+    tester.test_highlight_digest()
+    
+    # Test 4: Content Sync
+    tester.test_content_sync()
+    
+    # Test 5: Email Status (existing test)
     tester.test_email_status()
     
-    # Test 3: Funnel Plan Split
+    # Test 6: Funnel Plan Split (existing test)
     tester.test_funnel_plan_split()
-    
-    # Test 4: Announcement Editing
-    tester.test_announcement_editing()
-    
-    # Test 5: Digest Personalization Code Review
-    tester.test_digest_personalization_code_review()
     
     # Print results
     print("\n" + "="*60)

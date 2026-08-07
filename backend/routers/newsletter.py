@@ -9,7 +9,7 @@ from utils import now_utc, iso, clean
 from security import get_current_user, get_admin_user
 from schemas import NewsletterIn, NewsletterPrefsIn, DigestSendIn, AutosendIn
 from services.emailer import log_email, unsubscribe_token
-from services.digest_service import build_digest_html, get_digest_posts, do_send_digest
+from services.digest_service import build_digest_html, get_digest_posts, do_send_digest, get_week_top_highlights
 
 router = APIRouter(prefix='/api')
 
@@ -89,9 +89,11 @@ async def set_newsletter_prefs(body: NewsletterPrefsIn, user=Depends(get_current
 @router.get('/admin/newsletter/digest-preview')
 async def digest_preview(admin=Depends(get_admin_user)):
     posts = await get_digest_posts()
+    top_highlights = await get_week_top_highlights()
     subject = f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
     return {'subject': subject, 'post_count': len(posts), 'posts': posts,
-            'html': build_digest_html(posts)}
+            'top_highlights': top_highlights,
+            'html': build_digest_html(posts, top_highlights=top_highlights)}
 
 
 @router.post('/admin/newsletter/send-digest')
@@ -111,8 +113,9 @@ async def send_digest_preview(body: DigestSendIn, admin=Depends(get_admin_user))
     subject = body.subject or f"[PREVIEW] The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
     to = GMAIL_SMTP_USER or admin['email']
     titles = ', '.join(p['title'] for p in posts[:5])
+    top_highlights = await get_week_top_highlights()
     entry = await log_email(to, subject, f'Weekly digest preview featuring: {titles}', 'digest',
-                            html=build_digest_html(posts))
+                            html=build_digest_html(posts, top_highlights=top_highlights))
     return {'ok': True, 'to': to, 'status': entry['status'], 'posts': len(posts)}
 
 

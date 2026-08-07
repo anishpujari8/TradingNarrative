@@ -1,30 +1,26 @@
 [
   {
-    "content": "Migrate Edition #1 + freight article to production via admin API",
-    "status": "completed"
+    "content": "Hardcode Edition #1 + freight article in seed_data.py (seed as published, slug-checked)",
+    "status": "in_progress"
   },
   {
-    "content": "Patch seed code: sample essays seed as drafts on fresh deploys",
-    "status": "completed"
-  },
-  {
-    "content": "Share From Article: quote card from selection popover",
-    "status": "completed"
-  },
-  {
-    "content": "Popular Highlights: aggregate endpoint + Kindle-style markers",
-    "status": "completed"
-  },
-  {
-    "content": "Testing agent verification: 100% pass (14/14 backend, all frontend)",
-    "status": "completed"
-  },
-  {
-    "content": "Edition #2 + Delivery essay imports (still waiting for pasted text)",
+    "content": "Highlight Digest: most-highlighted lines section in Friday digest email",
     "status": "pending"
   },
   {
-    "content": "PayPal integration (still waiting for setup answers)",
+    "content": "Content Sync Tool: admin diff + push-to-production endpoints",
+    "status": "pending"
+  },
+  {
+    "content": "Content Sync Tool: one-click button + dialog in Admin dashboard",
+    "status": "pending"
+  },
+  {
+    "content": "Compile, smoke test, mandatory testing agent run",
+    "status": "pending"
+  },
+  {
+    "content": "Edition #2 + Delivery essay imports (still waiting for pasted text)",
     "status": "pending"
   }
 ]

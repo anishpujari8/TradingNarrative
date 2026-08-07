@@ -11,7 +11,7 @@ from services import emailer
 from services.emailer import log_email
 
 
-def build_digest_html(posts):
+def build_digest_html(posts, top_highlights=None):
     accent = '#1c8570'
     items = ''
     for p in posts:
@@ -37,12 +37,51 @@ def build_digest_html(posts):
           <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#3a4150;margin:0 0 24px;">Here's everything published this week &mdash; the sharpest thinking on markets, tech, and living well.</p>
         </td></tr>
         {items}
+        {_highlights_section(top_highlights, accent)}
         <tr><td style="padding-top:8px;border-top:1px solid #e8e4da;">
           <p style="font-family:Arial,sans-serif;font-size:12px;color:#8a8577;margin:16px 0 0;">You're receiving this because you subscribed to The Trading Narrative.<br/>
           <a href="{FRONTEND_URL}" style="color:{accent};">Visit the site</a> &middot; <a href="{FRONTEND_URL}/pricing" style="color:{accent};">Go Premium</a></p>
         </td></tr>
       </table>
     </td></tr></table></body></html>"""
+
+
+def _highlights_section(top_highlights, accent):
+    """Renders the 'most highlighted this week' social-proof block; empty string when no data."""
+    if not top_highlights:
+        return ''
+    rows = ''
+    for h in top_highlights:
+        rows += f"""
+        <div style="border-left:3px solid {accent};padding:2px 0 2px 14px;margin:0 0 16px;">
+          <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:16px;font-style:italic;line-height:1.55;color:#14181f;">&ldquo;{h['text']}&rdquo;</p>
+          <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#8a8577;">
+            {h['count']} readers highlighted this &middot; <a href="{FRONTEND_URL}/post/{h['post_slug']}" style="color:{accent};">{h['post_title']}</a>
+          </p>
+        </div>"""
+    return f"""
+        <tr><td style="padding:6px 0 22px;">
+          <div style="background:#f7f5f0;border-radius:10px;padding:22px 24px;">
+            <p style="margin:0 0 14px;font-family:monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{accent};">Most highlighted this week</p>
+            {rows}
+          </div>
+        </td></tr>"""
+
+
+async def get_week_top_highlights(limit: int = 3):
+    """Lines highlighted by 2+ distinct readers in the last 7 days, most-saved first."""
+    week_ago = iso(now_utc() - timedelta(days=7))
+    rows = await db.highlights.aggregate([
+        {'$match': {'created_at': {'$gte': week_ago}}},
+        {'$group': {'_id': {'post_slug': '$post_slug', 'post_title': '$post_title', 'text': '$text'},
+                    'readers': {'$addToSet': '$user_id'}}},
+        {'$project': {'count': {'$size': '$readers'}}},
+        {'$match': {'count': {'$gte': 2}}},
+        {'$sort': {'count': -1}},
+        {'$limit': limit},
+    ]).to_list(limit)
+    return [{'post_slug': r['_id']['post_slug'], 'post_title': r['_id']['post_title'],
+             'text': r['_id']['text'], 'count': r['count']} for r in rows]
 
 
 async def get_digest_posts():
@@ -61,6 +100,7 @@ async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
     subject = subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
     subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
     all_cats = list(CATEGORIES.keys())
+    top_highlights = await get_week_top_highlights()
     html_cache = {}
     sent = 0
     for sub in subs:
@@ -70,7 +110,7 @@ async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
             continue  # nothing in their chosen pillars this week
         key = tuple(sorted(p['id'] for p in sub_posts))
         if key not in html_cache:
-            html_cache[key] = build_digest_html(sub_posts)
+            html_cache[key] = build_digest_html(sub_posts, top_highlights=top_highlights)
         titles = ', '.join(p['title'] for p in sub_posts[:5])
         await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest', html=html_cache[key])
         sent += 1

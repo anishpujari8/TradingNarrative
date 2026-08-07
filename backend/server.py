@@ -15,11 +15,11 @@ from config import logger  # loads .env first
 from db import client, db
 from utils import now_utc, iso, slugify, read_time
 from security import hash_password
-from seed_data import SAMPLE_POSTS, AUTHOR
+from seed_data import SAMPLE_POSTS, REAL_POSTS, AUTHOR
 from services.razorpay_service import probe_razorpay_subscriptions
 from services.digest_service import digest_autosend_loop, briefing_reminder_loop
 
-from routers import auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights
+from routers import auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync
 
 app = FastAPI(title='The Trading Narrative API')
 
@@ -56,6 +56,23 @@ async def seed_database():
             }
             await db.posts.insert_one(post)
         logger.info(f'Seeded {len(SAMPLE_POSTS)} sample posts as drafts')
+    # REAL site content: always ensure the author's actual articles exist (matched by
+    # slug) — hardcoded in seed_data.py so a DB reset or fresh deployment never loses them.
+    for rp in REAL_POSTS:
+        if await db.posts.find_one({'slug': rp['slug']}):
+            continue
+        published_at = rp.get('published_at') or iso(now_utc())
+        await db.posts.insert_one({
+            'id': str(uuid.uuid4()), 'slug': rp['slug'], 'title': rp['title'],
+            'excerpt': rp['excerpt'], 'category': rp['category'], 'tier': rp['tier'],
+            'cover_image': rp['cover_image'], 'content_blocks': rp['content_blocks'],
+            'tags': rp.get('tags', []), 'featured': rp.get('featured', False),
+            'status': 'published', 'publish_at': None, 'edition': rp.get('edition'),
+            'published_at': published_at, 'author': AUTHOR,
+            'read_time': read_time(rp['content_blocks']), 'views': 0,
+            'created_at': published_at, 'updated_at': published_at,
+        })
+        logger.info(f"Restored real article from seed: {rp['title'][:60]}")
     # backfill tags on already-seeded posts
     for sp in SAMPLE_POSTS:
         if sp.get('tags'):
@@ -82,6 +99,7 @@ app.include_router(analytics.router)
 app.include_router(community.router)
 app.include_router(admin.router)
 app.include_router(highlights.router)
+app.include_router(sync.router)
 
 app.add_middleware(
     CORSMiddleware,

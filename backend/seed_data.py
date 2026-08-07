@@ -247,3 +247,216 @@ SAMPLE_POSTS = [
         ],
     },
 ]
+
+
+# ---------------- REAL SITE CONTENT (hardcoded so DB resets never lose it) ----------------
+# These are the author's actual published articles. seed_database() inserts any of
+# these that are missing (matched by slug) as PUBLISHED posts on every startup.
+REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
+  'title': 'Five Things Commodity Desks Need to Know This Week',
+  'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. '
+             'Edition #1 of The Trading Narrative.',
+  'category': 'finance',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['ETRM', 'Commodities', 'Markets', 'Risk', 'Regulation'],
+  'featured': True,
+  'edition': 1,
+  'published_at': '2026-08-06T17:05:57.428378+00:00',
+  'content_blocks': ['THE BOARD — Brent $92.27 ▲ | WTI ~$84.00 ▲ | Copper $6.44 ▲ (+46% y/y) | Wheat $6.63½ '
+                     '▲ | Corn $4.45¾ ▼ | Soybeans $11.77¼ ▼',
+                     'Welcome to Edition #1. Every week: five things that actually change how trading and '
+                     'risk teams work — written the way a desk reads them, not the way a press release '
+                     'writes them.',
+                     '## 1. Crude posts its biggest monthly gain since March',
+                     'This is not a demand story. US strikes on Iranian military targets and the Houthi '
+                     'blockade keep the geopolitical premium elevated; Saudi Arabia is canvassing 43 '
+                     'countries on a maritime coalition. Russia extended gasoline export curbs to year-end, '
+                     'and CPC halted Black Sea loadings after tanker attacks.',
+                     'The tell: US gasoline stocks rose and still sit 6% below the 5-year average. When '
+                     'inventories build and prices rally anyway, geopolitics is doing the pricing. (Sources: '
+                     'Bloomberg · Barchart · EIA)',
+                     '## 2. Copper smelters are effectively paying to work',
+                     'Copper is up 46% year-on-year, but the real story is upstream: concentrate TC/RCs are '
+                     'at record lows and negative. Smelters survive on acid and precious-metal by-product '
+                     'credits; Platts is proposing outright clean-concentrate assessments.',
+                     'If you model smelter margins, offtakes or embedded optionality: this is no longer a '
+                     "blip. It's the market structure. (Sources: Fastmarkets · S&P Global)",
+                     '## 3. Every ETRM deal is now an AI conversation with one vendor',
+                     'Fact one: Openlink Endur, Allegro, RightAngle and Aspect all sit under ION — a '
+                     '"competitive bid" increasingly means choosing between stablemates. Negotiate '
+                     'accordingly.',
+                     'Fact two: AI has moved from pilot to purchase criterion. Desks now demand AI-native '
+                     "deal capture, exposure and logistics tooling — programmes that don't answer the AI "
+                     "question don't get funded. (Sources: CTRM Center · Phlo Systems)",
+                     '## 4. FERC tells NERC: write the rules for data-centre load',
+                     'Reliability standards for large computational loads on the Bulk-Power System, filings '
+                     'due 31 December 2026. Power traders: load forecasting just became a compliance topic. '
+                     'And for cross-Atlantic desks — a fresh REMIT II vs US CFTC/FERC split-model comparison '
+                     'is essential reading. (Sources: FERC · National Law Review)',
+                     '## 5. AI governance gets teeth in trading and surveillance',
+                     'Supervisors converge on three demands: explainability, bias management, '
+                     "human-in-the-loop oversight. AI/model risk now ranks among 2026's top operational "
+                     'risks while surveillance expands across email, chat, voice and off-channel devices, '
+                     'with GenAI cutting false positives (FINRA).',
+                     'Ags corner: wheat firm at $6.63½, corn correcting, soybeans waiting on one headline — '
+                     'a China purchase. (Sources: Thomson Reuters · MCO · FINRA · Brownfield)',
+                     '## Three signals to watch',
+                     '1. Crude — the rally rests on Iran/Red Sea escalation. Watch the coalition talks, not '
+                     'the inventory data.',
+                     '2. Copper — negative TC/RCs are structural. Watch Q3 concentrate supply deals.',
+                     '3. ETRM — platform replacement is an AI conversation, and increasingly a single-vendor '
+                     'negotiation.',
+                     'If this saved you a morning of reading, subscribe and share it with one person on your '
+                     'desk. What should the Narrative cover next week? Tell me in the comments.',
+                     "I'm Anish Pujari, Senior ETRM/CTRM Product Manager & Consultant (Endur, Eka, Triple "
+                     'Point, Azure Databricks). Views my own; prices indicative, not trading advice.']},
+ {'slug': 'freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr',
+  'title': 'Freight Management and Tracking Visibility: How Digital Platforms and AI Are Rewriting the Rules '
+           'of Commodity Logistics',
+  'excerpt': 'Why $15 billion in annual demurrage is a data problem — and how AIS, AI, and integrated CTRM '
+             'are finally solving it.',
+  'category': 'tech-business',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['AI', 'CTRM', 'Freight', 'Logistics', 'Commodities'],
+  'featured': False,
+  'edition': None,
+  'published_at': '2026-08-07T02:22:08.669944+00:00',
+  'content_blocks': ['“We had 47 vessels at sea, 12 carrying live crude positions, tracked on a spreadsheet '
+                     "refreshed twice a day by a port agent's WhatsApp message. When one vessel diverted, we "
+                     'found out three hours later. The position had already moved against us by $800,000.” — '
+                     'Head of Operations, Major Commodity Trading House',
+                     'This is not a small firm problem. This is happening at firms trading millions of '
+                     'barrels and billions of dollars of physical commodity — right now, in 2025.',
+                     'The technology to solve it exists. It is proven and already deployed by the firms '
+                     'winning margin wars in physical commodity trading. This article covers what that '
+                     'technology stack looks like and what AI is adding to it.',
+                     '## The Cost of Not Knowing',
+                     'Poor freight visibility creates direct financial losses in four specific ways.',
+                     'Demurrage surprises. Global demurrage costs exceed $15 billion annually. The majority '
+                     'of demurrage disputes arise not because the detention happened but because the trading '
+                     'firm did not know it was accruing in real time. By the time the invoice arrives — '
+                     '60–90 days after the event — facts are disputed, documentation is missing, and '
+                     'settlement drags for months.',
+                     'Position miscalculation. Traders hold physical positions against paper hedges. If a '
+                     'vessel is delayed by three days and the operations team does not know until Day 2, the '
+                     'position has been incorrectly hedged for two days. In a volatile market, that is a '
+                     'significant P&L exposure.',
+                     'Documentary non-compliance. Letters of credit have hard deadlines. A bill of lading '
+                     'presented one day late results in a bank refusing payment. A certificate of quality '
+                     'with incorrect moisture figures triggers a price adjustment or rejection. Freight '
+                     'visibility is not just where the vessel is — it is whether every document is on track '
+                     'to meet its deadline.',
+                     'Regulatory exposure. REMIT, CFTC rules, and a growing number of jurisdictions require '
+                     'reporting of physical delivery obligations and their fulfilment. Poor freight tracking '
+                     'means poor regulatory data.',
+                     '## The Digital Freight Visibility Stack',
+                     'Modern freight visibility is built in five layers. Most firms have some layers '
+                     'partially. Very few have all five integrated.',
+                     'Layer 1 — AIS Vessel Tracking. Every commercial vessel broadcasts its position, speed, '
+                     'and destination via AIS every few seconds. Satellite AIS receivers aggregate this into '
+                     'real-time tracking. Commercial providers — Kpler, Vortexa, MarineTraffic, Spire '
+                     'Maritime, Windward — deliver this data via API. Connected to your CTRM shipment '
+                     'module, vessel ETA updates automatically rather than arriving by phone call from a '
+                     'port agent.',
+                     'Layer 2 — Port and Terminal Data. AIS tells you where the vessel is. Port data tells '
+                     'you what is happening at the terminal — berth availability, congestion (vessels at '
+                     'anchor), actual loading and discharge rates. This data flows into the laytime '
+                     'calculator, so the operations team knows before the vessel arrives whether it will '
+                     'face a berth queue and can begin commercial conversations proactively.',
+                     'Layer 3 — Real-Time Laytime Calculation. Laytime is the agreed period for loading or '
+                     'discharging. Demurrage begins when it expires. A digital laytime engine ingests the '
+                     'notice of readiness timestamp, applies charter party terms, receives real-time '
+                     'throughput data from the terminal, and shows at any moment during the operation '
+                     'whether the vessel is on laytime, ahead of schedule, or in demurrage — and by how '
+                     'much.',
+                     'A vessel loading 50,000 MT of crude at a terminal running behind rate accrues '
+                     'demurrage at $35,000 per day. Knowing this in real time changes what the operations '
+                     'team does next. Finding out on the invoice 60 days later does not.',
+                     'Layer 4 — Document Management and AI Extraction. A single bulk cargo generates 40–80 '
+                     'documents across the voyage lifecycle. AI-enhanced OCR and large language models '
+                     'extract structured data from these documents automatically — reading a statement of '
+                     'facts in any port agent format, pulling the NOR tendering time, loading commencement, '
+                     'interruptions and reasons, and feeding them directly into the laytime calculation. The '
+                     'same technology compares the bill of lading quantity against the confirmed trade '
+                     'record and flags discrepancies before the document reaches the bank.',
+                     'Layer 5 — CTRM Integration and the Closed Loop. The first four layers generate freight '
+                     'data. Layer 5 makes it commercially actionable by feeding it back into the CTRM system '
+                     'where the trading positions live.',
+                     'Trade booked → Voyage nominated → AIS tracks vessel → ETA auto-updated → Laytime '
+                     'running in real time → Demurrage accrual on P&L daily → Documents extracted and '
+                     'reconciled → Outturn quantity adjusts position → Settlement instruction generated → '
+                     'Regulatory data auto-populated',
+                     'When this loop is closed, a cargo flows from trade booking to settlement with minimal '
+                     'manual intervention and continuous P&L visibility.',
+                     '## Where AI Changes Everything',
+                     'Five AI applications are in production at commodity trading firms today — not in '
+                     'pilot, not theoretical.',
+                     'AI ETA Prediction. Vessel-reported ETAs are consistently inaccurate. AI models trained '
+                     'on historical AIS tracks, port congestion data, weather routing, canal wait times, and '
+                     'vessel-specific performance produce ETAs that are 30–50% more accurate than what the '
+                     'crew reports. For hedge roll decisions and terminal planning, that accuracy difference '
+                     'is material.',
+                     'Demurrage Prediction. AI models trained on historical demurrage claims, port '
+                     'congestion patterns, and charter party terms score every shipment for demurrage '
+                     'probability before the voyage begins. In a portfolio of 50 active shipments, the model '
+                     'identifies the 8–10 voyages above 70% probability — allowing the team to intervene '
+                     'specifically rather than monitoring all 50 equally.',
+                     'LLM Document Extraction. Traditional OCR extracts text. Large language models '
+                     'understand context. An LLM trained on commodity trade documents reads a statement of '
+                     'facts from any port agent in any format, extracts the laytime events with their '
+                     'timestamps, identifies the relevant charter party clauses, and generates a first-draft '
+                     'demurrage claim ready for human review. Time from voyage completion to demurrage claim '
+                     'submission: from 4–6 weeks to 3–5 days. The cash flow impact is direct — claims '
+                     'submitted earlier have higher acceptance rates.',
+                     'Vessel Risk and Sanctions Intelligence. AI-powered vessel risk scoring analyses '
+                     'complete AIS history, port call patterns, beneficial ownership chains, flag state '
+                     'risk, and P&I club membership to produce a risk score for every nominated vessel — '
+                     'integrated into the CTRM deal booking workflow so the screening happens at voyage '
+                     'instruction, not after the fixture is concluded.',
+                     'Freight Rate Prediction. AI models analysing Baltic Exchange indices, fleet supply in '
+                     'loading regions, commodity flow data, and historical seasonality predict near-term '
+                     'freight rate movements. The output informs whether to fix a vessel today or wait, '
+                     'whether to use spot or a forward freight agreement, and how to price the freight '
+                     'component of a physical commodity offer.',
+                     '## What This Means for Your CTRM Platform',
+                     'Vessel tracking — most firms today: port agent WhatsApp / email. What is required: AIS '
+                     'feed auto-updating CTRM in real time.',
+                     'Laytime calculation — most firms today: post-voyage, Excel, manual. What is required: '
+                     'real-time engine from the NOR timestamp.',
+                     'Demurrage accrual — most firms today: 60–90 day invoice lag. What is required: live '
+                     'accrual on daily P&L.',
+                     'Document management — most firms today: email filing, manual entry. What is required: '
+                     'OCR/LLM extraction, auto-reconciled.',
+                     'Position feedback — most firms today: manual outturn entry. What is required: '
+                     'auto-adjusted from draft survey data.',
+                     'Sanctions screening — most firms today: pre-fixture email check. What is required: '
+                     'automated vessel risk score at booking.',
+                     'Eka, RightAngle, and Endur/OpenLink Logistics all offer freight management modules '
+                     'with varying degrees of AIS integration and laytime automation. Veson IMOS is widely '
+                     'used as a dedicated freight platform alongside CTRM — though the integration challenge '
+                     'between two systems remains the most common point of failure.',
+                     '## Where to Start',
+                     'Do not try to implement all five layers at once. The sequence matters.',
+                     'Months 1–3: Subscribe to an AIS provider. Connect vessel position data to your CTRM '
+                     'shipment records. Automatic ETA updates. This single step eliminates the most basic '
+                     'visibility gap at relatively low cost and effort.',
+                     'Months 3–6: Implement a digital laytime calculation engine. Real-time demurrage '
+                     'accrual visible on P&L daily. This is where the largest immediate financial return '
+                     'sits.',
+                     'Months 6–12: Implement OCR document extraction for statements of facts and bills of '
+                     'lading. AI enhancement for ETA prediction and demurrage probability scoring.',
+                     'Months 12–24: Close the full loop — outturn feedback to position, automated settlement '
+                     'instructions, regulatory data auto-population, vessel risk screening at deal booking.',
+                     'The most important principle: AI on top of clean, structured freight data delivers '
+                     'transformation. AI on top of a spreadsheet delivers a more sophisticated spreadsheet. '
+                     'Build the data foundation first.',
+                     '## The Margin Is in the Visibility',
+                     'Physical commodity trading margins are thin and getting thinner. The firms maintaining '
+                     'margin in a commoditised market do so by executing better on the operational details.',
+                     'The technology to do this is available today. The question is not whether to implement '
+                     'it. The question is how quickly your firm can close the gap between where your freight '
+                     'management is today and the standard the leading firms have already set.',
+                     'The vessel is at sea. The position is live. The demurrage clock is running.',
+                     'Does your system know?']}]
