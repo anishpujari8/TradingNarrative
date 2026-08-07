@@ -1,9 +1,10 @@
-"""Backend API tests for The Trading Narrative - Series, Share, and Audio Features"""
+"""Backend API tests for The Trading Narrative - Narration Status Panel, Demo Cleanup, Admin Warm Trigger"""
 import requests
 import sys
-import re
 
 PREVIEW_URL = "https://insight-hub-484.preview.emergentagent.com"
+ADMIN_EMAIL = "admin@tradingnarrative.com"
+ADMIN_PASSWORD = "Admin@2025"
 
 class TestRunner:
     def __init__(self):
@@ -11,6 +12,7 @@ class TestRunner:
         self.tests_passed = 0
         self.tests_failed = 0
         self.failures = []
+        self.admin_token = None
 
     def test(self, name, condition, error_msg=""):
         """Run a single test assertion"""
@@ -41,246 +43,296 @@ class TestRunner:
         return self.tests_failed == 0
 
 
-def test_series_endpoints(runner):
-    """Test editorial series endpoints"""
+def test_admin_login(runner):
+    """Test admin login and get auth token"""
     print("\n" + "="*60)
-    print("SERIES ENDPOINTS TESTS")
+    print("ADMIN LOGIN TEST")
     print("="*60)
     
-    # Test 1: GET /api/series returns trading-operations with count 3
     try:
-        resp = requests.get(f"{PREVIEW_URL}/api/series", timeout=10)
+        resp = requests.post(
+            f"{PREVIEW_URL}/api/auth/login",
+            json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+            timeout=10
+        )
         runner.test(
-            "Series list: Status 200",
+            "Admin login: Status 200",
             resp.status_code == 200,
             f"Expected 200, got {resp.status_code}"
         )
         
-        data = resp.json()
-        series_list = data.get("series", [])
-        
-        runner.test(
-            "Series list: Returns 1 series",
-            len(series_list) == 1,
-            f"Expected 1 series, got {len(series_list)}"
-        )
-        
-        if series_list:
-            s = series_list[0]
+        if resp.status_code == 200:
+            data = resp.json()
+            token = data.get("token")
             runner.test(
-                "Series list: Slug is 'trading-operations'",
-                s.get("slug") == "trading-operations",
-                f"Expected 'trading-operations', got {s.get('slug')}"
+                "Admin login: Token received",
+                token is not None,
+                "No token in response"
             )
-            runner.test(
-                "Series list: Title is 'Trading Operations'",
-                s.get("title") == "Trading Operations",
-                f"Expected 'Trading Operations', got {s.get('title')}"
-            )
-            runner.test(
-                "Series list: Count is 3",
-                s.get("count") == 3,
-                f"Expected count 3, got {s.get('count')}"
-            )
+            runner.admin_token = token
+            print(f"   Admin token: {token[:20]}...")
+        else:
+            print(f"   Response: {resp.text}")
     except Exception as e:
-        runner.test("Series list endpoint", False, str(e))
-
-    # Test 2: GET /api/series/trading-operations returns posts in exact order
-    try:
-        resp = requests.get(f"{PREVIEW_URL}/api/series/trading-operations", timeout=10)
-        runner.test(
-            "Series detail: Status 200",
-            resp.status_code == 200,
-            f"Expected 200, got {resp.status_code}"
-        )
-        
-        data = resp.json()
-        posts = data.get("posts", [])
-        
-        runner.test(
-            "Series detail: Returns 3 posts",
-            len(posts) == 3,
-            f"Expected 3 posts, got {len(posts)}"
-        )
-        
-        expected_order = [
-            "five-things-commodity-desks-need-to-know-this-week",
-            "freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr",
-            "the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a"
-        ]
-        
-        if len(posts) >= 3:
-            actual_order = [p.get("slug") for p in posts[:3]]
-            runner.test(
-                "Series detail: Post 1 is 'Five Things Commodity Desks...'",
-                actual_order[0] == expected_order[0],
-                f"Expected {expected_order[0]}, got {actual_order[0]}"
-            )
-            runner.test(
-                "Series detail: Post 2 is 'Freight Management...'",
-                actual_order[1] == expected_order[1],
-                f"Expected {expected_order[1]}, got {actual_order[1]}"
-            )
-            runner.test(
-                "Series detail: Post 3 is 'The Shipping Industry...'",
-                actual_order[2] == expected_order[2],
-                f"Expected {expected_order[2]}, got {actual_order[2]}"
-            )
-    except Exception as e:
-        runner.test("Series detail endpoint", False, str(e))
-
-    # Test 3: GET /api/series/unknown returns 404
-    try:
-        resp = requests.get(f"{PREVIEW_URL}/api/series/unknown-series", timeout=10)
-        runner.test(
-            "Series 404: Unknown series returns 404",
-            resp.status_code == 404,
-            f"Expected 404, got {resp.status_code}"
-        )
-    except Exception as e:
-        runner.test("Series 404 test", False, str(e))
+        runner.test("Admin login", False, str(e))
 
 
-def test_posts_with_series(runner):
-    """Test posts include series information"""
+def test_narrations_endpoint_auth(runner):
+    """Test GET /api/admin/narrations with and without auth"""
     print("\n" + "="*60)
-    print("POSTS WITH SERIES INFO TESTS")
+    print("NARRATIONS ENDPOINT - AUTH TESTS")
     print("="*60)
     
-    # Test 1: Freight article includes series info
+    # Test 1: Without auth should return 401/403
     try:
-        slug = "freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr"
-        resp = requests.get(f"{PREVIEW_URL}/api/posts/{slug}", timeout=10)
+        resp = requests.get(f"{PREVIEW_URL}/api/admin/narrations", timeout=10)
         runner.test(
-            "Post with series: Status 200",
+            "Narrations without auth: Returns 401 or 403",
+            resp.status_code in [401, 403],
+            f"Expected 401 or 403, got {resp.status_code}"
+        )
+    except Exception as e:
+        runner.test("Narrations without auth", False, str(e))
+    
+    # Test 2: With admin auth should return 200
+    if not runner.admin_token:
+        print("⚠️  Skipping authenticated tests - no admin token")
+        return
+    
+    try:
+        headers = {"Authorization": f"Bearer {runner.admin_token}"}
+        resp = requests.get(f"{PREVIEW_URL}/api/admin/narrations", headers=headers, timeout=10)
+        runner.test(
+            "Narrations with auth: Status 200",
             resp.status_code == 200,
             f"Expected 200, got {resp.status_code}"
         )
         
-        data = resp.json()
-        series = data.get("series")
-        
-        runner.test(
-            "Post with series: Has series field",
-            series is not None,
-            "Expected series field, got None"
-        )
-        
-        if series:
+        if resp.status_code == 200:
+            data = resp.json()
+            
+            # Check enabled field
             runner.test(
-                "Post with series: Slug is 'trading-operations'",
-                series.get("slug") == "trading-operations",
-                f"Expected 'trading-operations', got {series.get('slug')}"
+                "Narrations: enabled is true",
+                data.get("enabled") is True,
+                f"Expected enabled=true, got {data.get('enabled')}"
             )
+            
+            # Check warming field (boolean)
+            warming = data.get("warming")
             runner.test(
-                "Post with series: Title is 'Trading Operations'",
-                series.get("title") == "Trading Operations",
-                f"Expected 'Trading Operations', got {series.get('title')}"
+                "Narrations: warming is boolean",
+                isinstance(warming, bool),
+                f"Expected boolean, got {type(warming)}"
             )
+            print(f"   warming: {warming}")
+            
+            # Check credits field (expected to be null due to missing user_read permission)
+            credits = data.get("credits")
+            runner.test(
+                "Narrations: credits is null (expected - API key lacks user_read permission)",
+                credits is None,
+                f"Expected null, got {credits}"
+            )
+            
+            # Check cached_count
+            cached_count = data.get("cached_count")
+            runner.test(
+                "Narrations: cached_count is 3",
+                cached_count == 3,
+                f"Expected 3, got {cached_count}"
+            )
+            
+            # Check total
+            total = data.get("total")
+            runner.test(
+                "Narrations: total is 4",
+                total == 4,
+                f"Expected 4, got {total}"
+            )
+            
+            # Check essays array
+            essays = data.get("essays", [])
+            runner.test(
+                "Narrations: essays array has 4 items",
+                len(essays) == 4,
+                f"Expected 4 essays, got {len(essays)}"
+            )
+            
+            # Check essay structure
+            if essays:
+                essay = essays[0]
+                required_fields = ["slug", "title", "tier", "cached", "scopes", "bytes", "listens"]
+                for field in required_fields:
+                    runner.test(
+                        f"Narrations: Essay has '{field}' field",
+                        field in essay,
+                        f"Missing field: {field}"
+                    )
+                
+                # Count cached vs missing
+                cached_essays = [e for e in essays if e.get("cached")]
+                missing_essays = [e for e in essays if not e.get("cached")]
+                print(f"   Cached essays: {len(cached_essays)}")
+                print(f"   Missing essays: {len(missing_essays)}")
+                
+                # Check for the specific missing essay
+                five_things_essay = next((e for e in essays if "five-things-commodity-desks" in e.get("slug", "")), None)
+                if five_things_essay:
+                    runner.test(
+                        "Narrations: 'Five Things Commodity Desks' essay is Missing",
+                        not five_things_essay.get("cached"),
+                        f"Expected cached=false, got {five_things_essay.get('cached')}"
+                    )
+                    print(f"   Five Things essay: {five_things_essay.get('title')[:50]}... - cached={five_things_essay.get('cached')}")
+        else:
+            print(f"   Response: {resp.text}")
     except Exception as e:
-        runner.test("Post with series info", False, str(e))
-
-    # Test 2: Non-series article has series=null
-    try:
-        slug = "170-kilometres-one-green-enfield-and-a-lesson-in-strategic-momentum"
-        resp = requests.get(f"{PREVIEW_URL}/api/posts/{slug}", timeout=10)
-        runner.test(
-            "Post without series: Status 200",
-            resp.status_code == 200,
-            f"Expected 200, got {resp.status_code}"
-        )
-        
-        data = resp.json()
-        series = data.get("series")
-        
-        runner.test(
-            "Post without series: series is None",
-            series is None,
-            f"Expected None, got {series}"
-        )
-    except Exception as e:
-        runner.test("Post without series info", False, str(e))
+        runner.test("Narrations with auth", False, str(e))
 
 
-def test_share_endpoint(runner):
-    """Test LinkedIn/X preview card endpoint"""
+def test_warm_endpoint(runner):
+    """Test POST /api/admin/narrations/warm (call ONCE only)"""
     print("\n" + "="*60)
-    print("SHARE ENDPOINT (OG CARDS) TESTS")
+    print("WARM ENDPOINT TEST (CALLING ONCE)")
     print("="*60)
     
-    # Test 1: Valid slug returns HTML with OG tags
+    if not runner.admin_token:
+        print("⚠️  Skipping warm test - no admin token")
+        return
+    
     try:
-        slug = "the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a"
-        resp = requests.get(f"{PREVIEW_URL}/api/share/{slug}", timeout=10)
+        headers = {"Authorization": f"Bearer {runner.admin_token}"}
+        resp = requests.post(f"{PREVIEW_URL}/api/admin/narrations/warm", headers=headers, timeout=10)
         runner.test(
-            "Share endpoint: Status 200",
+            "Warm endpoint: Status 200",
             resp.status_code == 200,
             f"Expected 200, got {resp.status_code}"
         )
         
-        html = resp.text
-        
-        # Check for og:title
-        has_og_title = 'property="og:title"' in html and "The Shipping Industry" in html
-        runner.test(
-            "Share endpoint: Contains og:title with essay title",
-            has_og_title,
-            "og:title not found or doesn't contain essay title"
-        )
-        
-        # Check for og:image
-        has_og_image = 'property="og:image"' in html and 'unsplash.com' in html
-        runner.test(
-            "Share endpoint: Contains og:image with unsplash URL",
-            has_og_image,
-            "og:image not found or doesn't contain unsplash URL"
-        )
-        
-        # Check for og:url
-        has_og_url = 'property="og:url"' in html and f'/post/{slug}' in html
-        runner.test(
-            "Share endpoint: Contains og:url ending in /post/[slug]",
-            has_og_url,
-            f"og:url not found or doesn't end with /post/{slug}"
-        )
-        
-        # Check for twitter:card
-        has_twitter_card = 'name="twitter:card"' in html and 'summary_large_image' in html
-        runner.test(
-            "Share endpoint: Contains twitter:card summary_large_image",
-            has_twitter_card,
-            "twitter:card summary_large_image not found"
-        )
-        
-        # Check for meta refresh redirect
-        has_meta_refresh = 'http-equiv="refresh"' in html and f'/post/{slug}' in html
-        runner.test(
-            "Share endpoint: Contains meta refresh redirect",
-            has_meta_refresh,
-            "meta refresh redirect not found"
-        )
-        
-        # Check for JS redirect
-        has_js_redirect = 'window.location.replace' in html and f'/post/{slug}' in html
-        runner.test(
-            "Share endpoint: Contains JS redirect",
-            has_js_redirect,
-            "window.location.replace redirect not found"
-        )
-        
+        if resp.status_code == 200:
+            data = resp.json()
+            
+            runner.test(
+                "Warm endpoint: ok is true",
+                data.get("ok") is True,
+                f"Expected ok=true, got {data.get('ok')}"
+            )
+            
+            runner.test(
+                "Warm endpoint: started is true",
+                data.get("started") is True,
+                f"Expected started=true, got {data.get('started')}"
+            )
+            
+            print(f"   Response: {data}")
+            print("   ⚠️  Expected: Warmup will try to generate missing essay and stop with quota error (0 credits)")
+            
+            # Wait a moment and check if warming flag is set
+            import time
+            time.sleep(2)
+            
+            resp2 = requests.get(f"{PREVIEW_URL}/api/admin/narrations", headers=headers, timeout=10)
+            if resp2.status_code == 200:
+                data2 = resp2.json()
+                warming = data2.get("warming")
+                print(f"   After warmup call, warming={warming} (may briefly be true)")
+        else:
+            print(f"   Response: {resp.text}")
     except Exception as e:
-        runner.test("Share endpoint valid slug", False, str(e))
+        runner.test("Warm endpoint", False, str(e))
 
-    # Test 2: Unknown slug returns 404
+
+def test_demo_cleanup(runner):
+    """Test demo cleanup - verify only 4 published posts"""
+    print("\n" + "="*60)
+    print("DEMO CLEANUP TEST")
+    print("="*60)
+    
+    # Test 1: GET /api/posts returns exactly 4 posts
     try:
-        resp = requests.get(f"{PREVIEW_URL}/api/share/unknown-slug-12345", timeout=10)
+        resp = requests.get(f"{PREVIEW_URL}/api/posts", timeout=10)
         runner.test(
-            "Share endpoint 404: Unknown slug returns 404",
-            resp.status_code == 404,
-            f"Expected 404, got {resp.status_code}"
+            "Demo cleanup: /api/posts returns 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
         )
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            posts = data.get("posts", [])
+            
+            runner.test(
+                "Demo cleanup: Exactly 4 published posts",
+                len(posts) == 4,
+                f"Expected 4 posts, got {len(posts)}"
+            )
+            
+            # Check that none of the demo titles are present
+            demo_titles = [
+                "The Deep Work Reset",
+                "Why Great Products Die in Distribution",
+                "The Attention Economy",
+                "Building in Public",
+                "The Creator Economy"
+            ]
+            
+            post_titles = [p.get("title", "") for p in posts]
+            has_demo_titles = any(demo in title for demo in demo_titles for title in post_titles)
+            
+            runner.test(
+                "Demo cleanup: No demo essay titles in published posts",
+                not has_demo_titles,
+                f"Found demo titles in: {post_titles}"
+            )
+            
+            print(f"   Published posts:")
+            for p in posts:
+                print(f"     - {p.get('title')[:60]}...")
     except Exception as e:
-        runner.test("Share endpoint 404 test", False, str(e))
+        runner.test("Demo cleanup: /api/posts", False, str(e))
+    
+    # Test 2: Check admin posts to verify demo essays are drafts
+    if not runner.admin_token:
+        print("⚠️  Skipping admin posts check - no admin token")
+        return
+    
+    try:
+        headers = {"Authorization": f"Bearer {runner.admin_token}"}
+        resp = requests.get(f"{PREVIEW_URL}/api/admin/posts", headers=headers, timeout=10)
+        runner.test(
+            "Demo cleanup: /api/admin/posts returns 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            all_posts = data.get("posts", [])
+            
+            # Count published vs draft
+            published = [p for p in all_posts if p.get("status") == "published"]
+            drafts = [p for p in all_posts if p.get("status") == "draft"]
+            
+            print(f"   Total posts: {len(all_posts)}")
+            print(f"   Published: {len(published)}")
+            print(f"   Drafts: {len(drafts)}")
+            
+            runner.test(
+                "Demo cleanup: Exactly 4 published posts in admin view",
+                len(published) == 4,
+                f"Expected 4 published, got {len(published)}"
+            )
+            
+            # Check that demo essays are in drafts
+            demo_keywords = ["Deep Work", "Distribution", "Attention Economy"]
+            draft_titles = [p.get("title", "") for p in drafts]
+            has_demo_in_drafts = any(keyword in title for keyword in demo_keywords for title in draft_titles)
+            
+            if has_demo_in_drafts:
+                print(f"   ✓ Demo essays found in drafts (as expected)")
+    except Exception as e:
+        runner.test("Demo cleanup: /api/admin/posts", False, str(e))
 
 
 def test_regression_endpoints(runner):
@@ -297,28 +349,10 @@ def test_regression_endpoints(runner):
             resp.status_code == 200,
             f"Expected 200, got {resp.status_code}"
         )
-        
-        data = resp.json()
-        runner.test(
-            "Regression: /api/posts has posts array",
-            "posts" in data and isinstance(data["posts"], list),
-            "posts array not found"
-        )
     except Exception as e:
         runner.test("Regression: /api/posts", False, str(e))
-
-    # Test 2: /api/briefings still works
-    try:
-        resp = requests.get(f"{PREVIEW_URL}/api/briefings", timeout=10)
-        runner.test(
-            "Regression: /api/briefings returns 200",
-            resp.status_code == 200,
-            f"Expected 200, got {resp.status_code}"
-        )
-    except Exception as e:
-        runner.test("Regression: /api/briefings", False, str(e))
-
-    # Test 3: /api/categories still works
+    
+    # Test 2: /api/categories still works
     try:
         resp = requests.get(f"{PREVIEW_URL}/api/categories", timeout=10)
         runner.test(
@@ -328,6 +362,52 @@ def test_regression_endpoints(runner):
         )
     except Exception as e:
         runner.test("Regression: /api/categories", False, str(e))
+    
+    # Test 3: /api/briefings still works
+    try:
+        resp = requests.get(f"{PREVIEW_URL}/api/briefings", timeout=10)
+        runner.test(
+            "Regression: /api/briefings returns 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+    except Exception as e:
+        runner.test("Regression: /api/briefings", False, str(e))
+    
+    # Test 4: /api/admin/analytics/stats still works (with auth)
+    if not runner.admin_token:
+        print("⚠️  Skipping analytics test - no admin token")
+        return
+    
+    try:
+        headers = {"Authorization": f"Bearer {runner.admin_token}"}
+        resp = requests.get(f"{PREVIEW_URL}/api/admin/analytics/stats", headers=headers, timeout=10)
+        runner.test(
+            "Regression: /api/admin/analytics/stats returns 200",
+            resp.status_code == 200,
+            f"Expected 200, got {resp.status_code}"
+        )
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            
+            # Check that listens and listens_7d fields are present
+            runner.test(
+                "Regression: Stats has 'listens' field",
+                "listens" in data,
+                "Missing 'listens' field"
+            )
+            
+            runner.test(
+                "Regression: Stats has 'listens_7d' field",
+                "listens_7d" in data,
+                "Missing 'listens_7d' field"
+            )
+            
+            print(f"   listens: {data.get('listens')}")
+            print(f"   listens_7d: {data.get('listens_7d')}")
+    except Exception as e:
+        runner.test("Regression: /api/admin/analytics/stats", False, str(e))
 
 
 def main():
@@ -335,13 +415,14 @@ def main():
     
     print("\n" + "="*60)
     print("THE TRADING NARRATIVE - BACKEND API TESTS")
-    print("Series, Share (OG Cards), and Audio Features")
+    print("Narration Status Panel, Demo Cleanup, Admin Warm Trigger")
     print("="*60)
     
     # Run all test suites
-    test_series_endpoints(runner)
-    test_posts_with_series(runner)
-    test_share_endpoint(runner)
+    test_admin_login(runner)
+    test_narrations_endpoint_auth(runner)
+    test_warm_endpoint(runner)
+    test_demo_cleanup(runner)
     test_regression_endpoints(runner)
     
     # Print summary

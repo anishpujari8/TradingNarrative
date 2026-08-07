@@ -1,0 +1,58 @@
+{
+  "summary": "Completed comprehensive testing of three new features: Narration Status Panel, Demo Cleanup, and Admin Warm Trigger. All backend APIs and frontend UI components working correctly.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: Admin login successful with token generation",
+    "Backend: GET /api/admin/narrations without auth returns 401/403",
+    "Backend: GET /api/admin/narrations with auth returns 200 with correct structure",
+    "Backend: Narrations endpoint returns enabled=true, warming=false, credits=null (expected), cached_count=3, total=4",
+    "Backend: Essays array contains 4 items with all required fields (slug, title, tier, cached, scopes, bytes, listens)",
+    "Backend: Five Things Commodity Desks essay correctly marked as Missing (not cached)",
+    "Backend: POST /api/admin/narrations/warm returns 200 with ok=true, started=true",
+    "Backend: Warmup process starts and encounters expected quota error (0 ElevenLabs credits)",
+    "Backend: Demo cleanup verified - GET /api/posts returns exactly 4 published posts",
+    "Backend: No demo essay titles in published posts",
+    "Backend: GET /api/admin/posts shows 4 published, 12 drafts (demo essays in drafts as expected)",
+    "Backend: Regression - /api/posts, /api/categories, /api/briefings all return 200",
+    "Backend: Regression - /api/admin/analytics/stats returns 200 with listens and listens_7d fields",
+    "Frontend: Admin login successful and redirected to admin page",
+    "Frontend: Overview tab displays Listens stat card (value: 4)",
+    "Frontend: Overview tab displays Top posts chart with views & listens",
+    "Frontend: Narrations tab exists and is clickable (data-testid='admin-tab-narrations')",
+    "Frontend: Credits remaining stat card shows '—' (null as expected)",
+    "Frontend: Credits used stat card shows '—' (null as expected)",
+    "Frontend: Essays narrated stat card shows '3 / 4'",
+    "Frontend: Total listens stat card shows '4'",
+    "Frontend: Hint text visible: 'Credit balance unavailable — enable the User → Read permission on your ElevenLabs API key'",
+    "Frontend: Narrations table (data-testid='admin-narrations-table') displays 4 rows",
+    "Frontend: Table shows 3 'Cached' badges and 1 'Missing' badge",
+    "Frontend: Five Things Commodity Desks essay has 'Missing' badge",
+    "Frontend: Generate missing narrations button (data-testid='admin-narrations-warm-button') is enabled",
+    "Frontend: Clicking Generate button shows success toast: 'Warmup started — missing narrations are being generated in the background.'",
+    "Frontend: Homepage shows only 4 real published essays (no demo titles)",
+    "Frontend: Regression - Overview tab still functional with all stat cards and charts"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/root/.emergent/automation_output/20260807_110532/console_20260807_110532.log",
+    ".screenshots/narrations_tab.png"
+  ],
+  "action_item_for_main_agent": "",
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+  "success_percentage": {
+    "backend": "100% (32/32 tests passed)",
+    "frontend": "100% (all features working correctly)"
+  },
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

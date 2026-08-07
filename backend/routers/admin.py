@@ -6,7 +6,7 @@ from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query
 
 from config import (CATEGORIES, FRONTEND_URL, EMAIL_ENABLED, EMAIL_FROM_NAME,
-                    EMAIL_REPLY_TO, GMAIL_SMTP_USER)
+                    EMAIL_REPLY_TO, GMAIL_SMTP_USER, TTS_ENABLED)
 from db import db
 from utils import now_utc, iso, clean, slugify, read_time, post_summary, published_query
 from security import get_admin_user
@@ -133,6 +133,52 @@ async def admin_send_issue(body: IssueIn, admin=Depends(get_admin_user)):
 async def admin_issues(admin=Depends(get_admin_user)):
     issues = await db.newsletter_issues.find({}).sort('sent_at', -1).to_list(200)
     return {'issues': [clean(i) for i in issues]}
+
+
+# ---------------------- narration status panel ----------------------
+
+@router.get('/admin/narrations')
+async def admin_narrations(admin=Depends(get_admin_user)):
+    """Per-essay narration cache status + live ElevenLabs credit balance."""
+    from services.tts_service import get_credits, WARMUP_STATE, DEFAULT_WARM_VOICE
+    credits = await get_credits()
+    posts = await db.posts.find(published_query()).sort('published_at', -1).to_list(500)
+    cache_docs = await db.audio_cache.find({'voice': DEFAULT_WARM_VOICE}, {'audio': 0}).to_list(1000)
+    by_slug = {}
+    for c in cache_docs:
+        by_slug.setdefault(c['post_slug'], {})[c.get('scope', 'full')] = c
+    essays = []
+    for p in posts:
+        version = p.get('updated_at') or p.get('published_at') or ''
+        entries = by_slug.get(p['slug'], {})
+        needed = ['full'] + (['preview'] if p.get('tier') == 'premium' else [])
+        ready_scopes, total_bytes, cached = [], 0, True
+        for s in needed:
+            c = entries.get(s)
+            if c and c.get('post_version') == version:
+                ready_scopes.append(s)
+                total_bytes += c.get('bytes', 0)
+            else:
+                cached = False
+        essays.append({'slug': p['slug'], 'title': p['title'], 'tier': p.get('tier', 'free'),
+                       'cached': cached, 'scopes': ready_scopes, 'bytes': total_bytes,
+                       'listens': p.get('listens', 0)})
+    return {'enabled': TTS_ENABLED, 'warming': WARMUP_STATE['running'], 'credits': credits,
+            'cached_count': sum(1 for e in essays if e['cached']), 'total': len(essays),
+            'essays': essays}
+
+
+@router.post('/admin/narrations/warm')
+async def admin_warm_narrations(admin=Depends(get_admin_user)):
+    """Kick off background pre-generation of every missing narration (skips cached ones)."""
+    if not TTS_ENABLED:
+        raise HTTPException(status_code=503, detail='Narration is not configured')
+    from services.tts_service import warm_all_narrations, WARMUP_STATE
+    if WARMUP_STATE['running']:
+        return {'ok': True, 'started': False, 'message': 'A warmup run is already in progress.'}
+    asyncio.create_task(warm_all_narrations(initial_delay=0))
+    return {'ok': True, 'started': True,
+            'message': 'Warmup started — missing narrations are being generated in the background.'}
 
 
 @router.get('/admin/analytics/stats')

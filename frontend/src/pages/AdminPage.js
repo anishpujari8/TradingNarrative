@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, Legend, ResponsiveContainer } from "recharts";
-import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning, Headphones } from "lucide-react";
+import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning, Headphones, RefreshCw, AudioLines, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { SyncToProductionDialog } from "@/components/SyncToProductionDialog";
@@ -76,6 +76,32 @@ export default function AdminPage() {
   const [funnel, setFunnel] = useState(null);
   const [emailStatus, setEmailStatus] = useState(null);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [narrations, setNarrations] = useState(null);
+  const [warmStarting, setWarmStarting] = useState(false);
+
+  const loadNarrations = useCallback(() => {
+    api.get("/admin/narrations").then((r) => setNarrations(r.data)).catch(() => setNarrations({ enabled: false, essays: [] }));
+  }, []);
+
+  // while a warmup run is in progress, refresh the panel every 8s
+  useEffect(() => {
+    if (!narrations?.warming) return;
+    const t = setInterval(loadNarrations, 8000);
+    return () => clearInterval(t);
+  }, [narrations?.warming, loadNarrations]);
+
+  const startWarmup = async () => {
+    setWarmStarting(true);
+    try {
+      const res = await api.post("/admin/narrations/warm");
+      toast.success(res.data.message || "Warmup started.");
+      setTimeout(loadNarrations, 1500);
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not start the warmup.");
+    } finally {
+      setWarmStarting(false);
+    }
+  };
 
   const loadAll = useCallback(() => {
     api.get("/admin/analytics/stats").then((r) => setStats(r.data)).catch(() => {});
@@ -86,6 +112,7 @@ export default function AdminPage() {
     api.get("/admin/newsletter/autosend").then((r) => setAutosend(r.data)).catch(() => {});
     api.get("/admin/newsletter/briefing-reminder").then((r) => setReminder(r.data)).catch(() => {});
     api.get("/admin/email/status").then((r) => setEmailStatus(r.data)).catch(() => {});
+    api.get("/admin/narrations").then((r) => setNarrations(r.data)).catch(() => setNarrations({ enabled: false, essays: [] }));
   }, []);
 
   useEffect(() => {
@@ -259,6 +286,7 @@ export default function AdminPage() {
           <TabsTrigger value="traffic" data-testid="admin-tab-traffic">Traffic</TabsTrigger>
           <TabsTrigger value="posts" data-testid="admin-tab-posts">Posts</TabsTrigger>
           <TabsTrigger value="newsletter" data-testid="admin-tab-newsletter">Newsletter</TabsTrigger>
+          <TabsTrigger value="narrations" data-testid="admin-tab-narrations">Narrations</TabsTrigger>
           <TabsTrigger value="emails" data-testid="admin-tab-emails">Email log</TabsTrigger>
         </TabsList>
 
@@ -773,6 +801,97 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* NARRATIONS */}
+        <TabsContent value="narrations">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatCard icon={Zap} label="Credits remaining" value={narrations?.credits ? narrations.credits.remaining.toLocaleString() : "—"} testId="admin-narration-credits-remaining" />
+            <StatCard icon={TrendingUp} label="Credits used" value={narrations?.credits ? `${narrations.credits.used.toLocaleString()} / ${narrations.credits.limit.toLocaleString()}` : "—"} testId="admin-narration-credits-used" />
+            <StatCard icon={AudioLines} label="Essays narrated" value={narrations ? `${narrations.cached_count ?? 0} / ${narrations.total ?? 0}` : "—"} testId="admin-narration-cached-count" />
+            <StatCard icon={Headphones} label="Total listens" value={stats?.listens} testId="admin-narration-total-listens" />
+          </div>
+
+          <Card className="rounded-xl">
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+              <div>
+                <CardTitle className="font-serif text-xl">Narration status by essay</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {narrations?.warming
+                    ? "Generating missing narrations in the background — this panel refreshes automatically."
+                    : narrations?.enabled && !narrations?.credits
+                      ? "Credit balance unavailable — enable the 'User → Read' permission on your ElevenLabs API key to see it here."
+                      : narrations?.credits?.remaining === 0
+                        ? "ElevenLabs credits are exhausted — top up at elevenlabs.io, then generate the missing narrations."
+                        : "Cached essays play instantly for readers. Generate any missing ones with one click."}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={loadNarrations} data-testid="admin-narrations-refresh-button">
+                  <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={startWarmup}
+                  disabled={warmStarting || narrations?.warming || !narrations?.enabled || (narrations && narrations.cached_count === narrations.total)}
+                  data-testid="admin-narrations-warm-button"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {narrations?.warming ? "Generating…" : "Generate missing narrations"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!narrations ? (
+                <Skeleton className="h-48" />
+              ) : !narrations.enabled ? (
+                <p className="text-sm text-muted-foreground" data-testid="admin-narrations-disabled">Narration is not configured — add an ElevenLabs API key to enable it.</p>
+              ) : narrations.essays.length === 0 ? (
+                <p className="text-sm text-muted-foreground" data-testid="admin-narrations-empty">No published essays yet.</p>
+              ) : (
+                <Table data-testid="admin-narrations-table">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Essay</TableHead>
+                      <TableHead>Tier</TableHead>
+                      <TableHead>Narration</TableHead>
+                      <TableHead className="text-right">Audio size</TableHead>
+                      <TableHead className="text-right">Listens</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {narrations.essays.map((e) => (
+                      <TableRow key={e.slug} data-testid={`admin-narration-row-${e.slug}`}>
+                        <TableCell className="max-w-[340px]">
+                          <Link to={`/post/${e.slug}`} className="font-medium hover:text-accent line-clamp-1">{e.title}</Link>
+                        </TableCell>
+                        <TableCell>
+                          {e.tier === "premium"
+                            ? <Badge variant="secondary">Premium</Badge>
+                            : <Badge variant="outline">Free</Badge>}
+                        </TableCell>
+                        <TableCell>
+                          {e.cached ? (
+                            <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10" data-testid={`admin-narration-status-${e.slug}`}>Cached</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground" data-testid={`admin-narration-status-${e.slug}`}>Missing</Badge>
+                          )}
+                          {e.tier === "premium" && e.cached && (
+                            <span className="text-xs text-muted-foreground ml-2">full + preview</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {e.bytes ? `${(e.bytes / 1048576).toFixed(1)} MB` : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">{e.listens}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* EMAIL LOG */}

@@ -73,6 +73,32 @@ async def get_or_generate_audio(post, voice: str, blocks, scope: str):
 
 DEFAULT_WARM_VOICE = 'male'  # the player's default voice — the one every first-time listener hears
 
+WARMUP_STATE = {'running': False}  # guards against overlapping warmup runs
+
+
+async def get_credits():
+    """Live ElevenLabs subscription usage (character credits). Returns None if unavailable."""
+    if not TTS_ENABLED:
+        return None
+
+    def _fetch():
+        import requests
+        r = requests.get('https://api.elevenlabs.io/v1/user/subscription',
+                         headers={'xi-api-key': ELEVENLABS_API_KEY}, timeout=15)
+        r.raise_for_status()
+        return r.json()
+
+    try:
+        data = await asyncio.to_thread(_fetch)
+        used = data.get('character_count', 0)
+        limit = data.get('character_limit', 0)
+        return {'used': used, 'limit': limit, 'remaining': max(0, limit - used),
+                'tier': data.get('tier'),
+                'resets_at_unix': data.get('next_character_count_reset_unix')}
+    except Exception as e:
+        logger.warning(f'ElevenLabs credits check failed: {e}')
+        return None
+
 
 async def warm_post_audio(post, voice: str = DEFAULT_WARM_VOICE):
     """Pre-generate the default narration for one published post.
@@ -103,22 +129,27 @@ async def warm_post_audio(post, voice: str = DEFAULT_WARM_VOICE):
     return result
 
 
-async def warm_all_narrations():
-    """Startup task: pre-generate the default narration for every published essay
-    so readers never wait on first play. Cached entries are skipped (no extra credits)."""
-    if not TTS_ENABLED:
+async def warm_all_narrations(initial_delay: int = 15):
+    """Warm the narration cache for every published essay so readers never wait on
+    first play. Cached entries are skipped (no extra credits). Startup task + admin-triggered."""
+    if not TTS_ENABLED or WARMUP_STATE['running']:
         return
-    await asyncio.sleep(15)  # let the app finish booting before doing heavy work
-    posts = await db.posts.find(published_query()).sort('published_at', -1).to_list(500)
-    logger.info(f'TTS warmup: checking narrations for {len(posts)} published essays')
-    counts = {'generated': 0, 'cached': 0, 'failed': 0}
-    for post in posts:
-        result = await warm_post_audio(post)
-        if result == 'quota':
-            logger.warning(f"TTS warmup stopped: ElevenLabs credits exhausted "
-                           f"({counts['generated']} generated, {counts['cached']} already cached). "
-                           f"Top up credits and restart to warm the remaining essays.")
-            return
-        counts[result] += 1
-    logger.info(f"TTS warmup complete: {counts['generated']} generated, "
-                f"{counts['cached']} already cached, {counts['failed']} failed")
+    WARMUP_STATE['running'] = True
+    try:
+        if initial_delay:
+            await asyncio.sleep(initial_delay)  # let the app finish booting before doing heavy work
+        posts = await db.posts.find(published_query()).sort('published_at', -1).to_list(500)
+        logger.info(f'TTS warmup: checking narrations for {len(posts)} published essays')
+        counts = {'generated': 0, 'cached': 0, 'failed': 0}
+        for post in posts:
+            result = await warm_post_audio(post)
+            if result == 'quota':
+                logger.warning(f"TTS warmup stopped: ElevenLabs credits exhausted "
+                               f"({counts['generated']} generated, {counts['cached']} already cached). "
+                               f"Top up credits and restart to warm the remaining essays.")
+                return
+            counts[result] += 1
+        logger.info(f"TTS warmup complete: {counts['generated']} generated, "
+                    f"{counts['cached']} already cached, {counts['failed']} failed")
+    finally:
+        WARMUP_STATE['running'] = False

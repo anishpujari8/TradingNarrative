@@ -87,6 +87,18 @@ async def seed_database():
         {'author.name': {'$ne': AUTHOR['name']}}, {'$set': {'author': AUTHOR}})
     if res.modified_count:
         logger.info(f"Normalized author to '{AUTHOR['name']}' on {res.modified_count} posts")
+    # One-time cleanup: unpublish demo/sample essays so ElevenLabs credits are spent
+    # only on real writing (runs once per DB; the admin can republish any of them later).
+    if not await db.migrations.find_one({'key': 'unpublish_demo_posts_v1'}):
+        demo_slugs = [slugify(sp['title']) for sp in SAMPLE_POSTS]
+        res = await db.posts.update_many(
+            {'slug': {'$in': demo_slugs}, 'status': 'published'},
+            {'$set': {'status': 'draft', 'updated_at': iso(now_utc())}})
+        await db.migrations.insert_one({'key': 'unpublish_demo_posts_v1',
+                                        'applied_at': iso(now_utc()),
+                                        'unpublished': res.modified_count})
+        if res.modified_count:
+            logger.info(f'One-time cleanup: unpublished {res.modified_count} demo essays')
 
 
 @app.on_event('startup')
