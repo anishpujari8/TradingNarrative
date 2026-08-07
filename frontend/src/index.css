@@ -203,6 +203,24 @@ mark.reader-highlight {
     -webkit-box-decoration-break: clone;
 }
 
+/* Popular highlights — lines many readers saved (Kindle-style dotted underline) */
+mark.popular-highlight {
+    background: transparent;
+    color: inherit;
+    border-bottom: 2px dotted hsl(var(--accent) / 0.55);
+    padding-bottom: 1px;
+    cursor: help;
+}
+
+mark.popular-highlight .popular-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62em;
+    vertical-align: super;
+    color: hsl(var(--accent));
+    margin-left: 2px;
+    user-select: none;
+}
+
 /* Card hover image zoom */
 .card-img-zoom img {
     transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);

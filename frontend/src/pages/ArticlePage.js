@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Clock, Check, Sparkles, Highlighter } from "lucide-react";
+import { Lock, Clock, Check, Sparkles, Highlighter, Share2 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
@@ -15,6 +15,7 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { QuoteCardDialog } from "@/components/QuoteCardDialog";
 import { toast } from "sonner";
 import { api, formatDate, trackEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -74,8 +75,18 @@ export default function ArticlePage() {
   const [post, setPost] = useState(null);
   const [error, setError] = useState(null);
   const [highlights, setHighlights] = useState([]);
+  const [popular, setPopular] = useState([]);
   const [selInfo, setSelInfo] = useState(null);
+  const [shareSel, setShareSel] = useState(null);
   const bodyRef = useRef(null);
+
+  // most-highlighted lines across all readers (public, Kindle-style)
+  useEffect(() => {
+    setPopular([]);
+    api.get(`/posts/${encodeURIComponent(slug)}/popular-highlights`)
+      .then((res) => setPopular(res.data.popular || []))
+      .catch(() => {});
+  }, [slug]);
 
   // load the reader's saved highlights for this essay
   useEffect(() => {
@@ -134,21 +145,40 @@ export default function ArticlePage() {
       .catch((err) => toast.error(err?.response?.data?.detail || "Could not save the highlight."));
   };
 
+  const shareSelection = () => {
+    if (!selInfo || !post) return;
+    const { text } = selInfo;
+    setSelInfo(null);
+    try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+    setShareSel({ text, post_title: post.title, category_label: post.category_label });
+  };
+
   const renderWithHighlights = (text, blockIndex) => {
-    const marks = highlights.filter((h) => h.block_index === blockIndex).map((h) => h.text);
-    if (!marks.length) return text;
+    const personal = highlights.filter((h) => h.block_index === blockIndex).map((h) => h.text);
+    const pops = popular.filter((p) => p.block_index === blockIndex);
+    if (!personal.length && !pops.length) return text;
     let parts = [text];
-    marks.forEach((m) => {
+    const splitWrap = (m, make) => {
       parts = parts.flatMap((seg) => {
         if (typeof seg !== "string") return [seg];
         const idx = seg.indexOf(m);
         if (idx === -1) return [seg];
-        return [seg.slice(0, idx), { mark: m }, seg.slice(idx + m.length)];
+        return [seg.slice(0, idx), make(), seg.slice(idx + m.length)];
       });
+    };
+    // personal marks take precedence; popular applies to remaining plain segments
+    personal.forEach((m) => splitWrap(m, () => ({ mark: m, type: "personal" })));
+    pops.forEach((p) => splitWrap(p.text, () => ({ mark: p.text, type: "popular", count: p.count })));
+    return parts.map((seg, j) => {
+      if (typeof seg === "string") return seg;
+      if (seg.type === "personal") return <mark key={j} className="reader-highlight">{seg.mark}</mark>;
+      return (
+        <mark key={j} className="popular-highlight" title={`${seg.count} readers highlighted this`} data-testid="popular-highlight">
+          {seg.mark}
+          <span className="popular-count" aria-label={`${seg.count} readers highlighted this`}>{seg.count}</span>
+        </mark>
+      );
     });
-    return parts.map((seg, j) =>
-      typeof seg === "string" ? seg : <mark key={j} className="reader-highlight">{seg.mark}</mark>
-    );
   };
 
   useEffect(() => {
@@ -220,16 +250,30 @@ export default function ArticlePage() {
       <ReadingProgress targetRef={bodyRef} readTime={post.read_time} slug={post.slug} />
 
       {selInfo && (
-        <button
-          className="fixed z-[200] -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-foreground text-background text-xs font-medium px-3.5 py-2 shadow-lg hover:bg-accent hover:text-accent-foreground transition-colors duration-150"
+        <div
+          className="fixed z-[200] -translate-x-1/2 flex items-center rounded-full bg-foreground text-background shadow-lg overflow-hidden"
           style={{ top: selInfo.top, left: selInfo.left }}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={saveHighlight}
-          data-testid="highlight-save-button"
-          aria-label="Save highlight"
+          data-testid="selection-popover"
         >
-          <Highlighter className="h-3.5 w-3.5" /> Highlight
-        </button>
+          <button
+            className="inline-flex items-center gap-1.5 text-xs font-medium pl-3.5 pr-3 py-2 hover:bg-accent hover:text-accent-foreground transition-colors duration-150"
+            onClick={saveHighlight}
+            data-testid="highlight-save-button"
+            aria-label="Save highlight"
+          >
+            <Highlighter className="h-3.5 w-3.5" /> Highlight
+          </button>
+          <span className="w-px self-stretch my-1.5 bg-background/25" aria-hidden="true" />
+          <button
+            className="inline-flex items-center gap-1.5 text-xs font-medium pl-3 pr-3.5 py-2 hover:bg-accent hover:text-accent-foreground transition-colors duration-150"
+            onClick={shareSelection}
+            data-testid="selection-share-button"
+            aria-label="Share as quote card"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share
+          </button>
+        </div>
       )}
 
       <div className="container-editorial pt-10 sm:pt-14">
@@ -364,6 +408,8 @@ export default function ArticlePage() {
           </section>
         )}
       </div>
+
+      <QuoteCardDialog highlight={shareSel} open={!!shareSel} onOpenChange={(o) => !o && setShareSel(null)} />
     </article>
   );
 }

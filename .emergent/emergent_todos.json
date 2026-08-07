@@ -1,26 +1,30 @@
 [
   {
-    "content": "Backend: note field on highlights (create + edit endpoint)",
-    "status": "completed"
+    "content": "Migrate Edition #1 + freight article to production via admin API",
+    "status": "in_progress"
   },
   {
-    "content": "Frontend: add/edit note UI on highlights page",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: shareable quote card dialog (canvas render, download/copy/share)",
-    "status": "completed"
-  },
-  {
-    "content": "Test both features (12/12 backend, 100% frontend) + cleanup",
-    "status": "completed"
-  },
-  {
-    "content": "PayPal integration (waiting for user's setup answers)",
+    "content": "Patch seed code: sample essays seed as drafts on fresh deploys",
     "status": "pending"
   },
   {
-    "content": "Edition #2 + Delivery essay imports (waiting for pasted text)",
+    "content": "Share From Article: quote card from selection popover",
+    "status": "pending"
+  },
+  {
+    "content": "Popular Highlights: aggregate endpoint + Kindle-style markers",
+    "status": "pending"
+  },
+  {
+    "content": "Testing agent verification (bug fix + new features) - MANDATORY",
+    "status": "pending"
+  },
+  {
+    "content": "Edition #2 + Delivery essay imports (still waiting for pasted text)",
+    "status": "pending"
+  },
+  {
+    "content": "PayPal integration (still waiting for setup answers)",
     "status": "pending"
   }
 ]

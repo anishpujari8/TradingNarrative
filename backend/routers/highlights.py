@@ -75,6 +75,22 @@ async def set_highlight_note(hid: str, body: HighlightNoteIn, user=Depends(get_c
     return clean(updated)
 
 
+@router.get('/posts/{slug}/popular-highlights')
+async def popular_highlights(slug: str):
+    """Kindle-style: lines highlighted by 2+ readers, most-saved first. Public."""
+    rows = await db.highlights.aggregate([
+        {'$match': {'post_slug': slug}},
+        {'$group': {'_id': {'block_index': '$block_index', 'text': '$text'},
+                    'readers': {'$addToSet': '$user_id'}}},
+        {'$project': {'count': {'$size': '$readers'}}},
+        {'$match': {'count': {'$gte': 2}}},
+        {'$sort': {'count': -1}},
+        {'$limit': 5},
+    ]).to_list(5)
+    return {'popular': [{'block_index': r['_id']['block_index'], 'text': r['_id']['text'],
+                         'count': r['count']} for r in rows]}
+
+
 @router.delete('/highlights/{hid}')
 async def delete_highlight(hid: str, user=Depends(get_current_user)):
     h = await db.highlights.find_one({'id': hid})

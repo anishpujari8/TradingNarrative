@@ -5,7 +5,6 @@ config/db/security/schemas/utils are top-level modules.
 """
 import os
 import uuid
-import random
 import asyncio
 from datetime import timedelta
 
@@ -47,14 +46,16 @@ async def seed_database():
                 'excerpt': sp['excerpt'], 'category': sp['category'], 'tier': sp['tier'],
                 'cover_image': sp['cover_image'], 'content_blocks': sp['content_blocks'],
                 'tags': sp.get('tags', []),
-                'featured': sp.get('featured', False), 'status': 'published', 'publish_at': None,
+                # Demo essays seed as DRAFTS: fresh deployments start with a clean public
+                # site and the owner publishes real content (or drafts) from the admin studio.
+                'featured': sp.get('featured', False), 'status': 'draft', 'publish_at': None,
                 'published_at': iso(published), 'author': AUTHOR,
                 'read_time': read_time(sp['content_blocks']),
-                'views': random.randint(120, 2400),
+                'views': 0,
                 'created_at': iso(published), 'updated_at': iso(published),
             }
             await db.posts.insert_one(post)
-        logger.info(f'Seeded {len(SAMPLE_POSTS)} posts')
+        logger.info(f'Seeded {len(SAMPLE_POSTS)} sample posts as drafts')
     # backfill tags on already-seeded posts
     for sp in SAMPLE_POSTS:
         if sp.get('tags'):
