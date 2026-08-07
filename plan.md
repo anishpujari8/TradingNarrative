@@ -53,11 +53,25 @@
   - Admin endpoint to import cached audio on the receiver
   - Admin sync endpoint to push preview cache to production
   - Frontend button + dialog in Admin → Narrations
+- **Narration hardening (cache corruption protection)** ✅
+  - Import endpoint rejects non-MP3/tiny payloads
+  - Serving path auto-purges corrupt cache entries
+  - Sync sender skips corrupt/tiny cache entries
 
 **ElevenLabs operational caveats**
 - Credits may be exhausted; uncached essays will be unavailable until credits are topped up.
 - Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
 - Production narration can be restored without credits by syncing existing preview cache to production.
+- Current ElevenLabs status: **0 credits remaining** (probe confirmed `quota_exceeded`).
+
+**Current audio cache state (preview)**
+- Valid cached narrations retained:
+  - `the-shipping-industry-...` (male/full)
+  - `freight-management-...` (male/full)
+  - `the-ai-infrastructure-gold-rush-...` (male/full + male/preview)
+- Missing (cannot regenerate until credits are topped up):
+  - `170-kilometres-...`
+  - `five-things-commodity-desks-...`
 
 ### AI features (Gemini)
 - **Gemini 2.5 Flash integration via emergentintegrations + EMERGENT_LLM_KEY** ✅
@@ -176,7 +190,7 @@
 - Split `server.py` into modules:
   - `config.py`, `db.py`, `utils.py`, `security.py`, `schemas.py`
   - `services/` (emailer, stripe, razorpay, digest, tts)
-  - `routers/` (auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync)
+  - `routers/` (auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync, ai)
 - Route parity verified; background loops confirmed running
 - Regression testing complete; test data cleaned
 
@@ -286,19 +300,11 @@
 **Fix delivered (works without new credits): Narration Sync (Preview → Production)**
 - Backend:
   - `POST /api/admin/audio-cache/import` *(production receiver)*
-    - Validates voice/scope, post exists and is published
-    - Accepts base64 audio (≤20MB)
-    - Stores against receiving env post version so it serves as a fresh cache hit
   - `POST /api/admin/sync/narrations` *(preview sender)*
-    - Logs into production admin
-    - Reads production `/api/admin/narrations` to skip already-cached
-    - Pushes cached audio blobs with 120s timeout
-    - Emits explicit “redeploy first” guidance if production lacks the import endpoint
 - Frontend:
   - New Admin → Narrations button: **“Send narrations to live site”**
-  - Password dialog + per-item results list
 - Testing:
-  - Iteration_22: 100% pass (12/12 backend + all frontend).
+  - Iteration_22: 100% pass.
 
 ### Phase 31 — Resend Integration ⛔ NOT STARTED (blocked)
 **Blocked on user decisions + credentials**
@@ -308,36 +314,61 @@
   3) Resend API key (`re_...`)
   4) Sender domain status: verified `thetradingnarrative.com` vs `onboarding@resend.dev` test sender
 
+### Phase 32 — Recurring Narration Bug: True Root Cause + Permanent Hardening ✅ COMPLETED
+**User-reported recurring issue:** narration continues to show “temporarily unavailable / Cloudflare invalid or incomplete response”.
+
+**True root cause**
+- During Phase 30 testing, a **1004-byte dummy payload** was POSTed to `/api/admin/audio-cache/import` using the **real** slug `170-kilometres-...`, overwriting its ~2MB cached narration.
+- The player then received corrupt audio → surfaced as Cloudflare/origin incomplete response.
+- The original ~2MB narration blob is **unrecoverable until ElevenLabs credits are topped up**.
+
+**Fixes delivered (permanent)**
+1) **Purged the corrupt cache entry**.
+   - `170-kilometres-...` now returns an honest **503** with a clear “credits refilling” message.
+2) **Hardened the import endpoint** (`/api/admin/audio-cache/import`):
+   - Validates that payload is a real MP3 narration (≥50KB and `ID3`/MPEG-frame magic bytes) → else **400**
+   - Refuses to overwrite an existing narration with a payload **4× smaller** → **409**
+3) **Hardened serving path** (`tts_service.get_or_generate_audio`):
+   - Auto-purges corrupt cache entries (<50KB or invalid MP3 magic) instead of serving them.
+4) **Hardened narration sync sender** (`/api/admin/sync/narrations`):
+   - Skips pushing any local cache entries <50KB.
+
+**Testing**
+- Iteration_23: 100% pass (12/12).
+
+**Important safety note (for future testing)**
+- **Never** allow any automated test run to write to `audio_cache` or POST to `/api/admin/audio-cache/import` using real slugs.
+
 ---
 
 ## 3) Next Actions
 
 ### A) Immediate
-1) **Production rollout** ⏳
-   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–30**.
-   - Note: recent production deploy attempts may hit Cloud Build rate limits; retry after a cooldown window.
+1) **Restore narration on production without credits (shipping + freight)** ✅ (user action)
+   - Production already has the import endpoint (returns 401), but cache is empty.
+   - Go to **Admin → Narrations → Send narrations to live site** and enter the **production admin password**.
+   - Result: the cached narrations for:
+     - Shipping essay
+     - Freight essay
+     will play immediately on production without spending credits.
 
-2) **Restore narration on production without credits** ✅ (user action)
-   - After production redeploy includes Phase 30 endpoints:
-     - Go to **Admin → Narrations → Send narrations to live site**
-     - Enter the production admin password
-     - This will push the 3 cached narrations from preview to production instantly.
+2) **ElevenLabs operations (to regenerate missing audio)** ⛔ (requires user)
+   - Top up ElevenLabs credits.
+   - Then use **Admin → Narrations → Generate missing narrations** to synthesize:
+     - `170-kilometres-...`
+     - `five-things-commodity-desks-...`
+   - Then re-run **Send narrations to live site** to push those newly cached narrations to production.
 
-3) **ElevenLabs operations** ⏳
-   - Top up ElevenLabs credits (to generate narration for the one remaining uncached essay).
-   - (Optional) Enable `user_read` on the ElevenLabs API key so credit balance shows in the Narrations panel.
-   - Then use **Admin → Narrations → Generate missing narrations**.
-
-4) **Delivery & Systems essay import** ⛔
+3) **Delivery & Systems essay import** ⛔
    - Paste your delivery-focused essay text (title + body).
 
-5) **Edition #2 import** ⛔
+4) **Edition #2 import** ⛔
    - Paste Edition #2 newsletter text.
 
-6) **PayPal (recurring subscriptions)** ⛔
+5) **PayPal (recurring subscriptions)** ⛔
    - Provide PayPal decisions + credentials as listed in Phase 19.
 
-7) **Resend integration** ⛔
+6) **Resend integration** ⛔
    - Answer the 4 setup decisions + provide Resend API key.
 
 ### B) Production note (workflow)
@@ -359,6 +390,10 @@
 - “Most listened this week”
 ✅ Narration production restore path works:
 - Production can receive cached audio via narration sync without spending new ElevenLabs credits.
+✅ Narration cache is protected against corruption:
+- Import rejects invalid/tiny audio
+- Serving path purges corrupt cache
+- Sync skips corrupt cache
 ✅ AI features:
 - Admin AI writing assistant works (draft/polish/expand; streaming)
 - “Ask this essay” is grounded + paywall-aware; streaming
@@ -373,3 +408,4 @@
 - Edition #2 import: awaiting text.
 - PayPal: awaiting decisions + credentials.
 - Resend: awaiting decisions + API key + sender domain verification.
+- ElevenLabs: credits must be topped up to regenerate missing narrations (170km + five-things).
