@@ -1,0 +1,145 @@
+"""Weekly digest build/send + background loops (Friday autosend, Wednesday briefing reminder)."""
+import uuid
+import asyncio
+from datetime import timedelta
+from typing import Optional
+
+from config import CATEGORIES, FRONTEND_URL, EMAIL_ENABLED, GMAIL_SMTP_USER, logger
+from db import db
+from utils import now_utc, iso, clean, post_summary, published_query
+from services import emailer
+from services.emailer import log_email
+
+
+def build_digest_html(posts):
+    accent = '#1c8570'
+    items = ''
+    for p in posts:
+        items += f"""
+        <tr><td style="padding:0 0 28px 0;">
+          <img src="{p['cover_image']}" alt="" width="560" style="width:100%;max-width:560px;border-radius:10px;display:block;" />
+          <p style="margin:14px 0 4px;font-family:monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{accent};">{p['category_label']}{' &middot; PREMIUM' if p['tier'] == 'premium' else ''}</p>
+          <h2 style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;line-height:1.3;color:#14181f;">
+            <a href="{FRONTEND_URL}/post/{p['slug']}" style="color:#14181f;text-decoration:none;">{p['title']}</a>
+          </h2>
+          <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#555e6b;">{p['excerpt']}</p>
+          <a href="{FRONTEND_URL}/post/{p['slug']}" style="font-family:Arial,sans-serif;font-size:13px;color:{accent};font-weight:bold;text-decoration:none;">Read the essay ({p['read_time']} min) &rarr;</a>
+        </td></tr>"""
+    return f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f1ea;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;padding:36px;">
+        <tr><td style="padding-bottom:26px;border-bottom:1px solid #e8e4da;">
+          <span style="display:inline-block;width:10px;height:10px;background:{accent};"></span>
+          <span style="font-family:Georgia,serif;font-size:22px;font-weight:bold;color:#14181f;">&nbsp;The Trading Narrative</span>
+          <p style="margin:10px 0 0;font-family:monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a8577;">The week in narratives</p>
+        </td></tr>
+        <tr><td style="padding:26px 0 6px;">
+          <p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#3a4150;margin:0 0 24px;">Here's everything published this week &mdash; the sharpest thinking on markets, tech, and living well.</p>
+        </td></tr>
+        {items}
+        <tr><td style="padding-top:8px;border-top:1px solid #e8e4da;">
+          <p style="font-family:Arial,sans-serif;font-size:12px;color:#8a8577;margin:16px 0 0;">You're receiving this because you subscribed to The Trading Narrative.<br/>
+          <a href="{FRONTEND_URL}" style="color:{accent};">Visit the site</a> &middot; <a href="{FRONTEND_URL}/pricing" style="color:{accent};">Go Premium</a></p>
+        </td></tr>
+      </table>
+    </td></tr></table></body></html>"""
+
+
+async def get_digest_posts():
+    week_ago = iso(now_utc() - timedelta(days=7))
+    posts = await db.posts.find({**published_query(), 'published_at': {'$gte': week_ago}}).sort('published_at', -1).to_list(20)
+    if not posts:
+        posts = await db.posts.find(published_query()).sort('published_at', -1).limit(5).to_list(5)
+    return [post_summary(clean(p)) for p in posts]
+
+
+async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
+    """Shared digest send — personalised per subscriber's pillar preferences."""
+    posts = await get_digest_posts()
+    if not posts:
+        return None
+    subject = subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+    subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
+    all_cats = list(CATEGORIES.keys())
+    html_cache = {}
+    sent = 0
+    for sub in subs:
+        cats = sub.get('categories') or all_cats
+        sub_posts = [p for p in posts if p['category'] in cats]
+        if not sub_posts:
+            continue  # nothing in their chosen pillars this week
+        key = tuple(sorted(p['id'] for p in sub_posts))
+        if key not in html_cache:
+            html_cache[key] = build_digest_html(sub_posts)
+        titles = ', '.join(p['title'] for p in sub_posts[:5])
+        await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest', html=html_cache[key])
+        sent += 1
+    issue = {
+        'id': str(uuid.uuid4()), 'post_id': None,
+        'post_title': f'Weekly digest ({len(posts)} essays · pillar-personalised)',
+        'kind': 'digest', 'subject': subject, 'recipients': sent,
+        'status': ('sent (gmail)' if EMAIL_ENABLED and not emailer.EMAIL_LAST_ERROR else 'sent (mocked)') + (' · auto' if auto else ''),
+        'auto': auto, 'sent_at': iso(now_utc()),
+    }
+    await db.newsletter_issues.insert_one(dict(issue))
+    return issue
+
+
+async def digest_autosend_loop():
+    """Background loop: sends the weekly digest automatically every Friday (UTC),
+    at most once per ISO week, when the admin toggle is on."""
+    while True:
+        try:
+            cfg = await db.config.find_one({'key': 'digest_autosend'})
+            enabled = bool(cfg and cfg.get('value'))
+            now = now_utc()
+            if enabled and now.weekday() == 4:  # Friday
+                week_key = f'{now.isocalendar().year}-W{now.isocalendar().week}'
+                sent = await db.config.find_one({'key': 'digest_autosend_last_week'})
+                if not sent or sent.get('value') != week_key:
+                    issue = await do_send_digest(auto=True)
+                    if issue:
+                        await db.config.update_one(
+                            {'key': 'digest_autosend_last_week'},
+                            {'$set': {'value': week_key, 'sent_at': iso(now)}}, upsert=True)
+                        logger.info(f'Weekly digest auto-sent to {issue["recipients"]} subscribers ({week_key})')
+        except Exception as e:
+            logger.warning(f'Digest autosend loop error: {e}')
+        await asyncio.sleep(1800)  # check every 30 minutes
+
+
+async def briefing_reminder_loop():
+    """Background loop: every Wednesday morning (UTC), if this week's briefing
+    hasn't been published yet, email the author a nudge — at most once per week."""
+    while True:
+        try:
+            cfg = await db.config.find_one({'key': 'briefing_reminder'})
+            enabled = cfg.get('value') if cfg else True  # on by default
+            now = now_utc()
+            if enabled and EMAIL_ENABLED and now.weekday() == 2 and now.hour >= 7:  # Wednesday, from 07:00 UTC
+                week_key = f'{now.isocalendar().year}-W{now.isocalendar().week}'
+                sent = await db.config.find_one({'key': 'briefing_reminder_last_week'})
+                if not sent or sent.get('value') != week_key:
+                    week_start = iso(now - timedelta(days=now.weekday()))
+                    published = await db.posts.find_one({
+                        **published_query(), 'edition': {'$ne': None},
+                        'published_at': {'$gte': week_start}})
+                    if not published:
+                        latest = await db.posts.find_one({'edition': {'$ne': None}}, sort=[('edition', -1)])
+                        next_ed = (latest.get('edition', 0) + 1) if latest else 1
+                        editor_url = f'{FRONTEND_URL}/admin/editor'
+                        await log_email(
+                            GMAIL_SMTP_USER,
+                            f"Reminder: this week's briefing (Edition #{next_ed}) isn't out yet",
+                            f"It's Wednesday and Edition #{next_ed} of the weekly briefing hasn't been published.\n\n"
+                            f"Open the editor and use the Weekly Briefing Template: {editor_url}",
+                            'reminder',
+                            html=(f"<p>It's Wednesday and <strong>Edition #{next_ed}</strong> of the weekly briefing "
+                                  f"hasn't been published yet.</p>"
+                                  f"<p><a href='{editor_url}'>Open the editor</a> and hit "
+                                  f"<em>Weekly briefing template</em> — it prefills everything.</p>"))
+                    await db.config.update_one({'key': 'briefing_reminder_last_week'},
+                                               {'$set': {'value': week_key, 'sent_at': iso(now)}}, upsert=True)
+        except Exception as e:
+            logger.warning(f'Briefing reminder loop error: {e}')
+        await asyncio.sleep(1800)

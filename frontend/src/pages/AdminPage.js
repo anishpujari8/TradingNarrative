@@ -71,6 +71,7 @@ export default function AdminPage() {
   const [trafficDays, setTrafficDays] = useState("30");
   const [exporting, setExporting] = useState(false);
   const [autosend, setAutosend] = useState(null);
+  const [reminder, setReminder] = useState(null);
   const [funnel, setFunnel] = useState(null);
   const [emailStatus, setEmailStatus] = useState(null);
   const [testingEmail, setTestingEmail] = useState(false);
@@ -82,6 +83,7 @@ export default function AdminPage() {
     api.get("/admin/newsletter/issues").then((r) => setIssues(r.data.issues)).catch(() => setIssues([]));
     api.get("/admin/email-logs").then((r) => setEmailLogs(r.data.logs)).catch(() => setEmailLogs([]));
     api.get("/admin/newsletter/autosend").then((r) => setAutosend(r.data)).catch(() => {});
+    api.get("/admin/newsletter/briefing-reminder").then((r) => setReminder(r.data)).catch(() => {});
     api.get("/admin/email/status").then((r) => setEmailStatus(r.data)).catch(() => {});
   }, []);
 
@@ -112,6 +114,16 @@ export default function AdminPage() {
       toast.success(enabled ? "Weekly digest will auto-send every Friday." : "Digest autosend turned off.");
     } catch {
       toast.error("Could not update autosend.");
+    }
+  };
+
+  const toggleReminder = async (enabled) => {
+    try {
+      await api.post("/admin/newsletter/briefing-reminder", { enabled });
+      setReminder((r) => ({ ...r, enabled }));
+      toast.success(enabled ? "You'll get a Wednesday nudge if the briefing isn't out." : "Briefing reminder turned off.");
+    } catch {
+      toast.error("Could not update the reminder.");
     }
   };
 
@@ -670,6 +682,30 @@ export default function AdminPage() {
                 disabled={autosend === null}
                 data-testid="admin-digest-autosend-toggle"
                 aria-label="Toggle weekly digest autosend"
+              />
+            </CardContent>
+          </Card>
+          <Card className="rounded-xl mb-6">
+            <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  <Newspaper className="h-4 w-4 text-accent" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">Wednesday briefing reminder</div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {reminder?.enabled !== false
+                      ? "On · emails you Wednesday morning if that week's briefing isn't published yet"
+                      : "Off · no nudge if a briefing week slips"}
+                  </div>
+                </div>
+              </div>
+              <Switch
+                checked={reminder?.enabled !== false}
+                onCheckedChange={toggleReminder}
+                disabled={reminder === null}
+                data-testid="admin-briefing-reminder-toggle"
+                aria-label="Toggle Wednesday briefing reminder"
               />
             </CardContent>
           </Card>

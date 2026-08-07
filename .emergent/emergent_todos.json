@@ -1,18 +1,34 @@
 [
   {
-    "content": "Rename Travel pillar to Delivery & Systems + migrate posts",
+    "content": "Import freight article and verify rendering (Phase 14)",
     "status": "completed"
   },
   {
-    "content": "Weekly briefing template button in admin editor",
+    "content": "Map server.py structure (sections, routes, shared deps)",
     "status": "completed"
   },
   {
-    "content": "Edition number field + badges on briefings",
+    "content": "Extract config/db/models/utils shared modules",
     "status": "completed"
   },
   {
-    "content": "Test + verify all changes",
+    "content": "Extract routers: auth, posts, payments, newsletter, community, analytics, admin",
     "status": "completed"
+  },
+  {
+    "content": "Wire routers into slim server.py entrypoint (route parity 71/71 verified)",
+    "status": "completed"
+  },
+  {
+    "content": "Verify background loops (digest autosend, Wednesday reminder) still run",
+    "status": "completed"
+  },
+  {
+    "content": "Run comprehensive backend + frontend regression testing via testing agent",
+    "status": "in_progress"
+  },
+  {
+    "content": "Fix any regressions and update plan.md to COMPLETED",
+    "status": "pending"
   }
 ]

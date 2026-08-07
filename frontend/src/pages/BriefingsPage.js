@@ -1,0 +1,78 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Lock, Clock, ArrowRight, Newspaper } from "lucide-react";
+import { Seo } from "@/components/Seo";
+import { api, formatDate } from "@/lib/api";
+
+export default function BriefingsPage() {
+  const [briefings, setBriefings] = useState(null);
+
+  useEffect(() => {
+    api.get("/briefings").then((r) => setBriefings(r.data.briefings)).catch(() => setBriefings([]));
+  }, []);
+
+  return (
+    <div className="container-editorial py-12 sm:py-16" data-testid="briefings-page">
+      <Seo title="The Weekly Briefing" description="Every edition of the weekly commodity desk briefing — trading technology, markets, risk and regulation in 5 minutes." path="/briefings" />
+      <div className="max-w-2xl">
+        <span className="section-label">The series</span>
+        <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 leading-tight">The Weekly Briefing</h1>
+        <p className="text-muted-foreground leading-relaxed mt-4">
+          Five things that actually change how trading and risk teams work — every week,
+          written the way a desk reads them. Follow the editions in order or jump to the latest.
+        </p>
+      </div>
+
+      <div className="mt-10 max-w-3xl space-y-4">
+        {briefings === null ? (
+          <>
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+          </>
+        ) : briefings.length === 0 ? (
+          <Card className="rounded-xl">
+            <CardContent className="py-16 text-center" data-testid="briefings-empty">
+              <Newspaper className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-serif text-xl font-semibold mb-2">No editions yet</h3>
+              <p className="text-sm text-muted-foreground">The first briefing lands here soon.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          briefings.map((b) => (
+            <Link key={b.id} to={`/post/${b.slug}`} className="block group" data-testid={`briefing-card-${b.edition}`}>
+              <Card className="rounded-xl transition-colors duration-150 hover:border-accent/40">
+                <CardContent className="p-5 sm:p-6 flex items-start gap-5">
+                  <div className="w-14 h-14 rounded-xl bg-primary/5 border border-primary/15 flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">Edition</span>
+                    <span className="text-xl font-semibold text-primary leading-none">#{b.edition}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <span className="text-[11px] font-mono text-muted-foreground">{formatDate(b.published_at)}</span>
+                      <span className="text-[11px] font-mono text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> {b.read_time} min
+                      </span>
+                      {b.tier === "premium" && (
+                        <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 gap-1 text-[10px] px-1.5 py-0">
+                          <Lock className="h-3 w-3" /> Premium
+                        </Badge>
+                      )}
+                    </div>
+                    <h2 className="font-serif text-xl font-semibold leading-snug group-hover:text-accent transition-colors">
+                      {b.title}
+                    </h2>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1.5">{b.excerpt}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all shrink-0 self-center" />
+                </CardContent>
+              </Card>
+            </Link>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

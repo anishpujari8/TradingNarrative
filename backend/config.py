@@ -1,0 +1,50 @@
+"""Central configuration: env loading, constants, logger."""
+import os
+import logging
+from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('ttn')
+
+JWT_SECRET = os.environ.get('JWT_SECRET', 'dev-secret')
+JWT_ALGO = 'HS256'
+JWT_EXPIRY_DAYS = 30
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+MOCK_BILLING = os.environ.get('MOCK_BILLING', 'true').lower() == 'true'
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
+# Shared Emergent test key: one-time timed passes (proxy blocks Subscription cancel API).
+# User's own key: true auto-renewing subscriptions + Stripe-side cancellation.
+IS_SHARED_STRIPE_KEY = 'sk_test_emergent' in STRIPE_API_KEY
+AUTO_RENEW = not IS_SHARED_STRIPE_KEY
+
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_ENABLED = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
+
+PLANS = {
+    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 8.00, 'currency': 'usd',
+                'amount_inr': 199.00, 'interval': 'month', 'period_days': 30},
+    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 80.00, 'currency': 'usd',
+               'amount_inr': 1999.00, 'interval': 'year', 'period_days': 365},
+}
+
+CATEGORIES = {
+    'tech-business': 'Tech & AI',
+    'finance': 'Business & Finance',
+    'lifestyle': 'Personal Growth',
+    'delivery': 'Delivery & Systems',
+}
+
+PREVIEW_BLOCKS = 3  # paragraphs shown to non-premium users on premium posts
+
+GMAIL_SMTP_USER = os.environ.get('GMAIL_SMTP_USER', '')
+GMAIL_SMTP_PASSWORD = os.environ.get('GMAIL_SMTP_PASSWORD', '')
+EMAIL_FROM_NAME = os.environ.get('EMAIL_FROM_NAME', 'The Trading Narrative')
+EMAIL_REPLY_TO = os.environ.get('EMAIL_REPLY_TO', '')
+EMAIL_ENABLED = bool(GMAIL_SMTP_USER and GMAIL_SMTP_PASSWORD)
+
+MARKETING_KINDS = {'digest', 'issue', 'welcome'}

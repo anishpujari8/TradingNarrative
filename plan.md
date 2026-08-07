@@ -5,7 +5,7 @@
 - Support **four pillars/themes** (aligned with the updated author bio):
   - **Tech & AI** (`tech-business`)
   - **Business & Finance** (`finance`)
-  - **Personal Growth** (`lifestyle`)
+  - **Personal Growth** (`personal`)
   - **Delivery & Systems** (`delivery`) ✅ (replaces Travel)
 - Provide subscriptions via:
   - **Stripe (international recurring)**
@@ -40,6 +40,7 @@
   - **Pillar-personalized weekly digests** based on subscriber preferences
   - **Weekly digest autosend every Friday (UTC)** with admin toggle
   - **Digest preview email to admin** before sending to all subscribers
+  - **Wednesday briefing reminder** email nudge if the week’s briefing isn’t published (admin toggle)
 - Branding + content readiness:
   - Use the **official The Trading Narrative logo** across the UI (navbar/footer/mobile + favicon)
   - Use **Anish Pujari** author identity + updated About page + headshot across pages and post metadata
@@ -47,7 +48,9 @@
   - Add briefing operational tooling:
     - **Weekly briefing template** (THE BOARD + five numbered sections) ✅
     - **Edition numbering** (Edition #1, #2…) with UI badges ✅
+    - **Briefings series archive page** `/briefings` ✅
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
+- **New objective (stability)**: Reduce large-file edit risk by modularizing the backend monolith (`/app/backend/server.py` ~2300+ lines) into router modules with regression testing.
 
 ---
 
@@ -157,33 +160,149 @@
     - Post cards: “#N”
   - Set Edition #1 on the imported briefing.
 
+### Phase 13 — Briefings Series Page + Wednesday Reminder ✅ DONE
+**User stories**
+1. As a reader, I can browse all weekly briefing editions in one place.
+2. As the author, I get a simple reminder if I miss the Wednesday cadence.
+
+**Steps (DONE)**
+- **Series archive**:
+  - Backend: `GET /api/briefings` returns published posts with `edition` sorted by edition desc.
+  - Frontend: `/briefings` page showing edition tiles + metadata, with navigation link (desktop + mobile).
+  - Article edition badge now links into `/briefings`.
+- **Wednesday reminder**:
+  - Background loop emails owner Wednesday ≥07:00 UTC if the week’s briefing (post with `edition`) isn’t published.
+  - Runs at most once per ISO week.
+  - Admin toggle in Admin → Newsletter tab (ON by default):
+    - `GET/POST /api/admin/newsletter/briefing-reminder`
+- Housekeeping: removed test subscriber emails again (Gmail live) — only `anishpujari8@gmail.com` remains subscribed.
+
+### Phase 14 — Article Import: “Freight Management and Tracking Visibility” (Tech & AI) 🟡 IN PROGRESS
+**Context**: The prior agent created `/tmp/import_freight.py` but did not execute it.
+
+**User stories**
+1. As the author, I can migrate an existing LinkedIn-style article into the platform quickly.
+2. As a reader, I can discover the imported article under **Tech & AI** and read it in the correct formatting.
+
+**Steps**
+- Backend:
+  - Run `python /tmp/import_freight.py`.
+  - Verify a new document is inserted into `posts` with:
+    - `category = "tech-business"` (Tech & AI)
+    - Correct `title`, `slug`, `author`, `content_blocks`
+    - Correct `is_premium` setting per script
+- Backend verification:
+  - Query Mongo for the new `slug` (or call `GET /api/posts`) to confirm presence.
+- Frontend verification:
+  - Verify the post appears on homepage and/or Tech & AI listing.
+  - Open article page and confirm typography + headings render properly.
+
+**Exit criteria**
+- Import script exits cleanly.
+- Post is visible on the site and renders correctly.
+- No regressions in post listing/reading.
+
+### Phase 15 — Backend Modularization Refactor (server.py → routers) ⏳ NOT STARTED
+**Goal**: Reduce merge/conflict risk and improve maintainability by extracting the 2300+ line monolith into modules.
+
+**User stories**
+1. As a developer, I can work on payments/community/newsletter without editing a single giant file.
+2. As an admin, all existing features continue to work after refactor (no behavior changes).
+
+**Proposed module split**
+- `app/backend/main.py` (app creation, middleware, startup tasks)
+- `app/backend/routers/`:
+  - `auth.py`
+  - `posts.py` (CRUD + briefings + paywall)
+  - `payments_stripe.py`
+  - `payments_razorpay.py`
+  - `newsletter.py` (SMTP send, digests, unsubscribe, reminder toggles)
+  - `community.py`
+  - `analytics.py` (traffic, funnel, exports)
+  - `admin.py` (admin-only aggregations + settings)
+- `app/backend/services/` (pure logic utilities):
+  - `email_service.py`
+  - `digest_service.py`
+  - `razorpay_service.py`
+  - `stripe_service.py`
+  - `analytics_service.py`
+- `app/backend/db.py` (Mongo connection + common collection getters)
+- `app/backend/config.py` (env loading + constants)
+
+**Steps**
+- Do the refactor **incrementally** (one router at a time), keeping routes identical.
+- Add a quick smoke-test script or checklist for each extracted router.
+- Ensure background loops (digest autosend + Wednesday reminder) still run.
+- Confirm CORS, auth middleware, and exception handlers remain consistent.
+
+**Regression testing (required)**
+- Backend:
+  - Verify critical endpoints:
+    - Posts: `GET /api/posts`, `GET /api/posts/{slug}`, Admin CRUD
+    - Briefings: `GET /api/briefings`
+    - Payments: Stripe checkout create + webhook endpoint, Razorpay capability probe + checkout mode
+    - Newsletter: send, digest preview, unsubscribe, reminder toggle
+    - Community: thread list/create/reply, pin/lock, scheduled publish
+    - Analytics: traffic, funnel, CSV export
+- Frontend:
+  - Validate key flows with screenshots:
+    - Home → category → article
+    - Pricing → checkout (Stripe/Razorpay)
+    - Admin dashboard (analytics charts load)
+    - Community lounge
+    - Briefings page
+
+**Exit criteria**
+- No route paths changed (or frontend updated accordingly).
+- All tests/smoke checks pass.
+- `server.py` reduced to a small entrypoint or removed in favor of `main.py`.
+
+### Phase 16 — Delivery & Systems Article Import ⛔ BLOCKED (waiting on user content)
+**Context**: User will paste a Delivery-focused article after the freight import.
+
+**User stories**
+1. As a reader, the **Delivery & Systems** pillar is populated with at least one real essay.
+2. As the author, I can continue importing additional editions/articles reliably.
+
+**Steps (once content is provided)**
+- Receive full text + title from the user.
+- Import into `posts` with `category = "delivery"`.
+- Verify frontend listing + article render.
+
 ---
 
 ## 3) Next Actions
-All planned phases are complete. Remaining high-impact setup actions and content ops:
 
-### A) Required setup actions (to fully go-live)
+### A) Immediate (this week)
+1. **Run and verify the freight article import** (Phase 14).
+2. **Refactor backend into router modules** (Phase 15) with full regression testing.
+3. After import is confirmed, user will **paste a Delivery & Systems article** to import (Phase 16).
+
+### B) Required setup actions (to fully go-live)
 1. **Enable Razorpay Subscriptions** in the Razorpay dashboard to activate true UPI Autopay mandates.
    - The app will switch automatically via the live re-probe (no restart required).
 2. **Redeploy to production** (https://insight-hub-484.emergent.host)
    - Current updates were implemented in preview; production requires a redeploy.
+3. **Operational safety** (recommended now that Gmail is live):
+   - Keep the Friday digest autosend ON only if you intend to send to real subscribers.
+   - Keep subscriber list clean (no test emails) to avoid bounces.
 
-### B) Content operations (next editorial steps)
+### C) Content operations (next editorial steps)
 1. Import remaining LinkedIn newsletter editions and any standalone LinkedIn articles.
-   - Input format: paste title + full text (as done for Edition #1).
+   - Input format: paste title + full text.
    - Choose per article: Free vs Premium, pillar/category, featured flag, edition number.
 2. Fill the new **Delivery & Systems** pillar with real essays (currently empty in published feed).
-3. Create “Weekly Briefing” cadence:
+3. Establish “Weekly Briefing” cadence:
    - Use template in Admin Editor.
    - Ensure edition increments (Edition #2, #3…).
+   - Use **Briefings series page** `/briefings` as the canonical archive.
 
-### C) Optional enhancements (nice-to-haves)
+### D) Optional enhancements (nice-to-haves)
 1. Configure `RAZORPAY_WEBHOOK_SECRET` and Stripe webhook secrets in production for stronger signature verification.
-2. Refactor `/app/backend/server.py` into modules (billing, community, admin/analytics, newsletter) to reduce risk from large-file edits.
-3. Analytics upgrades:
+2. Analytics upgrades:
    - Funnel segmentation by landing page and currency (USD vs INR)
    - Premium conversion lift per pillar
-4. Newsletter upgrades:
+3. Newsletter upgrades:
    - Double opt-in
    - Dedicated sender domain + SPF/DKIM/DMARC hardening
 
@@ -217,15 +336,31 @@ All planned phases are complete. Remaining high-impact setup actions and content
 ✅ Pillar cleanup complete: Travel removed, Delivery & Systems active.
 ✅ Weekly briefing template exists and auto-suggests the next edition.
 ✅ Edition badges display on briefings.
+✅ Briefings archive page `/briefings` is live and navigable.
+✅ Wednesday reminder toggle exists and reminder system is enabled by default.
+
+🟡 Freight article import complete:
+- Script executed without errors
+- Post exists in DB under `tech-business`
+- Post renders correctly on frontend
+
+⏳ Backend modularization complete:
+- `server.py` split into routers/services
+- No endpoint regressions
+- Backend + frontend smoke/regression tests pass
+
+⛔ Delivery & Systems import:
+- Blocked until user provides the article text
 
 ✅ Testing passes (key iterations):
 - Iteration 5: backend 99.4% + frontend verification.
 - Iteration 6: backend 99.5% (183/184) + frontend 100%.
 - Iteration 7: backend 99.5% (208/209) + frontend 100%.
-- Iteration 8: backend 100% (261/262) + frontend 100%.
+- Iteration 8: backend 100% (261/262), frontend 100%.
 - Iteration 9: backend 100% + frontend 100%.
-- Iteration 10: backend 98.2% (test expectation mismatch only) + frontend 100%.
+- Iteration 10: backend 98.2% (test expectation mismatch only), frontend 100%.
+- Iteration 11: series page + reminder verified via screenshots + curl.
 
 ---
 
-> Engineering note: `/app/backend/server.py` is large. Apply edits sequentially to avoid merge/conflict corruption; consider modularizing next.
+> Engineering note: `/app/backend/server.py` is large. Apply edits sequentially to avoid merge/conflict corruption; the next step is to modularize into routers/services with full regression testing.

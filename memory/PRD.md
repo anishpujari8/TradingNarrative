@@ -101,3 +101,9 @@ Tech & Business, Finance, Lifestyle, Travel. FARM stack (FastAPI, React 19, Mong
 - **Weekly Briefing Template**: "Weekly briefing template" button in admin editor prefills title, excerpt, category (finance), tags, next edition number (auto-computed from existing posts), and a full content skeleton (THE BOARD strip, 5 numbered '## ' sections, Three signals, sign-off).
 - **Edition Numbers**: posts have optional 'edition' int (editor input); "Edition #N" badge on article pages, "#N" badge on post cards. Edition #1 set on the imported briefing.
 - Pending user input: paste further LinkedIn editions for import.
+
+## V2.9 Session Update (Series Page + Briefing Reminder)
+- **Briefings series page** (/briefings): all published editions in order with edition tiles, dates, read times; "Briefings" nav link (desktop + mobile); Edition badge on articles links here. GET /api/briefings.
+- **Wednesday briefing reminder**: background loop emails the owner Wednesday ≥07:00 UTC if that ISO week's briefing (post with edition) isn't published — once per week, suggests next edition number + editor link; admin toggle in Newsletter tab (ON by default; GET/POST /api/admin/newsletter/briefing-reminder). Reminder emails are transactional (no unsubscribe footer).
+- Housekeeping: purged 2 test emails from subscribers again (real Gmail sending live); only anishpujari8@gmail.com remains.
+- Awaiting user: paste further LinkedIn editions + a delivery-focused essay for the new pillar.
