@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, Legend, ResponsiveContainer } from "recharts";
-import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning, Headphones, RefreshCw, AudioLines, Zap } from "lucide-react";
+import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning, Headphones, RefreshCw, AudioLines, Zap, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { SyncToProductionDialog } from "@/components/SyncToProductionDialog";
@@ -79,6 +80,7 @@ export default function AdminPage() {
   const [testingEmail, setTestingEmail] = useState(false);
   const [narrations, setNarrations] = useState(null);
   const [warmStarting, setWarmStarting] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const loadNarrations = useCallback(() => {
     api.get("/admin/narrations").then((r) => setNarrations(r.data)).catch(() => setNarrations({ enabled: false, essays: [] }));
@@ -281,15 +283,38 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto justify-start mb-6">
           <TabsTrigger value="overview" data-testid="admin-tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="traffic" data-testid="admin-tab-traffic">Traffic</TabsTrigger>
           <TabsTrigger value="posts" data-testid="admin-tab-posts">Posts</TabsTrigger>
           <TabsTrigger value="newsletter" data-testid="admin-tab-newsletter">Newsletter</TabsTrigger>
-          <TabsTrigger value="narrations" data-testid="admin-tab-narrations">Narrations</TabsTrigger>
+          <TabsTrigger value="narrations" className="relative" data-testid="admin-tab-narrations">
+            Narrations
+            {narrations?.enabled && narrations?.issues?.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive" data-testid="admin-tab-narrations-alert-dot" aria-hidden="true" />
+            )}
+          </TabsTrigger>
           <TabsTrigger value="emails" data-testid="admin-tab-emails">Email log</TabsTrigger>
         </TabsList>
+
+        {narrations?.enabled && narrations?.issues?.length > 0 && activeTab !== "narrations" && (
+          <Alert className="mb-6 border-destructive/40 bg-destructive/5" data-testid="narration-health-alert">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertTitle className="font-medium">
+              Narration health: {narrations.issues.length} essay{narrations.issues.length === 1 ? " has" : "s have"} no playable audio
+            </AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+              <span className="truncate max-w-full">
+                {narrations.issues.slice(0, 2).map((i) => i.title).join(" · ")}
+                {narrations.issues.length > 2 ? ` · +${narrations.issues.length - 2} more` : ""}
+              </span>
+              <Button variant="outline" size="sm" className="h-7" onClick={() => setActiveTab("narrations")} data-testid="narration-health-review-button">
+                Review in Narrations
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* OVERVIEW */}
         <TabsContent value="overview">
@@ -877,6 +902,8 @@ export default function AdminPage() {
                         <TableCell>
                           {e.cached ? (
                             <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10" data-testid={`admin-narration-status-${e.slug}`}>Cached</Badge>
+                          ) : e.health === "corrupt" ? (
+                            <Badge variant="destructive" data-testid={`admin-narration-status-${e.slug}`}>Corrupt</Badge>
                           ) : (
                             <Badge variant="outline" className="text-muted-foreground" data-testid={`admin-narration-status-${e.slug}`}>Missing</Badge>
                           )}
