@@ -14,7 +14,7 @@
     - Fallback to one-time Razorpay Orders when Subscriptions is not enabled
     - Live re-probe so Autopay switches on without restart
   - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
-    - Target: **Recurring subscription** (user intent confirmed, exact config pending)
+    - Target: **Recurring subscription** (user intent confirmed; exact config + credentials pending)
 - Deliver retention UX:
   - Bookmarks/reading list ✅
   - Reading progress indicators ✅
@@ -30,6 +30,7 @@
     - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
   - Weekly digest preview + send ✅
   - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
+  - **Weekly Listen Digest Social Proof** ✅ *(digest includes “Most listened this week” block when narration listen data exists)*
   - **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
   - **Listen analytics for narration** ✅ *(count plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
   - **Listen completion rate** ✅ *(milestone funnel: 25% / 50% / 75% / finish + completion % per essay in Admin Narrations)*
@@ -192,7 +193,7 @@
 #### A) Highlight Notes ✅
 - Backend:
   - `HighlightIn` schema gained optional `note` (max 500 chars) stored on create
-  - New endpoint: `PUT /api/highlights/{id}/note` (owner-only; empty string clears; sets `note_updated_at`)
+  - `PUT /api/highlights/{id}/note` (owner-only; empty string clears)
 - Frontend `/highlights`:
   - Notes UI + inline editor + toasts
 
@@ -207,7 +208,7 @@
 ### Phase 19 — PayPal Integration ⛔ NOT STARTED (still blocked)
 **Blocked on user decisions + credentials**
 - Confirm:
-  1) **Recurring subscription** vs one-time timed passes *(user intent: recurring; please confirm definitively)*
+  1) **Recurring subscription** vs one-time timed passes *(user intent: recurring; must confirm definitively)*
   2) Sandbox vs Live credentials (**Client ID + Secret**)
   3) Placement on pricing page (always visible vs international-only)
 
@@ -289,9 +290,7 @@
 - New schema: `AudioProgressIn` in `schemas.py`
 - New endpoint: `POST /api/posts/{slug}/audio/progress` with `{ milestone: 25|50|75|100 }`
   - Increments `posts.listen_milestones.{milestone}`
-  - Validations:
-    - 400 on invalid milestone
-    - 404 on bad slug
+  - Validations: 400 on invalid milestone; 404 on bad slug
 - `GET /api/admin/narrations` now returns per-essay:
   - `milestones: {25,50,75,100}`
   - `completion` = `round(100 * min(finished, listens) / listens)` (None if listens=0)
@@ -302,12 +301,34 @@
   - 100 triggered on `onended`
 - Admin → Narrations table gained **Completion** column:
   - Shows `{completion}% finish` or “No listens yet”
-  - Hover tooltip shows the full milestone funnel counts
+  - Hover tooltip shows milestone funnel counts
 
 #### C) Verification ✅
-- End-to-end verified:
-  - Playback fired 1 listen + 4 milestone calls
-  - Admin displayed completion (example observed: 67% finish)
+- End-to-end verified: playback fired 1 listen + 4 milestone calls; Admin displayed completion.
+
+### Phase 28 — Weekly Listen Digest ✅ COMPLETED
+> Goal: include narration engagement in the Friday weekly digest as social proof.
+
+#### A) Backend ✅
+- `services/digest_service.py`:
+  - Added `get_week_top_listened(limit=3)`
+    - Aggregates `analytics` events `narration_listen` for last 7 days by `meta.slug`
+    - Filters to still-published posts
+  - Added `_listens_section(top_listened, accent)`
+    - Renders branded “Most listened this week” block with numbered essay links + play counts + CTA (“Listen to the narration →”)
+  - `build_digest_html(posts, top_highlights=None, top_listened=None)` updated to include the listens section
+  - Wired into:
+    - `do_send_digest()` (autosend + manual)
+- `routers/newsletter.py`:
+  - `GET /api/admin/newsletter/digest-preview` now returns `top_listened`
+  - `POST /api/admin/newsletter/send-digest-preview` includes listens section in HTML
+
+#### B) Behavior ✅
+- Gracefully omitted when no listen data exists.
+
+#### C) Verification ✅
+- Verified API returns real top_listened data.
+- Verified Admin UI “Weekly digest preview” renders “Most listened this week” section.
 
 ---
 
@@ -315,11 +336,12 @@
 
 ### A) Immediate
 1) **Production rollout**
-   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–27**.
+   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–28**.
    - After redeploy, production will:
      - Normalize author identity automatically on startup
      - Draft demo essays via demo cleanup migration
      - Enable narration status panel + warmup endpoints + completion tracking
+     - Include “Most listened this week” in weekly digests
 
 2) **ElevenLabs operations**
    - Top up ElevenLabs credits.
@@ -333,11 +355,11 @@
      - append to `REAL_POSTS` for durability
      - (optional) sync to production via the Sync tool
 
-4) **More Editions**: Import LinkedIn newsletter editions as numbered briefings
-   - ⛔ Blocked until you paste Edition #2 text.
+4) **More Editions**: Import LinkedIn newsletter editions as numbered briefings ⛔
+   - Blocked until you paste Edition #2 text.
    - After import: append to `REAL_POSTS` for durability.
 
-5) **PayPal (Recurring subscriptions)**
+5) **PayPal (Recurring subscriptions)** ⛔
    - Still blocked until you provide:
      - Confirm recurring subscription (yes/no)
      - Sandbox vs Live
@@ -371,12 +393,13 @@
 - Listen analytics
 - Completion milestones + completion %
 - Pre-generation hooks
-✅ Phase 26–27 success criteria
-- Admin can view narration coverage and cached/missing status per essay.
-- Admin can view completion rate per essay (finish % + milestone funnel).
-- Admin can start a warmup run from the UI.
-- Demo essays do not consume narration credits (auto-drafted once).
-- Credits display is available when ElevenLabs API key includes `user_read` permission.
+✅ Admin narration ops are self-serve:
+- Narration coverage, cached/missing per essay
+- Completion rate + milestone funnel
+- One-click warmup + auto-refresh
+✅ Weekly digest includes social proof blocks when data exists:
+- “Most highlighted this week”
+- “Most listened this week”
 
 ⚠️ Operational caveat (ElevenLabs quota)
 - If credits are exhausted, uncached essays will 502 on narration play until credits are topped up.

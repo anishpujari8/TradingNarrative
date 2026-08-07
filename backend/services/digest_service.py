@@ -11,7 +11,7 @@ from services import emailer
 from services.emailer import log_email
 
 
-def build_digest_html(posts, top_highlights=None):
+def build_digest_html(posts, top_highlights=None, top_listened=None):
     accent = '#1c8570'
     items = ''
     for p in posts:
@@ -38,6 +38,7 @@ def build_digest_html(posts, top_highlights=None):
         </td></tr>
         {items}
         {_highlights_section(top_highlights, accent)}
+        {_listens_section(top_listened, accent)}
         <tr><td style="padding-top:8px;border-top:1px solid #e8e4da;">
           <p style="font-family:Arial,sans-serif;font-size:12px;color:#8a8577;margin:16px 0 0;">You're receiving this because you subscribed to The Trading Narrative.<br/>
           <a href="{FRONTEND_URL}" style="color:{accent};">Visit the site</a> &middot; <a href="{FRONTEND_URL}/pricing" style="color:{accent};">Go Premium</a></p>
@@ -66,6 +67,52 @@ def _highlights_section(top_highlights, accent):
             {rows}
           </div>
         </td></tr>"""
+
+
+def _listens_section(top_listened, accent):
+    """Renders the 'most listened this week' narration block; empty string when no data."""
+    if not top_listened:
+        return ''
+    rows = ''
+    for i, l in enumerate(top_listened, 1):
+        plays = f"{l['count']} play" + ('s' if l['count'] != 1 else '')
+        rows += f"""
+        <div style="padding:2px 0 2px 0;margin:0 0 14px;">
+          <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:16px;line-height:1.5;color:#14181f;">
+            <span style="color:{accent};font-weight:bold;">{i}.</span>&nbsp;
+            <a href="{FRONTEND_URL}/post/{l['post_slug']}" style="color:#14181f;text-decoration:none;">{l['post_title']}</a>
+          </p>
+          <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#8a8577;">
+            {plays} this week &middot; <a href="{FRONTEND_URL}/post/{l['post_slug']}" style="color:{accent};">Listen to the narration &rarr;</a>
+          </p>
+        </div>"""
+    return f"""
+        <tr><td style="padding:6px 0 22px;">
+          <div style="background:#f7f5f0;border-radius:10px;padding:22px 24px;">
+            <p style="margin:0 0 14px;font-family:monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{accent};">Most listened this week</p>
+            {rows}
+          </div>
+        </td></tr>"""
+
+
+async def get_week_top_listened(limit: int = 3):
+    """Essays whose narration was played the most in the last 7 days."""
+    week_ago = iso(now_utc() - timedelta(days=7))
+    rows = await db.analytics.aggregate([
+        {'$match': {'event': 'narration_listen', 'created_at': {'$gte': week_ago},
+                    'meta.slug': {'$ne': None}}},
+        {'$group': {'_id': '$meta.slug', 'count': {'$sum': 1}, 'title': {'$last': '$meta.title'}}},
+        {'$sort': {'count': -1}},
+        {'$limit': limit},
+    ]).to_list(limit)
+    out = []
+    for r in rows:
+        # only feature essays that are still published (title fallback from the post itself)
+        post = await db.posts.find_one({'slug': r['_id'], **published_query()}, {'title': 1})
+        if post:
+            out.append({'post_slug': r['_id'], 'post_title': r.get('title') or post['title'],
+                        'count': r['count']})
+    return out
 
 
 async def get_week_top_highlights(limit: int = 3):
@@ -101,6 +148,7 @@ async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
     subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
     all_cats = list(CATEGORIES.keys())
     top_highlights = await get_week_top_highlights()
+    top_listened = await get_week_top_listened()
     html_cache = {}
     sent = 0
     for sub in subs:
@@ -110,7 +158,7 @@ async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
             continue  # nothing in their chosen pillars this week
         key = tuple(sorted(p['id'] for p in sub_posts))
         if key not in html_cache:
-            html_cache[key] = build_digest_html(sub_posts, top_highlights=top_highlights)
+            html_cache[key] = build_digest_html(sub_posts, top_highlights=top_highlights, top_listened=top_listened)
         titles = ', '.join(p['title'] for p in sub_posts[:5])
         await log_email(sub['email'], subject, f'Weekly digest featuring: {titles}', 'digest', html=html_cache[key])
         sent += 1
