@@ -460,3 +460,198 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'management is today and the standard the leading firms have already set.',
                      'The vessel is at sea. The position is live. The demurrage clock is running.',
                      'Does your system know?']}]
+
+# Added: LNG demurrage essay (finance) + Enfield ride essay (lifestyle, featured)
+REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a',
+  'title': 'The Shipping Industry Is Sitting on a $15 Billion Problem. And Nobody Is Talking About It '
+           'Honestly.',
+  'excerpt': 'Demurrage is not an operational inconvenience — it is a systemic failure of data. The industry '
+             'loses up to $15 billion a year to a problem that lives in inboxes and spreadsheets.',
+  'category': 'finance',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1605745341112-85968b19335b?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['LNG', 'Demurrage', 'Shipping', 'Logistics', 'CTRM', 'Commodities'],
+  'featured': False,
+  'edition': None,
+  'published_at': '2026-08-07T06:06:16.569128+00:00',
+  'content_blocks': ['Let me say something that LNG traders, shipping desks, and commodity operations teams '
+                     'already know but rarely say out loud:',
+                     'Demurrage is not an operational inconvenience. It is a systemic failure of data.',
+                     'Every year, the global shipping industry loses somewhere between $10 billion and $15 '
+                     'billion to demurrage — the penalty charged when a vessel waits beyond its agreed '
+                     'loading or discharging window. And the vast majority of that loss is not caused by '
+                     'port congestion, weather events, or force majeure.',
+                     'It is caused by spreadsheets, email chains, and the absence of a single source of '
+                     'truth.',
+                     'That needs to change. And in LNG — where the stakes are highest and the complexity is '
+                     'deepest — it needs to change now.',
+                     '## What Demurrage Actually Is — And Why Most People Get It Wrong',
+                     'Demurrage is commonly described as a "delay penalty." That framing is wrong, and the '
+                     'wrong framing leads to wrong solutions.',
+                     'Demurrage is the financial consequence of a contractual time commitment not being '
+                     'honoured. The charter party defines a laytime — the agreed window for loading or '
+                     'discharging. When that window is exceeded, demurrage accrues at a daily rate that can '
+                     'reach $50,000 to $150,000 per day for LNG carriers.',
+                     'The critical distinction: demurrage is a documentation problem before it is a '
+                     'logistics problem.',
+                     'Most demurrage disputes are not about whether a vessel was delayed. They are about: '
+                     'whose clock started when. Whether the Notice of Readiness was validly tendered. What '
+                     'the Statement of Facts actually shows versus what the port agent reported. Whether a '
+                     'weather day was a working day or an excepted period. Whether the terminal or the '
+                     'vessel caused the delay.',
+                     'Every one of these questions is answered by documents. And in most commodity trading '
+                     "organisations today, those documents live in someone's email inbox.",
+                     '## The LNG Dimension — Why This Problem Is 10x More Complex',
+                     'In crude oil or bulk commodities, demurrage is complex. In LNG, it is a different '
+                     'category of challenge entirely.',
+                     'LNG cargoes move under long-term Sales and Purchase Agreements with embedded '
+                     'scheduling frameworks, send-out obligations, heel management requirements, and '
+                     'boil-off gas calculations. A single LNG cargo from the US Gulf Coast to Japan involves '
+                     'a Tolling Agreement defining liquefaction rights, a Shipping Agreement defining vessel '
+                     'obligations, a Terminal Use Agreement at the loading terminal, a Sale and Purchase '
+                     'Agreement with the buyer, a charter party with the shipowner, regulatory nominations '
+                     'to FERC or equivalent bodies, and customs and export documentation.',
+                     'Each of these documents contains time-sensitive clauses. Each interacts with the '
+                     'others. And the demurrage exposure sits at the intersection of all of them '
+                     'simultaneously.',
+                     'Here is the uncomfortable truth: most LNG trading desks do not have a real-time view '
+                     'of their demurrage exposure across their active cargo book. They find out at '
+                     'month-end, when the invoices arrive, when it is too late to do anything about it.',
+                     '## The Bold Opinion: Global Logistics Is Still Operating Like It Is 2005',
+                     'The container shipping revolution of the last decade brought us real-time vessel '
+                     'tracking, port congestion dashboards, and digital bill of lading pilots. The narrative '
+                     'of logistics digitalisation has been loud.',
+                     'But in commodity trading — in the physical movement of crude, LNG, refined products, '
+                     'bulk, and metals — the operational backbone is still email.',
+                     'The Statement of Facts comes from the port agent by email. The Notice of Readiness is '
+                     'attached to an email. The laytime calculation is done in Excel. The demurrage claim is '
+                     'assembled manually by an operations analyst who has to read three PDFs, two emails, '
+                     'and a charter party clause before they can calculate the number.',
+                     'I have worked across commodity trading systems on four continents. I have implemented '
+                     'CTRM platforms for oil majors, trading houses, and utilities. And I can tell you that '
+                     'the document management problem in physical commodity operations is not being solved '
+                     'by the current generation of CTRM platforms. It is being worked around.',
+                     'That distinction matters enormously.',
+                     "## What Actually Needs to Change — A Practitioner's View",
+                     'Three things need to happen, and they need to happen in parallel.',
+                     'First: demurrage visibility must move from month-end to real-time. Every active cargo '
+                     'should have a live laytime clock visible to the operations desk, the trading desk, and '
+                     'the risk team simultaneously. When a vessel reports alongside, the laytime window '
+                     'opens. When it completes, it closes. The system calculates accruing demurrage '
+                     'automatically, against the relevant charter party clause, flagging exceptions as they '
+                     'happen — not three weeks later.',
+                     'This is technically achievable today. The barrier is not technology. It is data '
+                     'discipline and organisational will.',
+                     'Second: document ingestion must be automated. Statements of Facts, Notices of '
+                     'Readiness, port agent reports, and inspection certificates should flow into the CTRM '
+                     "system automatically — not be attached to emails that sit in someone's inbox. AI "
+                     'document processing can extract structured data from these documents with sufficient '
+                     'accuracy to trigger workflow actions and flag discrepancies.',
+                     "The demurrage analyst's job should be reviewing exceptions and negotiating claims — "
+                     'not manually comparing two versions of a Statement of Facts line by line.',
+                     'Third: the charter party must become a living document in the system. Every laytime '
+                     'clause, every exception period, every NOR acceptance window should be encoded in the '
+                     'system at the time the charter party is signed. Not summarised in a note. Not left in '
+                     'a PDF. Encoded, so the system can apply it automatically when the cargo moves.',
+                     'This is the hardest part. It requires discipline at the point of charter party '
+                     'execution — capturing structured data at the right moment rather than trying to '
+                     'extract it retrospectively. Most organisations do not do this today. The ones that '
+                     'start doing it tomorrow will have a structural advantage over those that wait.',
+                     '## The LNG Net-Zero Intersection — A Closing Thought',
+                     'LNG occupies a complicated position in the energy transition. It is a cleaner-burning '
+                     'hydrocarbon positioned as a bridge fuel. But the methane emissions from LNG shipping — '
+                     'from boil-off gas, from engine emissions, from fugitive leaks — are under increasing '
+                     'scrutiny from regulators, counterparties, and investors.',
+                     'Demurrage and the energy transition intersect here in a way that is rarely discussed: '
+                     'every unnecessary vessel-day of waiting at a terminal is not just a financial cost. It '
+                     'is an emissions cost.',
+                     'A laden LNG carrier sitting at anchor burning boil-off gas while waiting for a berth '
+                     'is emitting. Quantifying that emission, attributing it to the right cargo, and '
+                     'reporting it accurately is going to become a regulatory requirement — not a '
+                     'nice-to-have.',
+                     'The organisations that solve their demurrage data problem will also be better '
+                     'positioned to solve their Scope 3 emissions accounting problem. The two are not '
+                     'separate challenges. They share the same root: the absence of real-time, structured, '
+                     'cargo-level operational data.',
+                     '## What I Would Tell Any Head of Operations Reading This',
+                     'Stop treating demurrage as a cost of doing business. It is a symptom of a data '
+                     'management failure that is costing your organisation real money, every voyage, across '
+                     'every commodity.',
+                     'The fix is not a new platform. Most organisations already have the platform. The fix '
+                     'is data discipline — entering structured data at the right moment, in the right '
+                     'format, so the system can do what it was designed to do.',
+                     'And in LNG specifically: the complexity of your cargo structure is not an excuse for '
+                     'the absence of real-time visibility. It is the reason real-time visibility is '
+                     'non-negotiable.',
+                     'The $15 billion sitting in demurrage losses globally is not inevitable. It is '
+                     'recoverable. But only by organisations willing to be honest about where the problem '
+                     'actually lives.',
+                     'Anish Pujari is a Senior ETRM/CTRM Product Manager and Consultant with 12+ years of '
+                     'experience across Aligne TRM, Endur, Eka, and Triple Point platforms. He has delivered '
+                     'front-to-back commodity trading technology solutions across Oil & Gas, LNG, Power, '
+                     'Metals, and Agriculture sectors.']},
+ {'slug': '170-kilometres-one-green-enfield-and-a-lesson-in-strategic-momentum',
+  'title': '170 Kilometres, One Green Enfield, and a Lesson in Strategic Momentum',
+  'excerpt': 'What a group cruiser ride taught me about pacing, partnership, and the leadership principles '
+             'we forget at our desks.',
+  'category': 'lifestyle',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['Leadership', 'Clarity', 'Motorcycling', 'Product Management', 'Momentum'],
+  'featured': True,
+  'edition': None,
+  'published_at': '2026-08-07T06:06:16.703939+00:00',
+  'content_blocks': ["Some of the clearest product thinking I've ever done happened at 80 km/h, with the "
+                     'wind drowning out every notification and the road demanding nothing but presence.',
+                     'The route: Pune → Babe Ghaat → Dhanep → Kuran → Malkhed. 170 kilometres, five '
+                     'waypoints, one group of riders.',
+                     '## The Start: 6:30 AM. Engine On. Mind Clear.',
+                     "There's something quietly radical about choosing to start your day before the city "
+                     'wakes up. On the morning of June 6th, our group left Pune at 6:30 AM on our own rides '
+                     '— no cab aggregators, no autopilot, each of us responsible for our own journey while '
+                     'riding as one unit.',
+                     "The mission was precise: cover half of the 170 km route by 9:30 AM. That's a project "
+                     "manager's constraint right there — a hard checkpoint, a shared destination, individual "
+                     'accountability. In a world of endless async work and blurry timelines, there was '
+                     'something deeply satisfying about a goal this clear.',
+                     '## The Ride: A Machine That Asks You to Commit',
+                     'My ride was a Royal Enfield Classic 350 — metallic green, sturdy, accessorised with '
+                     "purpose, and admittedly, a little heavy. This was the first time I'd ridden this "
+                     'particular machine, and it asked something of me immediately: adjustment, respect, and '
+                     'full attention.',
+                     "There's a product metaphor hiding in plain sight. Every new platform, every unfamiliar "
+                     "ETRM system, every freshly inherited codebase asks the same thing of us. You don't "
+                     'dominate it from day one — you listen to it, understand its weight and balance, and '
+                     'then you ride.',
+                     'Metallic green. Strong and sturdy silhouette. Accessories done right. A little heavy '
+                     'for a first-timer — but that weight is also what keeps you grounded at speed. First '
+                     'time on this bike. It was absolutely worth it.',
+                     '## The Leadership Lens: What the Open Road Reveals About Product Leadership',
+                     'Group riding is a masterclass in orchestrating without over-controlling. You set the '
+                     'pace. You signal your turns. You check your mirrors constantly — not out of fear, but '
+                     'out of collective responsibility. Nobody accelerates recklessly, because your actions '
+                     'have consequences for everyone riding behind you.',
+                     'In my years as a Senior ETRM/CTRM Product Manager — across Endur, RightAngle, Eka, '
+                     "Triple Point — I've come to believe that the best product leads operate like "
+                     'experienced lead riders. They establish momentum early, communicate lane changes '
+                     'clearly, and never mistake speed for progress.',
+                     'The checkpoint logic — cover half by 9:30 AM — is how I think about product sprints. '
+                     'Break the journey. Validate position. Adjust and continue.',
+                     '"The road doesn\'t reward the fastest rider. It rewards the one who reads conditions '
+                     'early, holds steady, and arrives with the group intact."',
+                     '## The Deeper Lesson: Momentum Is a Practice, Not a Destination',
+                     "Babe Ghaat wasn't just a coordinate on a map. It was a moment of arrival — earned mile "
+                     'by mile, village by village (Dhanep, Kuran, Malkhed), each waypoint a reminder that '
+                     'long journeys are really just a series of smaller, well-executed commitments.',
+                     'In commodity trading and risk management, we talk endlessly about volatility, P&L '
+                     'attribution, and hedging strategies. But the underlying discipline is the same as '
+                     'riding: identify your route, manage your exposure, and trust the fundamentals of your '
+                     'system when the terrain gets rough.',
+                     'I returned from this ride with a quieter head and a sharper perspective. The kind of '
+                     "clarity you can't manufacture in a boardroom, but can find reliably on an empty state "
+                     'highway at 7 AM.',
+                     "If you're a product leader, a consultant, or simply someone navigating a complex "
+                     "system at speed, I'd love to hear what rituals help you find your clarity. The road, "
+                     'the journal, the morning ride: we all have our version of it.',
+                     "And if you're ever on the Pune–Babe Ghaat route on a Royal Enfield, you already know "
+                     "exactly what I'm talking about."]}]

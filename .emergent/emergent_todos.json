@@ -1,22 +1,18 @@
 [
   {
-    "content": "Hardcode Edition #1 + freight article in seed_data.py (self-healing verified)",
+    "content": "Import demurrage article (finance) + Enfield article (lifestyle, featured)",
     "status": "completed"
   },
   {
-    "content": "Highlight Digest: most-highlighted section in digest email (graceful omission)",
+    "content": "Append both to REAL_POSTS in seed_data.py (durability)",
     "status": "completed"
   },
   {
-    "content": "Content Sync Tool: diff/push endpoints + admin dialog",
+    "content": "Sync both to production via the new Sync tool (2/2 pushed)",
     "status": "completed"
   },
   {
-    "content": "Testing agent: 100% pass (10/10 backend, all frontend)",
-    "status": "completed"
-  },
-  {
-    "content": "Edition #2 + Delivery essay imports (still waiting for pasted text)",
+    "content": "Edition #2 import (still waiting for pasted text)",
     "status": "pending"
   },
   {

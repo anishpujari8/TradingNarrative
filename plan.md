@@ -55,7 +55,7 @@
   - Author identity: Anish Pujari across UI and post metadata
   - Weekly briefing tooling: template + edition numbering + `/briefings` archive
   - Import existing writing (LinkedIn newsletter editions + LinkedIn articles)
-  - **Hardcoded default content** ✅ *(real articles are now hardcoded and self-heal on DB reset)*
+  - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
 - Improve editorial discovery ✅:
   - **Related essays by tags** (shared tags prioritized over category-only)
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
@@ -248,47 +248,68 @@
 
 ### Phase 21 — Hardcoded Real Content + Highlight Digest + Content Sync Tool ✅ COMPLETED
 #### A) Hardcoded Real Content (self-healing default content) ✅
-- `seed_data.py` now includes a `REAL_POSTS` list containing the author’s real, provided content exported verbatim from DB:
-  - Edition #1 “Five Things Commodity Desks Need to Know This Week”
-    - slug: `five-things-commodity-desks-need-to-know-this-week`
-    - blocks: 22, `edition=1`
-  - “Freight Management and Tracking Visibility …”
-    - blocks: 46
-- `server.py` `seed_database()` now **always** inserts any missing `REAL_POSTS` (matched by slug) as **PUBLISHED** on every startup.
+- `seed_data.py` includes a `REAL_POSTS` list containing the author’s real, provided content exported verbatim from DB.
+- `server.py` `seed_database()` **always** inserts any missing `REAL_POSTS` (matched by slug) as **PUBLISHED** on every startup.
 - Verified self-healing: deleted Edition #1 in preview DB, restarted backend, and it restored automatically with no duplicates.
 - Demo `SAMPLE_POSTS` remain and seed as **drafts** only on fresh DBs.
 - Process note: future real articles should be appended to `REAL_POSTS` using the same export pattern.
 
 #### B) Highlight Digest (social proof section) ✅
-- `services/digest_service.py` additions:
+- `services/digest_service.py`:
   - `get_week_top_highlights()` — last 7 days, >=2 distinct users, top 3
   - `_highlights_section()` — renders “Most highlighted this week” block (accent-bordered italic quotes + reader count + essay link)
-  - `build_digest_html(posts, top_highlights=...)` now conditionally includes the section
+  - `build_digest_html(posts, top_highlights=...)` conditionally includes the section
 - Wired into:
   - `do_send_digest()`
-  - `GET /api/admin/newsletter/digest-preview` (now returns `top_highlights`)
+  - `GET /api/admin/newsletter/digest-preview` (returns `top_highlights`)
   - `POST /api/admin/newsletter/send-digest-preview`
 - Graceful omission when no highlight data exists.
 
 #### C) Content Sync Tool (Preview → Production) ✅
 - Backend:
-  - New router `routers/sync.py`:
+  - Router: `routers/sync.py`
     - `GET /api/admin/sync/diff` — compares preview published posts vs production public posts by slug
     - `POST /api/admin/sync/push {password}` — one-time login to production admin API and creates missing posts
   - Config: `PRODUCTION_SITE_URL` in `config.py` (defaults to `https://thetradingnarrative.com`)
 - Frontend:
   - `components/SyncToProductionDialog.js`
-  - Admin header button “Sync to production” with:
-    - target host + production published count
-    - missing list (with tier/edition badges)
-    - password input (never stored)
-    - push progress + per-article results
-    - in-sync/empty/error/retry states
-- Dependencies:
-  - `requests` already present in backend requirements
+  - Admin header button “Sync to production”
 - Testing:
   - Iteration_15: **100% backend (10/10)**, **100% frontend**
   - Production only ever read; test data cleaned
+
+### Phase 22 — Two Article Imports + Production Sync ✅ COMPLETED
+#### A) Imports (user-pasted, untangled interleaved text) ✅
+1) **Business & Finance**:
+   - Title: **“The Shipping Industry Is Sitting on a $15 Billion Problem. And Nobody Is Talking About It Honestly.”**
+   - Category: `finance`
+   - Tier: `free`
+   - Blocks: **41**
+   - Tags: `[LNG, Demurrage, Shipping, Logistics, CTRM, Commodities]`
+   - Slug: `the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a`
+   - Cover: Unsplash `photo-1605745341112` (container ship)
+
+2) **Personal Growth** *(“highlight this article heading” implemented as FEATURED=true)*:
+   - Title: **“170 Kilometres, One Green Enfield, and a Lesson in Strategic Momentum”**
+   - Category: `lifestyle`
+   - Tier: `free`
+   - Blocks: **20**
+   - Featured: **true** (leads homepage hero)
+   - Tags: `[Leadership, Clarity, Motorcycling, Product Management, Momentum]`
+   - Slug: `170-kilometres-one-green-enfield-and-a-lesson-in-strategic-momentum`
+   - Cover: Unsplash `photo-1558981403` (best thematic fit after vetting multiple candidates via image analysis)
+
+- Verified rendering: both articles render correctly; Enfield appears as featured hero on homepage.
+
+#### B) Default content durability ✅
+- Both new posts were appended to `REAL_POSTS` in `seed_data.py`.
+- `REAL_POSTS` now totals **4** real, hardcoded articles.
+- Verified no duplication on restart (exactly 1 copy per fixed slug).
+
+#### C) Production sync (dogfooded sync tool) ✅
+- Ran `GET /api/admin/sync/diff` → correctly showed the 2 missing posts.
+- Ran `POST /api/admin/sync/push` → pushed **2/2** successfully.
+- Production now includes both new articles and preserved the featured flag.
 
 ---
 
@@ -311,7 +332,7 @@
 - **Two environments exist**:
   - **Preview** (dev): changes are implemented + tested here.
   - **Production** (`https://thetradingnarrative.com`): code changes require **redeploy** to go live.
-- Content migration of Edition #1 + Freight post was applied directly on production via API and is already live.
+- Content migrations/imports can be pushed via the **Sync to production** tool.
 
 ---
 
@@ -322,7 +343,6 @@
 ✅ Email sending is LIVE (Gmail SMTP) with unsubscribe + digest systems.
 ✅ Community lounge features work.
 ✅ Briefings tooling and `/briefings` archive works.
-✅ Freight article imported and renders correctly.
 ✅ Backend modularization complete with regression tests.
 ✅ Related essays scored by tags.
 ✅ Highlights system complete:
@@ -333,21 +353,18 @@
 - Notes + quote-card sharing
 - Share-from-article
 - Popular highlights
-
-✅ Production content issue resolved:
-- Edition #1 visible on production `/briefings`
-- Freight article visible on production posts
-- Seed logic patched to avoid auto-publishing demo essays on fresh DBs
-
+✅ Highlight Digest:
+- Weekly digest includes “Most highlighted this week” section when highlight data exists
+✅ Content Sync Tool:
+- Admin can diff and push missing published preview posts to production without manual scripts
 ✅ Default content durability:
 - Real provided articles are hardcoded in `seed_data.py` as `REAL_POSTS`
 - Backend self-heals and restores missing `REAL_POSTS` on startup
-
-✅ Highlight Digest:
-- Weekly digest includes “Most highlighted this week” section when highlight data exists
-
-✅ Content Sync Tool:
-- Admin can diff and push missing published preview posts to production without manual scripts
+✅ Phase 22 imports complete:
+- Demurrage essay published under Business & Finance
+- Enfield essay published under Personal Growth and featured
+- Both appended to `REAL_POSTS`
+- Both synced to production via Sync tool
 
 ⛔ PayPal integration: blocked until credentials + mode decisions.
 ⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.
