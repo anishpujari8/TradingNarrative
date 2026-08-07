@@ -18,6 +18,7 @@ from security import hash_password
 from seed_data import SAMPLE_POSTS, REAL_POSTS, AUTHOR
 from services.razorpay_service import probe_razorpay_subscriptions
 from services.digest_service import digest_autosend_loop, briefing_reminder_loop
+from services.tts_service import warm_all_narrations
 
 from routers import auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync
 
@@ -80,6 +81,12 @@ async def seed_database():
                 {'slug': slugify(sp['title']), 'tags': {'$exists': False}},
                 {'$set': {'tags': sp['tags']}},
             )
+    # Brand consistency: every essay is authored by Anish Pujari.
+    # Self-heals any legacy author values (runs on preview and production alike).
+    res = await db.posts.update_many(
+        {'author.name': {'$ne': AUTHOR['name']}}, {'$set': {'author': AUTHOR}})
+    if res.modified_count:
+        logger.info(f"Normalized author to '{AUTHOR['name']}' on {res.modified_count} posts")
 
 
 @app.on_event('startup')
@@ -88,6 +95,7 @@ async def startup():
     await probe_razorpay_subscriptions()
     asyncio.create_task(digest_autosend_loop())
     asyncio.create_task(briefing_reminder_loop())
+    asyncio.create_task(warm_all_narrations())
 
 
 app.include_router(auth.router)

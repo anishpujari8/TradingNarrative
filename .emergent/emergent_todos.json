@@ -1,30 +1,26 @@
 [
   {
-    "content": "ElevenLabs playbook + key setup + SDK install",
+    "content": "Author normalization: startup migration in seed_database (fixes preview now, prod on redeploy)",
     "status": "completed"
   },
   {
-    "content": "TTS service: chunked synthesis + Mongo cache + paywall scopes",
+    "content": "Spinning logo: slow 9s rotation on Navbar + Footer logos",
     "status": "completed"
   },
   {
-    "content": "Audio endpoint + voices endpoint",
+    "content": "Listen analytics backend: POST /api/posts/{slug}/audio/listen + admin stats with listens",
     "status": "completed"
   },
   {
-    "content": "AudioNarrator rewrite: blob playback, voice picker, seek, speeds",
+    "content": "Listen analytics frontend: AudioNarrator fires listen event; AdminPage shows Listens",
     "status": "completed"
   },
   {
-    "content": "Testing agent: 100% pass with credit conservation",
+    "content": "Pre-generate narrations: warmup on startup + on publish hook (quota-aware)",
     "status": "completed"
   },
   {
-    "content": "Edition #2 import (still waiting for pasted text)",
-    "status": "pending"
-  },
-  {
-    "content": "PayPal integration (still waiting for setup answers)",
-    "status": "pending"
+    "content": "Test backend (testing agent) + frontend screenshot of spinning logo",
+    "status": "in_progress"
   }
 ]

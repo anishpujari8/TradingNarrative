@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, Legend, ResponsiveContainer } from "recharts";
-import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning } from "lucide-react";
+import { Eye, Users, Crown, Mail, PenSquare, Trash2, Send, Plus, Newspaper, Globe, TrendingUp, Download, FileText, CalendarClock, Filter, MailCheck, MailWarning, Headphones } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { SyncToProductionDialog } from "@/components/SyncToProductionDialog";
@@ -264,14 +264,15 @@ export default function AdminPage() {
 
         {/* OVERVIEW */}
         <TabsContent value="overview">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <StatCard icon={Eye} label="Pageviews" value={stats?.pageviews} testId="admin-stat-pageviews" />
+            <StatCard icon={Headphones} label="Listens" value={stats?.listens} testId="admin-stat-listens" />
             <StatCard icon={Mail} label="Newsletter subs" value={stats?.newsletter_subscribers} testId="admin-stat-subscribers" />
             <StatCard icon={Users} label="Accounts" value={stats?.users} testId="admin-stat-users" />
             <StatCard icon={Crown} label="Premium members" value={stats?.premium_subscribers} testId="admin-stat-premium" />
           </div>
           <Card className="rounded-xl">
-            <CardHeader><CardTitle className="font-serif text-xl">Top posts by views</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-serif text-xl">Top posts — views & listens</CardTitle></CardHeader>
             <CardContent className="h-72" data-testid="admin-analytics-top-posts-chart">
               {stats?.top_posts?.length ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -279,7 +280,9 @@ export default function AdminPage() {
                     <XAxis type="number" hide />
                     <YAxis type="category" dataKey="title" width={220} tick={{ fontSize: 11 }} />
                     <ReTooltip cursor={{ fill: "hsla(168,52%,34%,0.06)" }} />
-                    <Bar dataKey="views" fill="hsl(168 52% 34%)" radius={[0, 6, 6, 0]} barSize={18} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="views" name="Views" fill="hsl(168 52% 34%)" radius={[0, 6, 6, 0]} barSize={14} />
+                    <Bar dataKey="listens" name="Listens" fill="hsl(38 45% 52%)" radius={[0, 6, 6, 0]} barSize={14} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -287,8 +290,9 @@ export default function AdminPage() {
               )}
             </CardContent>
           </Card>
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             <StatCard icon={Eye} label="Pageviews (7d)" value={stats?.pageviews_7d} testId="admin-stat-pageviews-7d" />
+            <StatCard icon={Headphones} label="Listens (7d)" value={stats?.listens_7d} testId="admin-stat-listens-7d" />
             <StatCard icon={Crown} label="Checkouts completed" value={stats?.checkouts} testId="admin-stat-checkouts" />
           </div>
         </TabsContent>

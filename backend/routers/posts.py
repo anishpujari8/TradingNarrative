@@ -341,6 +341,22 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
     })
 
 
+@router.post('/posts/{slug}/audio/listen')
+async def track_audio_listen(slug: str, user=Depends(get_optional_user)):
+    """Count a narration play: bump the post's listens counter + log an analytics event."""
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    await db.posts.update_one({'slug': slug}, {'$inc': {'listens': 1}})
+    await db.analytics.insert_one({
+        'id': str(uuid.uuid4()), 'event': 'narration_listen', 'path': f'/post/{slug}',
+        'meta': {'slug': slug, 'title': post['title']},
+        'user_id': user['id'] if user else None,
+        'created_at': iso(now_utc()),
+    })
+    return {'ok': True}
+
+
 @router.get('/audio/voices')
 async def audio_voices():
     return {'enabled': TTS_ENABLED,

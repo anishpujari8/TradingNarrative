@@ -1,0 +1,52 @@
+{
+  "summary": "Completed comprehensive testing of listen analytics feature (author normalization, listen tracking, admin stats, spinning logo, TTS cache). All backend and frontend tests passed after fixing minor bug in post_summary().",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [],
+    "fixed_bugs": [
+      {
+        "file": "/app/backend/utils.py",
+        "issue": "post_summary() function was missing 'listens' field, causing GET /api/posts/{slug} to not return listens count",
+        "fix": "Added 'listens': p.get('listens', 0) to post_summary() return dict",
+        "fix_priority": "MEDIUM"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "BACKEND: Admin authentication (POST /api/auth/login)",
+    "BACKEND: Author normalization - all 13 posts have author.name = 'Anish Pujari'",
+    "BACKEND: POST /api/posts/{valid-slug}/audio/listen returns {ok:true} and increments listens counter",
+    "BACKEND: POST /api/posts/nonexistent-slug/audio/listen returns 404",
+    "BACKEND: GET /api/admin/analytics/stats returns 'listens' (int) and 'listens_7d' (int)",
+    "BACKEND: GET /api/admin/analytics/stats top_posts entries all include 'listens' field",
+    "BACKEND: GET /api/posts/170-kilometres-one-green-enfield-and-a-lesson-in-strategic-momentum/audio?voice=male returns 200 with X-Audio-Cache: hit",
+    "BACKEND: Regression tests - GET /api/posts, /api/categories, /api/admin/posts, /api/posts/{slug}",
+    "FRONTEND: Homepage navbar logo has CSS animation 'spin' with 9s duration",
+    "FRONTEND: Admin Overview tab shows stat card 'Listens' with value 3",
+    "FRONTEND: Admin Overview tab shows stat card 'Listens (7d)' with value 3",
+    "FRONTEND: Admin Overview tab shows chart titled 'Top posts — views & listens'",
+    "FRONTEND: Article page audio play button fires exactly ONE POST to /api/posts/.../audio/listen when clicked",
+    "FRONTEND: Cached audio plays instantly (0:01 / 4:18 shown immediately)"
+  ],
+  "test_report_links": [
+    "/app/backend/test_listen_analytics.py",
+    "/.screenshots/admin-overview-listens.png",
+    "/.screenshots/audio-player-test.png"
+  ],
+  "success_percentage": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (3/3 tests passed)"
+  },
+  "updated_files": [
+    "/app/backend/utils.py",
+    "/app/backend/test_listen_analytics.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

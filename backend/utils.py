@@ -47,6 +47,7 @@ def post_summary(p):
         'tags': p.get('tags', []),
         'author': p.get('author', AUTHOR), 'published_at': p.get('published_at'),
         'status': p.get('status', 'published'), 'views': p.get('views', 0),
+        'listens': p.get('listens', 0),
         'edition': p.get('edition'),
     }
 

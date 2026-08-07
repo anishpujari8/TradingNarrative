@@ -1,4 +1,5 @@
 """Admin routes: post CRUD, subscribers, issues, stats, email status/test/logs."""
+import asyncio
 import uuid
 from datetime import timedelta
 
@@ -84,6 +85,10 @@ async def admin_update_post(post_id: str, body: PostIn, admin=Depends(get_admin_
         updates['published_at'] = iso(now_utc())
     await db.posts.update_one({'id': post_id}, {'$set': updates})
     updated = await db.posts.find_one({'id': post_id})
+    if updated.get('status') == 'published':
+        # content changed (post_version bumps) — regenerate narration ahead of the next listener
+        from services.tts_service import warm_post_audio
+        asyncio.create_task(warm_post_audio(dict(updated)))
     return clean(updated)
 
 
@@ -141,12 +146,19 @@ async def admin_stats(admin=Depends(get_admin_user)):
     top_posts = await db.posts.find(published_query()).sort('views', -1).limit(5).to_list(5)
     week_ago = iso(now_utc() - timedelta(days=7))
     pageviews_7d = await db.analytics.count_documents({'event': 'pageview', 'created_at': {'$gte': week_ago}})
+    listens_agg = await db.posts.aggregate([
+        {'$group': {'_id': None, 'total': {'$sum': {'$ifNull': ['$listens', 0]}}}},
+    ]).to_list(1)
+    listens = listens_agg[0]['total'] if listens_agg else 0
+    listens_7d = await db.analytics.count_documents({'event': 'narration_listen', 'created_at': {'$gte': week_ago}})
     return {
         'pageviews': pageviews, 'pageviews_7d': pageviews_7d,
+        'listens': listens, 'listens_7d': listens_7d,
         'newsletter_subscribers': nl_subs, 'users': users,
         'premium_subscribers': premium, 'checkouts': checkouts,
         'subscribe_cta_clicks': cta_clicks,
-        'top_posts': [{'title': p['title'], 'slug': p['slug'], 'views': p.get('views', 0)} for p in top_posts],
+        'top_posts': [{'title': p['title'], 'slug': p['slug'], 'views': p.get('views', 0),
+                       'listens': p.get('listens', 0)} for p in top_posts],
     }
 
 

@@ -3,9 +3,9 @@ import asyncio
 
 from bson import Binary
 
-from config import ELEVENLABS_API_KEY, TTS_MODEL, TTS_OUTPUT_FORMAT, TTS_VOICES, logger
+from config import ELEVENLABS_API_KEY, PREVIEW_BLOCKS, TTS_ENABLED, TTS_MODEL, TTS_OUTPUT_FORMAT, TTS_VOICES, logger
 from db import db
-from utils import now_utc, iso
+from utils import now_utc, iso, published_query
 
 MAX_CHUNK_CHARS = 4000  # stay well under per-request limits
 
@@ -67,3 +67,58 @@ async def get_or_generate_audio(post, voice: str, blocks, scope: str):
         'bytes': len(audio), 'chars': total_chars, 'created_at': iso(now_utc()),
     }}, upsert=True)
     return audio, False
+
+
+# ---------------------- pre-generation (warm cache so playback is instant) ----------------------
+
+DEFAULT_WARM_VOICE = 'male'  # the player's default voice — the one every first-time listener hears
+
+
+async def warm_post_audio(post, voice: str = DEFAULT_WARM_VOICE):
+    """Pre-generate the default narration for one published post.
+    Premium essays get both scopes: 'full' (entitled readers) and 'preview' (anonymous).
+    Returns 'generated', 'cached', 'quota' (out of ElevenLabs credits) or 'failed'."""
+    if not TTS_ENABLED:
+        return 'failed'
+    blocks = post.get('content_blocks', [])
+    if not blocks:
+        return 'failed'
+    scopes = [('full', blocks)]
+    if post.get('tier') == 'premium':
+        scopes.append(('preview', blocks[:PREVIEW_BLOCKS]))
+    result = 'cached'
+    for scope, blks in scopes:
+        try:
+            _, from_cache = await get_or_generate_audio(post, voice, blks, scope)
+            if not from_cache:
+                result = 'generated'
+                logger.info(f"TTS warmup: generated {post['slug']} ({scope})")
+                await asyncio.sleep(2)  # be gentle with the ElevenLabs API between generations
+        except Exception as e:
+            if 'quota_exceeded' in str(e):
+                logger.warning(f"TTS warmup: ElevenLabs quota exhausted at {post['slug']} ({scope})")
+                return 'quota'
+            logger.warning(f"TTS warmup failed for {post['slug']} ({scope}): {e}")
+            result = 'failed'
+    return result
+
+
+async def warm_all_narrations():
+    """Startup task: pre-generate the default narration for every published essay
+    so readers never wait on first play. Cached entries are skipped (no extra credits)."""
+    if not TTS_ENABLED:
+        return
+    await asyncio.sleep(15)  # let the app finish booting before doing heavy work
+    posts = await db.posts.find(published_query()).sort('published_at', -1).to_list(500)
+    logger.info(f'TTS warmup: checking narrations for {len(posts)} published essays')
+    counts = {'generated': 0, 'cached': 0, 'failed': 0}
+    for post in posts:
+        result = await warm_post_audio(post)
+        if result == 'quota':
+            logger.warning(f"TTS warmup stopped: ElevenLabs credits exhausted "
+                           f"({counts['generated']} generated, {counts['cached']} already cached). "
+                           f"Top up credits and restart to warm the remaining essays.")
+            return
+        counts[result] += 1
+    logger.info(f"TTS warmup complete: {counts['generated']} generated, "
+                f"{counts['cached']} already cached, {counts['failed']} failed")

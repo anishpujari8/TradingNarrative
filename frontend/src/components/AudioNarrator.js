@@ -24,11 +24,13 @@ export const AudioNarrator = ({ slug }) => {
   const [progress, setProgress] = useState({ t: 0, d: 0 });
   const audioRef = useRef(null);
   const urlsRef = useRef({}); // voice -> objectURL (per-essay cache in the browser)
+  const listenedRef = useRef(false); // one listen counted per essay visit
 
   // reset when navigating between essays
   useEffect(() => {
     setStatus("idle");
     setProgress({ t: 0, d: 0 });
+    listenedRef.current = false;
     const urls = urlsRef.current;
     return () => {
       audioRef.current?.pause();
@@ -56,11 +58,18 @@ export const AudioNarrator = ({ slug }) => {
     return url;
   };
 
+  const trackListen = () => {
+    if (listenedRef.current) return;
+    listenedRef.current = true;
+    api.post(`/posts/${encodeURIComponent(slug)}/audio/listen`).catch(() => {});
+  };
+
   const play = async (v = voice) => {
     try {
       if (audioRef.current && urlsRef.current[v] && audioRef.current.src === urlsRef.current[v]) {
         audioRef.current.play();
         setStatus("playing");
+        trackListen();
         return;
       }
       setStatus("loading");
@@ -70,6 +79,7 @@ export const AudioNarrator = ({ slug }) => {
       attach(audio);
       await audio.play();
       setStatus("playing");
+      trackListen();
     } catch (err) {
       setStatus("idle");
       const detail = err?.response?.status === 502

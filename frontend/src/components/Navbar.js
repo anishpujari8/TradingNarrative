@@ -39,7 +39,7 @@ export const Navbar = () => {
             </SheetTrigger>
             <SheetContent side="left" className="w-72">
               <div className="flex items-center gap-2 mt-2 mb-6">
-                <img src="/logo192.png" alt="The Trading Narrative logo" className="w-8 h-8" />
+                <img src="/logo192.png" alt="The Trading Narrative logo" className="w-8 h-8 animate-[spin_9s_linear_infinite] motion-reduce:animate-none" />
                 <span className="font-serif text-xl font-semibold">The Trading Narrative</span>
               </div>
               <nav className="flex flex-col gap-4">
@@ -65,7 +65,7 @@ export const Navbar = () => {
           </Sheet>
 
           <Link to="/" className="flex items-center gap-2.5" data-testid="nav-logo">
-            <img src="/logo192.png" alt="The Trading Narrative logo" className="w-9 h-9 sm:w-10 sm:h-10 shrink-0" />
+            <img src="/logo192.png" alt="The Trading Narrative logo" className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 animate-[spin_9s_linear_infinite] motion-reduce:animate-none" />
             <span className="font-serif text-lg sm:text-xl font-semibold tracking-tight">
               The Trading Narrative
             </span>

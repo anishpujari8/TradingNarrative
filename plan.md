@@ -30,7 +30,10 @@
     - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
   - Weekly digest preview + send ✅
   - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
-  - **Essay Audio Narration** ✅ *(high-quality ElevenLabs TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
+  - **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
+  - **NEW (in progress)**
+    - **Listen analytics for narration** ⏳ *(count plays; show “Listens” in Admin analytics next to page views)*
+    - **Pre-generated narrations** ⏳ *(synthesize ahead of time on startup + on publish so playback is instant; user approved upfront credit usage)*
 - Deliver admin + growth tooling ✅:
   - Traffic sources attribution + trends
   - Subscriber growth
@@ -39,6 +42,8 @@
   - Post conversion stats (“Essays that convert”)
   - CSV export
   - **Content Sync Tool (Preview → Production)** ✅ *(one-click admin sync for missing published posts)*
+  - **NEW (in progress)**
+    - **Sync carries normalized author identity** ⏳ *(ensure production receives “Anish Pujari” as author when syncing)*
 - Deliver premium community ✅:
   - Private Community Lounge
   - Pins/locks/scheduled announcements/editing
@@ -57,6 +62,9 @@
   - Weekly briefing tooling: template + edition numbering + `/briefings` archive
   - Import existing writing (LinkedIn newsletter editions + LinkedIn articles)
   - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
+  - **NEW (in progress)**
+    - **Normalize all post authors to “Anish Pujari”** ⏳ *(preview DB now; then user uses Sync tool to push content to production)*
+    - **Spinning logo** ⏳ *(slow, elegant rotation: ~8–10s per turn)*
 - Improve editorial discovery ✅:
   - **Related essays by tags** (shared tags prioritized over category-only)
   - **Author/Editorial Series** ✅ (config-driven collections like “Trading Operations”)
@@ -330,7 +338,6 @@
 
 #### C) Baseline Essay Audio ✅
 - Implemented browser speechSynthesis narrator as the initial version.
-
 - Testing:
   - Iteration_16: **100% backend**, **100% frontend**
 
@@ -380,18 +387,79 @@
 - Testing:
   - Iteration_17: **100% backend (7/7)**, **100% frontend** with strict credit-conservation.
 
+### Phase 25 — Author Normalization + Spinning Logo + Listen Analytics + Pre-Generated Narrations ⏳ IN PROGRESS
+> Goal: brand consistency (“Anish Pujari” everywhere), premium polish (logo), and audio ops maturity (analytics + instant playback).
+
+#### A) Normalize all post authors to “Anish Pujari” (Preview DB → Sync to Production) ⏳
+- **Preview DB migration**:
+  - Update all documents in `posts` to set `author = "Anish Pujari"`.
+  - Verify no remaining legacy values (e.g., `Jordan Hale`).
+- **Durability**:
+  - Ensure `seed_data.py` (`REAL_POSTS`) author fields are correct so self-heal doesn’t reintroduce older authors.
+- **Production workflow**:
+  - Use existing **Sync to production** tool to push updated published posts to production.
+  - Confirm sync logic preserves author value as-is (no rewriting to old values).
+- Testing:
+  - Backend check: query posts collection and assert all authors normalized.
+
+#### B) Spinning logo — slow, elegant rotation (8–10s per turn) ⏳
+- Update navbar logo `<img src="/logo192.png" ... />`:
+  - Add Tailwind animation class (e.g., custom `animate-[spin_10s_linear_infinite]`) or a small custom CSS keyframe.
+  - Ensure animation is subtle (no jitter), and respects reduced-motion preference if implemented.
+- Testing:
+  - Frontend visual verification (screenshot / manual check).
+
+#### C) Listen Analytics (narration plays) + Admin display ⏳
+- Backend:
+  - Extend `posts` schema to include a counter (e.g., `listens: int = 0`).
+  - Add endpoint to increment listens on first play event per session (to avoid rapid double-counting on pause/resume):
+    - Proposed: `POST /api/posts/{slug}/audio/listen` (auth optional).
+  - Update analytics aggregation to return listens per post alongside views.
+- Frontend:
+  - `AudioNarrator.js` calls the listen increment endpoint once when playback begins for a given slug+voice+scope.
+  - `AdminPage.js` shows **Listens** next to **Views** (and in any “Top posts” table or chart where applicable).
+- Testing:
+  - Backend tests: increment endpoint works, persists, and doesn’t break existing analytics routes.
+  - Frontend tests: a play triggers one listen increment; admin analytics reflects the change.
+
+#### D) Pre-generate ElevenLabs narrations (startup + on publish) ⏳
+- Goal: eliminate “first play takes a moment” for published posts by warming the cache.
+- Backend:
+  - Add a background warmup loop (on server startup) that:
+    - Iterates all **published** posts.
+    - Generates audio into cache for default voice(s) and appropriate scope(s) (at minimum: `male + full` for free/premium-entitled; ensure preview scope exists for premium for anonymous users).
+    - Skips generation if cache exists and post_version matches.
+  - Add a hook on publish (or admin publish action) to generate audio for the newly published post.
+  - Add safeguards:
+    - Rate limiting / sequential processing to avoid hammering ElevenLabs.
+    - Timeouts + logging without exposing the API key.
+    - Optional admin endpoint to trigger warmup manually (nice-to-have).
+- Credit note:
+  - User approved upfront credit usage to synthesize all published essays.
+- Testing:
+  - Verify cache entries exist after startup warmup.
+  - Confirm audio playback is immediate (cache hit) for warmed posts.
+
 ---
 
 ## 3) Next Actions
 
 ### A) Immediate
-1. **More Editions**: Import LinkedIn newsletter editions as numbered briefings
+1) **Phase 25 implementation (this iteration)**
+   - Normalize post authors in preview DB + ensure seed durability
+   - Add slow spinning logo
+   - Implement listen analytics + show in admin
+   - Implement TTS warmup/pre-generation (startup + on publish)
+
+2) **More Editions**: Import LinkedIn newsletter editions as numbered briefings
    - ⛔ Blocked until you paste Edition #2 text.
    - After import: append to `REAL_POSTS` for durability.
-2. **Delivery & Systems**: Import a real delivery-focused essay
+
+3) **Delivery & Systems**: Import a real delivery-focused essay
    - ⛔ Blocked until you paste the article text.
    - After import: append to `REAL_POSTS` for durability.
-3. **PayPal**: Proceed after you answer:
+
+4) **PayPal**: Proceed after you answer:
    - subscriptions vs one-time
    - sandbox/live credentials
    - pricing-page placement
@@ -402,7 +470,7 @@
   - **Preview** (dev): changes are implemented + tested here.
   - **Production** (`https://thetradingnarrative.com`): code changes require **redeploy** to go live.
 - Content migrations/imports can be pushed via the **Sync to production** tool.
-- **Phase 24 deployment requirement**:
+- **Phase 24+ deployment requirement**:
   - Production must have `ELEVENLABS_API_KEY` set in its deployment environment variables.
   - Without it, `/api/posts/{slug}/audio` returns **503** on production.
 
@@ -439,6 +507,12 @@
 ✅ Essay audio:
 - Each article includes a high-quality narration bar powered by ElevenLabs
 - Paywall-aware audio scoping for premium posts (preview vs full)
+
+⏳ Phase 25 success criteria (new)
+- All posts in preview DB have `author = "Anish Pujari"`, and production receives the same after sync.
+- Navbar logo rotates smoothly (~8–10 seconds per turn) without UI glitches.
+- Each narration play increments a **listens** metric and Admin analytics shows **Listens** next to **Views**.
+- TTS audio for all published posts is pre-generated (warmed cache) so playback is instant (cache hits) for common paths.
 
 ⛔ PayPal integration: blocked until credentials + mode decisions.
 ⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.
