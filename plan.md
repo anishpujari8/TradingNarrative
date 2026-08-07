@@ -14,7 +14,7 @@
     - Fallback to one-time Razorpay Orders when Subscriptions is not enabled
     - Live re-probe so Autopay switches on without restart
   - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
-    - Target: **Recurring subscription** *(user intent indicated but must confirm definitively + provide credentials)*
+    - Target: **Recurring subscription** *(user intent indicated; must confirm definitively + provide credentials)*
 
 ### Reader experience & engagement
 - Bookmarks/reading list ✅
@@ -54,14 +54,17 @@
   - Admin sync endpoint to push preview cache to production
   - Frontend button + dialog in Admin → Narrations
 - **Narration hardening (cache corruption protection)** ✅
-  - Import endpoint rejects non-MP3/tiny payloads
+  - Import endpoint rejects non-MP3 / tiny payloads and refuses suspicious overwrites
   - Serving path auto-purges corrupt cache entries
   - Sync sender skips corrupt/tiny cache entries
+- **Narration health alert** ✅ *(warns in Admin when any essay’s audio is missing or corrupt)*
+  - Red alert banner on Admin overview + red dot on Narrations tab
+  - Distinguishes `missing` vs `corrupt` in Narrations table
 
 **ElevenLabs operational caveats**
 - Credits may be exhausted; uncached essays will be unavailable until credits are topped up.
 - Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
-- Production narration can be restored without credits by syncing existing preview cache to production.
+- Production narration can be restored **without new credits** by syncing existing preview cache to production.
 - Current ElevenLabs status: **0 credits remaining** (probe confirmed `quota_exceeded`).
 
 **Current audio cache state (preview)**
@@ -323,21 +326,38 @@
 - The original ~2MB narration blob is **unrecoverable until ElevenLabs credits are topped up**.
 
 **Fixes delivered (permanent)**
-1) **Purged the corrupt cache entry**.
+1) Purged the corrupt cache entry.
    - `170-kilometres-...` now returns an honest **503** with a clear “credits refilling” message.
-2) **Hardened the import endpoint** (`/api/admin/audio-cache/import`):
-   - Validates that payload is a real MP3 narration (≥50KB and `ID3`/MPEG-frame magic bytes) → else **400**
-   - Refuses to overwrite an existing narration with a payload **4× smaller** → **409**
-3) **Hardened serving path** (`tts_service.get_or_generate_audio`):
+2) Hardened the import endpoint (`/api/admin/audio-cache/import`):
+   - Validates payload is a real MP3 narration (≥50KB and `ID3`/MPEG-frame magic bytes) → **400**
+   - Refuses overwriting a much larger existing narration with a tiny payload → **409**
+3) Hardened serving path (`tts_service.get_or_generate_audio`):
    - Auto-purges corrupt cache entries (<50KB or invalid MP3 magic) instead of serving them.
-4) **Hardened narration sync sender** (`/api/admin/sync/narrations`):
-   - Skips pushing any local cache entries <50KB.
+4) Hardened narration sync sender (`/api/admin/sync/narrations`):
+   - Skips pushing cache entries <50KB.
 
 **Testing**
-- Iteration_23: 100% pass (12/12).
+- Iteration_23: 100% pass.
 
-**Important safety note (for future testing)**
-- **Never** allow any automated test run to write to `audio_cache` or POST to `/api/admin/audio-cache/import` using real slugs.
+**Safety note (future testing)**
+- Never allow automated test runs to write to `audio_cache` or call audio import endpoints with real slugs.
+
+### Phase 33 — Narration Health Alert ✅ COMPLETED
+**Purpose:** warn in Admin when any published essay has missing or corrupt narration.
+
+**Backend**
+- `GET /api/admin/narrations` now returns:
+  - Per-essay `health`: `ok | missing | corrupt` *(corrupt = cache entry exists but <50KB)*
+  - `issues`: `[{slug, title, problem}]` for non-OK essays
+
+**Frontend**
+- Admin Studio uses controlled tabs (`activeTab` state)
+- **Red alert banner** above tabs (hidden while on Narrations tab) listing affected essay titles + **“Review in Narrations”** jump button
+- Red alert dot on the Narrations tab trigger
+- Narrations table shows `Corrupt` (destructive badge) vs `Missing` (outline)
+
+**Testing**
+- Iteration_24: 100% pass; verified audio cache untouched.
 
 ---
 
@@ -345,9 +365,9 @@
 
 ### A) Immediate
 1) **Restore narration on production without credits (shipping + freight)** ✅ (user action)
-   - Production already has the import endpoint (returns 401), but cache is empty.
+   - Production has the import endpoint but cache is empty.
    - Go to **Admin → Narrations → Send narrations to live site** and enter the **production admin password**.
-   - Result: the cached narrations for:
+   - Result: cached narrations for:
      - Shipping essay
      - Freight essay
      will play immediately on production without spending credits.
@@ -357,7 +377,7 @@
    - Then use **Admin → Narrations → Generate missing narrations** to synthesize:
      - `170-kilometres-...`
      - `five-things-commodity-desks-...`
-   - Then re-run **Send narrations to live site** to push those newly cached narrations to production.
+   - Then re-run **Send narrations to live site** to push newly cached narrations to production.
 
 3) **Delivery & Systems essay import** ⛔
    - Paste your delivery-focused essay text (title + body).
@@ -373,7 +393,7 @@
 
 ### B) Production note (workflow)
 - **Preview**: changes implemented and tested here.
-- **Production** (`https://thetradingnarrative.com`): requires **redeploy** for code changes.
+- **Production** (`https://thetradingnarrative.com`): requires redeploy for code changes.
 
 ---
 
@@ -394,14 +414,16 @@
 - Import rejects invalid/tiny audio
 - Serving path purges corrupt cache
 - Sync skips corrupt cache
+✅ Narration health visibility:
+- Admin receives a clear warning whenever any essay is missing/corrupt
 ✅ AI features:
 - Admin AI writing assistant works (draft/polish/expand; streaming)
 - “Ask this essay” is grounded + paywall-aware; streaming
 
 ⚠️ Operational caveats
 - ElevenLabs: uncached narrations may be unavailable if credits are exhausted.
-- Gemini: usage consumes Emergent LLM key credits.
-- Deployments can be rate-limited by Cloud Build quotas; retry after cooldown.
+- Gemini: usage consumes the Emergent LLM key credits.
+- Deployments can be rate-limited; retry after cooldown.
 
 ⛔ Blockers
 - Delivery essay import: awaiting text.
