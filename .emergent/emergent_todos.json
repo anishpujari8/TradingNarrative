@@ -1,23 +1,23 @@
 [
   {
     "content": "Migrate Edition #1 + freight article to production via admin API",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Patch seed code: sample essays seed as drafts on fresh deploys",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Share From Article: quote card from selection popover",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Popular Highlights: aggregate endpoint + Kindle-style markers",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Testing agent verification (bug fix + new features) - MANDATORY",
-    "status": "pending"
+    "content": "Testing agent verification: 100% pass (14/14 backend, all frontend)",
+    "status": "completed"
   },
   {
     "content": "Edition #2 + Delivery essay imports (still waiting for pasted text)",

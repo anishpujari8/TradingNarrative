@@ -26,6 +26,8 @@
     - Highlights library page
     - **Highlight Notes** ✅ (attach/edit/clear a personal note)
     - **Highlight Sharing** ✅ (download/share/copy a branded quote card)
+    - **Share From Article** ✅ (share quote card directly from selection popover)
+    - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
   - Weekly digest preview + send ✅
 - Deliver admin + growth tooling ✅:
   - Traffic sources attribution + trends
@@ -154,7 +156,7 @@
   - `GET /api/highlights` (optional `?slug=`)
   - `DELETE /api/highlights/{id}`
 - Frontend:
-  - Floating “Highlight” pill on text selection
+  - Floating selection UX
   - Inline `<mark class="reader-highlight">` rendering
   - `/highlights` library page + navbar link
 
@@ -208,6 +210,39 @@
 - Testing:
   - Sandbox end-to-end flow
 
+### Phase 20 — Production Content Bug Fix + Share From Article + Popular Highlights ✅ COMPLETED
+#### A) Production content bug fix (Edition #1 missing; “random” demo articles) ✅
+- User-reported bug: “where is my edition 1” and production showed only demo posts.
+- Root cause: **production uses a separate fresh DB**, auto-seeded demo/sample essays; real content existed only in preview.
+- Fix:
+  1) Migrated **Edition #1 briefing** + **Freight Management** post to production via production admin API.
+  2) Per user choice: demo/sample essays were **kept** on production for now.
+  3) Patched `seed_database` in `server.py` so fresh DBs seed `SAMPLE_POSTS` as **draft** (`status='draft'`, `views=0`) so future deployments start with a clean public site.
+  4) Removed unused `random` import after views were set to 0.
+- Verification:
+  - Verified live (read-only) on production endpoints:
+    - `https://thetradingnarrative.com/api/briefings` includes Edition #1.
+    - `https://thetradingnarrative.com/api/posts` includes both migrated posts.
+
+#### B) Share From Article ✅
+- Article selection popover is now a **two-button pill**: **Highlight | Share**
+  - Test IDs: `selection-popover`, `selection-share-button`
+- “Share” opens `QuoteCardDialog` directly with the selected text.
+- Works for **anonymous** visitors (no need to save a highlight).
+
+#### C) Popular Highlights ✅
+- Backend:
+  - Public endpoint: `GET /api/posts/{slug}/popular-highlights`
+  - Aggregates by `(block_index, text)` counting **distinct users**
+  - Threshold: `count >= 2`, returns **top 5**
+- Frontend:
+  - Article page fetches popular highlights and renders **Kindle-style** markers:
+    - `mark.popular-highlight`: dotted accent underline + superscript count + tooltip
+  - Personal highlights visually take precedence over popular markers in the merged renderer.
+- Testing:
+  - Iteration_14: **100% backend (14/14)**, **100% frontend**
+  - Production checked read-only; preview regression clean; all test data cleaned
+
 ---
 
 ## 3) Next Actions
@@ -224,7 +259,10 @@
 
 ### B) Production note (workflow)
 - The app is deployed to production at a custom domain.
-- Changes are implemented and tested in preview; you will need to redeploy for production to pick them up.
+- **Two environments exist**:
+  - **Preview** (dev): changes are implemented + tested here.
+  - **Production** (`https://thetradingnarrative.com`): code changes require **redeploy** to go live.
+- Content migration of Edition #1 + Freight post was applied directly on production via API and is already live.
 
 ---
 
@@ -244,6 +282,13 @@
 - Inline mark rendering
 - Highlights page
 - Notes + quote-card sharing
+- Share-from-article
+- Popular highlights
+
+✅ Production content issue resolved:
+- Edition #1 visible on production `/briefings`
+- Freight article visible on production posts
+- Seed logic patched to avoid auto-publishing demo essays on fresh DBs
 
 ⛔ PayPal integration: blocked until credentials + mode decisions.
 ⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.
