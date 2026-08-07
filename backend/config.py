@@ -49,6 +49,17 @@ EMAIL_ENABLED = bool(GMAIL_SMTP_USER and GMAIL_SMTP_PASSWORD)
 
 MARKETING_KINDS = {'digest', 'issue', 'welcome'}
 
+# ElevenLabs narration (Essay Audio)
+ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', '')
+TTS_ENABLED = bool(ELEVENLABS_API_KEY)
+TTS_MODEL = 'eleven_turbo_v2_5'  # half the credit cost of multilingual_v2, near-identical narration quality
+TTS_OUTPUT_FORMAT = 'mp3_44100_64'  # spoken word: good quality, ~0.5 MB/min
+TTS_VOICES = {
+    'male': {'id': 'JBFqnCBsd6RMkjVDRZzb', 'label': 'George — warm male'},
+    'female': {'id': '21m00Tcm4TlvDq8ikWAM', 'label': 'Rachel — warm female'},
+    'documentary': {'id': 'onwK4e9ZLuTAKqWW03F9', 'label': 'Daniel — documentary'},
+}
+
 # Production deployment of this app (used by the admin Content Sync tool)
 PRODUCTION_SITE_URL = os.environ.get('PRODUCTION_SITE_URL', 'https://thetradingnarrative.com').rstrip('/')
 

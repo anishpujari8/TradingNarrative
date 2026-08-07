@@ -362,7 +362,7 @@ export default function ArticlePage() {
             </Link>
           )}
 
-          <AudioNarrator title={post.title} blocks={visibleBlocks} />
+          <AudioNarrator slug={slug} />
 
           <div className="article-body" data-testid="article-body" onMouseUp={handleSelection} onTouchEnd={handleSelection}>
             {visibleBlocks.map((block, i) =>

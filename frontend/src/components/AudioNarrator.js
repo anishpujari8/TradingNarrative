@@ -1,78 +1,138 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, RotateCcw, Headphones } from "lucide-react";
+import { Play, Pause, RotateCcw, Headphones, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
 
-const cleanBlock = (b) => (b.startsWith("## ") ? b.slice(3) : b);
+const VOICES = [
+  { key: "male", label: "George — warm male" },
+  { key: "female", label: "Rachel — warm female" },
+  { key: "documentary", label: "Daniel — documentary" },
+];
 
-export const AudioNarrator = ({ title, blocks }) => {
-  const [supported] = useState(() => typeof window !== "undefined" && "speechSynthesis" in window);
-  const [status, setStatus] = useState("idle"); // idle | playing | paused | done
-  const [index, setIndex] = useState(0);
+const fmt = (s) => {
+  if (!isFinite(s)) return "0:00";
+  const m = Math.floor(s / 60);
+  return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+};
+
+export const AudioNarrator = ({ slug }) => {
+  const [status, setStatus] = useState("idle"); // idle | loading | playing | paused | done
+  const [voice, setVoice] = useState("male");
   const [rate, setRate] = useState("1");
-  const stateRef = useRef({ index: 0, rate: 1, stopped: true });
+  const [progress, setProgress] = useState({ t: 0, d: 0 });
+  const audioRef = useRef(null);
+  const urlsRef = useRef({}); // voice -> objectURL (per-essay cache in the browser)
 
-  const texts = [title, ...blocks.map(cleanBlock)].filter(Boolean);
+  // reset when navigating between essays
+  useEffect(() => {
+    setStatus("idle");
+    setProgress({ t: 0, d: 0 });
+    const urls = urlsRef.current;
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      Object.values(urls).forEach((u) => URL.revokeObjectURL(u));
+      urlsRef.current = {};
+    };
+  }, [slug]);
 
-  const speakFrom = (i) => {
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    stateRef.current.stopped = false;
-    const speakNext = (j) => {
-      if (stateRef.current.stopped) return;
-      if (j >= texts.length) {
-        setStatus("done");
-        setIndex(0);
-        stateRef.current.index = 0;
+  const attach = (audio) => {
+    audio.playbackRate = parseFloat(rate);
+    audio.ontimeupdate = () => setProgress({ t: audio.currentTime, d: audio.duration || 0 });
+    audio.onended = () => setStatus("done");
+    audioRef.current = audio;
+  };
+
+  const ensureAudio = async (v) => {
+    if (urlsRef.current[v]) return urlsRef.current[v];
+    const res = await api.get(`/posts/${encodeURIComponent(slug)}/audio?voice=${v}`, {
+      responseType: "blob",
+      timeout: 180000, // first play synthesizes the narration
+    });
+    const url = URL.createObjectURL(res.data);
+    urlsRef.current[v] = url;
+    return url;
+  };
+
+  const play = async (v = voice) => {
+    try {
+      if (audioRef.current && urlsRef.current[v] && audioRef.current.src === urlsRef.current[v]) {
+        audioRef.current.play();
+        setStatus("playing");
         return;
       }
-      stateRef.current.index = j;
-      setIndex(j);
-      const u = new SpeechSynthesisUtterance(texts[j]);
-      u.rate = stateRef.current.rate;
-      u.lang = "en-US";
-      u.onend = () => speakNext(j + 1);
-      u.onerror = () => speakNext(j + 1);
-      synth.speak(u);
-    };
-    setStatus("playing");
-    speakNext(i);
+      setStatus("loading");
+      const url = await ensureAudio(v);
+      audioRef.current?.pause();
+      const audio = new Audio(url);
+      attach(audio);
+      await audio.play();
+      setStatus("playing");
+    } catch (err) {
+      setStatus("idle");
+      const detail = err?.response?.status === 502
+        ? "Narration is temporarily unavailable. Try again shortly."
+        : "Could not load the narration. Try again.";
+      toast.error(detail, { action: { label: "Retry", onClick: () => play(v) } });
+    }
   };
 
   const toggle = () => {
-    const synth = window.speechSynthesis;
     if (status === "playing") {
-      synth.pause();
+      audioRef.current?.pause();
       setStatus("paused");
     } else if (status === "paused") {
-      synth.resume();
+      audioRef.current?.play();
       setStatus("playing");
-    } else {
-      speakFrom(stateRef.current.index || 0);
+    } else if (status === "done") {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+        setStatus("playing");
+      } else {
+        play();
+      }
+    } else if (status !== "loading") {
+      play();
     }
   };
 
-  const restart = () => speakFrom(0);
+  const restart = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+      setStatus("playing");
+    }
+  };
+
+  const changeVoice = (v) => {
+    setVoice(v);
+    const wasActive = status === "playing" || status === "paused" || status === "loading";
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setProgress({ t: 0, d: 0 });
+    if (wasActive) {
+      play(v);
+    } else {
+      setStatus("idle");
+    }
+  };
 
   const changeRate = (v) => {
     setRate(v);
-    stateRef.current.rate = parseFloat(v);
-    if (status === "playing" || status === "paused") {
-      speakFrom(stateRef.current.index); // re-speak the current paragraph at the new speed
-    }
+    if (audioRef.current) audioRef.current.playbackRate = parseFloat(v);
   };
 
-  // stop narration when leaving the page
-  useEffect(() => {
-    return () => {
-      stateRef.current.stopped = true;
-      try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
-    };
-  }, []);
+  const seek = (e) => {
+    if (!audioRef.current || !progress.d) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    audioRef.current.currentTime = frac * progress.d;
+  };
 
-  if (!supported || !texts.length) return null;
-
-  const pct = status === "idle" ? 0 : Math.round((index / texts.length) * 100);
+  const pct = progress.d ? Math.round((progress.t / progress.d) * 100) : 0;
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 mb-8" data-testid="audio-narrator">
@@ -80,24 +140,34 @@ export const AudioNarrator = ({ title, blocks }) => {
         size="icon"
         className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shrink-0 h-10 w-10"
         onClick={toggle}
+        disabled={status === "loading"}
         aria-label={status === "playing" ? "Pause narration" : "Listen to this essay"}
         data-testid="audio-play-button"
       >
-        {status === "playing" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+        {status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> :
+          status === "playing" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
       </Button>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 text-sm font-medium">
-          <Headphones className="h-3.5 w-3.5 text-accent" />
-          <span data-testid="audio-status-label">
+          <Headphones className="h-3.5 w-3.5 text-accent shrink-0" />
+          <span className="truncate" data-testid="audio-status-label">
             {status === "idle" && "Listen to this essay"}
-            {status === "playing" && `Narrating — paragraph ${Math.max(1, index)} of ${texts.length - 1}`}
-            {status === "paused" && "Paused"}
+            {status === "loading" && "Preparing narration — first play takes a moment…"}
+            {status === "playing" && `${fmt(progress.t)} / ${fmt(progress.d)}`}
+            {status === "paused" && `Paused — ${fmt(progress.t)} / ${fmt(progress.d)}`}
             {status === "done" && "Finished — play again?"}
           </span>
         </div>
-        <div className="h-1 rounded-full bg-muted mt-2 overflow-hidden">
-          <div className="h-full bg-accent transition-transform duration-300 origin-left" style={{ transform: `scaleX(${pct / 100})`, width: "100%" }} data-testid="audio-progress-bar" />
+        <div
+          className="h-1.5 rounded-full bg-muted mt-2 overflow-hidden cursor-pointer"
+          onClick={seek}
+          role="slider"
+          aria-valuenow={pct}
+          aria-label="Narration progress"
+          data-testid="audio-progress-bar"
+        >
+          <div className="h-full bg-accent transition-transform duration-300 origin-left" style={{ transform: `scaleX(${pct / 100})`, width: "100%" }} />
         </div>
       </div>
 
@@ -107,8 +177,17 @@ export const AudioNarrator = ({ title, blocks }) => {
         </Button>
       )}
 
+      <Select value={voice} onValueChange={changeVoice}>
+        <SelectTrigger className="w-[150px] h-8 text-xs shrink-0 hidden sm:flex" data-testid="audio-voice-select">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {VOICES.map((v) => <SelectItem key={v.key} value={v.key}>{v.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+
       <Select value={rate} onValueChange={changeRate}>
-        <SelectTrigger className="w-[76px] h-8 text-xs shrink-0" data-testid="audio-speed-select">
+        <SelectTrigger className="w-[74px] h-8 text-xs shrink-0" data-testid="audio-speed-select">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

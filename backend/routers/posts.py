@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import Response, HTMLResponse
 
-from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES
+from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLED, TTS_VOICES, logger
 from db import db
 from utils import now_utc, iso, clean, post_summary, published_query
 from security import get_optional_user, get_current_user, is_entitled
@@ -309,6 +309,42 @@ async def share_page(slug: str):
 <p>Redirecting to <a href="/post/{slug}">{title}</a>&hellip;</p>
 </body></html>"""
     return HTMLResponse(content=html)
+
+
+# ---------------------- essay audio narration (ElevenLabs) ----------------------
+
+@router.get('/posts/{slug}/audio')
+async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_user)):
+    if not TTS_ENABLED:
+        raise HTTPException(status_code=503, detail='Narration is not configured')
+    if voice not in TTS_VOICES:
+        raise HTTPException(status_code=400, detail='Unknown voice')
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    blocks = post.get('content_blocks', [])
+    # SERVER-SIDE PAYWALL: non-entitled listeners only ever hear the preview of premium essays
+    scope = 'full'
+    if post.get('tier') == 'premium' and not await is_entitled(user):
+        blocks = blocks[:PREVIEW_BLOCKS]
+        scope = 'preview'
+    from services.tts_service import get_or_generate_audio
+    try:
+        audio, from_cache = await get_or_generate_audio(post, voice, blocks, scope)
+    except Exception as e:
+        logger.error(f'TTS generation failed for {slug}: {e}')
+        raise HTTPException(status_code=502, detail='Narration is temporarily unavailable. Try again shortly.')
+    return Response(content=audio, media_type='audio/mpeg', headers={
+        'Cache-Control': 'private, max-age=86400',
+        'X-Audio-Cache': 'hit' if from_cache else 'generated',
+        'X-Audio-Scope': scope,
+    })
+
+
+@router.get('/audio/voices')
+async def audio_voices():
+    return {'enabled': TTS_ENABLED,
+            'voices': [{'key': k, 'label': v['label']} for k, v in TTS_VOICES.items()]}
 
 
 # ---------------------- SEO ----------------------
