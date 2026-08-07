@@ -29,6 +29,7 @@
     - **Share From Article** ✅ (share quote card directly from selection popover)
     - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
   - Weekly digest preview + send ✅
+  - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
 - Deliver admin + growth tooling ✅:
   - Traffic sources attribution + trends
   - Subscriber growth
@@ -36,6 +37,7 @@
   - Conversion funnels + plan split
   - Post conversion stats (“Essays that convert”)
   - CSV export
+  - **Content Sync Tool (Preview → Production)** ✅ *(one-click admin sync for missing published posts)*
 - Deliver premium community ✅:
   - Private Community Lounge
   - Pins/locks/scheduled announcements/editing
@@ -53,6 +55,7 @@
   - Author identity: Anish Pujari across UI and post metadata
   - Weekly briefing tooling: template + edition numbering + `/briefings` archive
   - Import existing writing (LinkedIn newsletter editions + LinkedIn articles)
+  - **Hardcoded default content** ✅ *(real articles are now hardcoded and self-heal on DB reset)*
 - Improve editorial discovery ✅:
   - **Related essays by tags** (shared tags prioritized over category-only)
 - Keep integrations reliable with webhooks, audit logs, and end-to-end tests.
@@ -148,6 +151,7 @@
 ### Phase 16 — Delivery & Systems Article Import ⛔ BLOCKED (waiting on user content)
 - Awaiting user to paste delivery-focused essay text
 - Import as `category="delivery"` and verify on frontend
+- After import: append to `REAL_POSTS` for durability
 
 ### Phase 17 — Reader Highlights + Related By Tags ✅ COMPLETED
 #### A) Reader Highlights ✅
@@ -218,7 +222,6 @@
   1) Migrated **Edition #1 briefing** + **Freight Management** post to production via production admin API.
   2) Per user choice: demo/sample essays were **kept** on production for now.
   3) Patched `seed_database` in `server.py` so fresh DBs seed `SAMPLE_POSTS` as **draft** (`status='draft'`, `views=0`) so future deployments start with a clean public site.
-  4) Removed unused `random` import after views were set to 0.
 - Verification:
   - Verified live (read-only) on production endpoints:
     - `https://thetradingnarrative.com/api/briefings` includes Edition #1.
@@ -243,6 +246,50 @@
   - Iteration_14: **100% backend (14/14)**, **100% frontend**
   - Production checked read-only; preview regression clean; all test data cleaned
 
+### Phase 21 — Hardcoded Real Content + Highlight Digest + Content Sync Tool ✅ COMPLETED
+#### A) Hardcoded Real Content (self-healing default content) ✅
+- `seed_data.py` now includes a `REAL_POSTS` list containing the author’s real, provided content exported verbatim from DB:
+  - Edition #1 “Five Things Commodity Desks Need to Know This Week”
+    - slug: `five-things-commodity-desks-need-to-know-this-week`
+    - blocks: 22, `edition=1`
+  - “Freight Management and Tracking Visibility …”
+    - blocks: 46
+- `server.py` `seed_database()` now **always** inserts any missing `REAL_POSTS` (matched by slug) as **PUBLISHED** on every startup.
+- Verified self-healing: deleted Edition #1 in preview DB, restarted backend, and it restored automatically with no duplicates.
+- Demo `SAMPLE_POSTS` remain and seed as **drafts** only on fresh DBs.
+- Process note: future real articles should be appended to `REAL_POSTS` using the same export pattern.
+
+#### B) Highlight Digest (social proof section) ✅
+- `services/digest_service.py` additions:
+  - `get_week_top_highlights()` — last 7 days, >=2 distinct users, top 3
+  - `_highlights_section()` — renders “Most highlighted this week” block (accent-bordered italic quotes + reader count + essay link)
+  - `build_digest_html(posts, top_highlights=...)` now conditionally includes the section
+- Wired into:
+  - `do_send_digest()`
+  - `GET /api/admin/newsletter/digest-preview` (now returns `top_highlights`)
+  - `POST /api/admin/newsletter/send-digest-preview`
+- Graceful omission when no highlight data exists.
+
+#### C) Content Sync Tool (Preview → Production) ✅
+- Backend:
+  - New router `routers/sync.py`:
+    - `GET /api/admin/sync/diff` — compares preview published posts vs production public posts by slug
+    - `POST /api/admin/sync/push {password}` — one-time login to production admin API and creates missing posts
+  - Config: `PRODUCTION_SITE_URL` in `config.py` (defaults to `https://thetradingnarrative.com`)
+- Frontend:
+  - `components/SyncToProductionDialog.js`
+  - Admin header button “Sync to production” with:
+    - target host + production published count
+    - missing list (with tier/edition badges)
+    - password input (never stored)
+    - push progress + per-article results
+    - in-sync/empty/error/retry states
+- Dependencies:
+  - `requests` already present in backend requirements
+- Testing:
+  - Iteration_15: **100% backend (10/10)**, **100% frontend**
+  - Production only ever read; test data cleaned
+
 ---
 
 ## 3) Next Actions
@@ -250,8 +297,10 @@
 ### A) Immediate
 1. **More Editions**: Import LinkedIn newsletter editions as numbered briefings
    - ⛔ Blocked until you paste the next edition text (we’ll publish as Edition #2).
+   - After import: append to `REAL_POSTS` for durability.
 2. **Delivery & Systems**: Import a real delivery-focused essay
    - ⛔ Blocked until you paste the article text.
+   - After import: append to `REAL_POSTS` for durability.
 3. **PayPal**: Proceed after you answer:
    - subscriptions vs one-time
    - sandbox/live credentials
@@ -289,6 +338,16 @@
 - Edition #1 visible on production `/briefings`
 - Freight article visible on production posts
 - Seed logic patched to avoid auto-publishing demo essays on fresh DBs
+
+✅ Default content durability:
+- Real provided articles are hardcoded in `seed_data.py` as `REAL_POSTS`
+- Backend self-heals and restores missing `REAL_POSTS` on startup
+
+✅ Highlight Digest:
+- Weekly digest includes “Most highlighted this week” section when highlight data exists
+
+✅ Content Sync Tool:
+- Admin can diff and push missing published preview posts to production without manual scripts
 
 ⛔ PayPal integration: blocked until credentials + mode decisions.
 ⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.

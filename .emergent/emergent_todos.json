@@ -1,26 +1,26 @@
 [
   {
-    "content": "Hardcode Edition #1 + freight article in seed_data.py (seed as published, slug-checked)",
-    "status": "in_progress"
+    "content": "Hardcode Edition #1 + freight article in seed_data.py (self-healing verified)",
+    "status": "completed"
   },
   {
-    "content": "Highlight Digest: most-highlighted lines section in Friday digest email",
-    "status": "pending"
+    "content": "Highlight Digest: most-highlighted section in digest email (graceful omission)",
+    "status": "completed"
   },
   {
-    "content": "Content Sync Tool: admin diff + push-to-production endpoints",
-    "status": "pending"
+    "content": "Content Sync Tool: diff/push endpoints + admin dialog",
+    "status": "completed"
   },
   {
-    "content": "Content Sync Tool: one-click button + dialog in Admin dashboard",
-    "status": "pending"
-  },
-  {
-    "content": "Compile, smoke test, mandatory testing agent run",
-    "status": "pending"
+    "content": "Testing agent: 100% pass (10/10 backend, all frontend)",
+    "status": "completed"
   },
   {
     "content": "Edition #2 + Delivery essay imports (still waiting for pasted text)",
+    "status": "pending"
+  },
+  {
+    "content": "PayPal integration (still waiting for setup answers)",
     "status": "pending"
   }
 ]
