@@ -11,7 +11,7 @@ from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLED
 from db import db
 from utils import now_utc, iso, clean, post_summary, published_query
 from security import get_optional_user, get_current_user, is_entitled
-from schemas import CommentIn, BookmarkToggleIn
+from schemas import CommentIn, BookmarkToggleIn, AudioProgressIn
 
 router = APIRouter(prefix='/api')
 
@@ -354,6 +354,18 @@ async def track_audio_listen(slug: str, user=Depends(get_optional_user)):
         'user_id': user['id'] if user else None,
         'created_at': iso(now_utc()),
     })
+    return {'ok': True}
+
+
+@router.post('/posts/{slug}/audio/progress')
+async def track_audio_progress(slug: str, body: AudioProgressIn, user=Depends(get_optional_user)):
+    """Record how far a listener got: milestone counters power the admin completion rate."""
+    if body.milestone not in (25, 50, 75, 100):
+        raise HTTPException(status_code=400, detail='Milestone must be 25, 50, 75 or 100')
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    await db.posts.update_one({'slug': slug}, {'$inc': {f'listen_milestones.{body.milestone}': 1}})
     return {'ok': True}
 
 

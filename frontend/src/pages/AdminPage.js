@@ -856,6 +856,7 @@ export default function AdminPage() {
                       <TableHead>Essay</TableHead>
                       <TableHead>Tier</TableHead>
                       <TableHead>Narration</TableHead>
+                      <TableHead>Completion</TableHead>
                       <TableHead className="text-right">Audio size</TableHead>
                       <TableHead className="text-right">Listens</TableHead>
                     </TableRow>
@@ -879,6 +880,19 @@ export default function AdminPage() {
                           )}
                           {e.tier === "premium" && e.cached && (
                             <span className="text-xs text-muted-foreground ml-2">full + preview</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {e.completion != null ? (
+                            <span
+                              className="font-mono text-sm"
+                              title={`Of ${e.listens} listens — reached 25%: ${e.milestones?.["25"] ?? 0} · 50%: ${e.milestones?.["50"] ?? 0} · 75%: ${e.milestones?.["75"] ?? 0} · finished: ${e.milestones?.["100"] ?? 0}`}
+                              data-testid={`admin-narration-completion-${e.slug}`}
+                            >
+                              {e.completion}%<span className="text-muted-foreground text-xs ml-1.5">finish</span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-sm" data-testid={`admin-narration-completion-${e.slug}`}>No listens yet</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm">

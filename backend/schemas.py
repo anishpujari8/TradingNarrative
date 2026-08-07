@@ -45,6 +45,10 @@ class BookmarkToggleIn(BaseModel):
     post_id: str
 
 
+class AudioProgressIn(BaseModel):
+    milestone: int  # 25 | 50 | 75 | 100 (percent of the narration reached)
+
+
 class NewsletterIn(BaseModel):
     email: EmailStr
     source: str = 'site'

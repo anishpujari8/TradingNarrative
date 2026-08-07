@@ -13,8 +13,8 @@
     - UPI Autopay/Subscriptions when enabled on Razorpay dashboard
     - Fallback to one-time Razorpay Orders when Subscriptions is not enabled
     - Live re-probe so Autopay switches on without restart
-  - **PayPal** ⛔ *(planned; blocked pending user decisions + credentials)*
-    - Target: support either recurring subscriptions or one-time timed passes (TBD by user)
+  - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
+    - Target: **Recurring subscription** (user intent confirmed, exact config pending)
 - Deliver retention UX:
   - Bookmarks/reading list ✅
   - Reading progress indicators ✅
@@ -32,10 +32,12 @@
   - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
   - **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
   - **Listen analytics for narration** ✅ *(count plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
+  - **Listen completion rate** ✅ *(milestone funnel: 25% / 50% / 75% / finish + completion % per essay in Admin Narrations)*
   - **Pre-generated narrations** ✅ *(warm cache on startup + when posts are published/updated so playback is instant when cached)*
     - **Operational constraint**: if ElevenLabs credits are exhausted, uncached essays return **502** on play until credits are topped up.
   - **Narration Status Panel** ✅ *(Admin self-service for narration coverage + warmup trigger)*
     - Shows narrated coverage (X/Y), cached/missing per essay, audio size, listens
+    - Shows completion rate + milestone funnel tooltips
     - “Generate missing narrations” one-click warmup
     - Auto-refresh while warmup is running
     - Credits display depends on ElevenLabs API key permissions (see caveat below)
@@ -154,7 +156,7 @@
 ### Phase 13 — Briefings Series Page + Wednesday Reminder ✅ DONE
 - `/briefings` archive page
 - `GET /api/briefings`
-- Wednesday reminder loop + admin toggle
+- Wednesday briefing reminder loop + admin toggle
 
 ### Phase 14 — Article Import: “Freight Management and Tracking Visibility” ✅ COMPLETED
 - Imported and verified under `category=tech-business` and published
@@ -192,9 +194,7 @@
   - `HighlightIn` schema gained optional `note` (max 500 chars) stored on create
   - New endpoint: `PUT /api/highlights/{id}/note` (owner-only; empty string clears; sets `note_updated_at`)
 - Frontend `/highlights`:
-  - Notes UI: StickyNote chip + pencil edit
-  - “Add note” affordance on highlights without notes
-  - Inline editor (Textarea + char counter + Save/Cancel) + toasts
+  - Notes UI + inline editor + toasts
 
 #### B) Highlight Sharing ✅
 - Frontend:
@@ -204,11 +204,11 @@
 - Testing:
   - Iteration_13: backend 12/12 (100%), frontend 100%
 
-### Phase 19 — PayPal Integration ⛔ NOT STARTED (blocked)
+### Phase 19 — PayPal Integration ⛔ NOT STARTED (still blocked)
 **Blocked on user decisions + credentials**
 - Confirm:
-  1) Recurring subscriptions vs one-time timed passes
-  2) Sandbox vs Live credentials (Client ID + Secret)
+  1) **Recurring subscription** vs one-time timed passes *(user intent: recurring; please confirm definitively)*
+  2) Sandbox vs Live credentials (**Client ID + Secret**)
   3) Placement on pricing page (always visible vs international-only)
 
 **Planned steps (once unblocked)**
@@ -217,9 +217,9 @@
 - Backend:
   - Create PayPal service wrapper
   - Add endpoints:
-    - checkout/create (order or subscription)
+    - create subscription
     - capture/verify
-    - webhooks (if using subscriptions)
+    - webhooks for lifecycle events
 - Frontend:
   - Add PayPal option on pricing page
 - Testing:
@@ -259,36 +259,55 @@
 
 #### A) Narration Status Panel (Admin → Narrations tab) ✅
 - Backend:
-  - `GET /api/admin/narrations` returns:
-    - warmup running state, credit status (when permitted), cached coverage counts, and per-essay cache status
+  - `GET /api/admin/narrations` returns warmup state + cache coverage + per-essay narration status
   - `POST /api/admin/narrations/warm` triggers background warmup (`warm_all_narrations`) guarded by `WARMUP_STATE`
 - Frontend:
-  - New **Narrations** tab in Admin Studio
-  - Stat cards:
-    - Credits remaining / used *(shows “—” if key lacks `user_read` permission)*
-    - Essays narrated X/Y
-    - Total listens
-  - Table:
-    - Cached/Missing status, audio size, listens per essay
-  - Button:
-    - “Generate missing narrations” (self-serve after credit top-up)
-  - Auto-refresh:
-    - Refresh every 8s while warmup is running
+  - New Narrations tab
+  - Table: Cached/Missing status, audio size, listens
+  - Button: Generate missing narrations
+  - Auto-refresh while warming
 
 #### B) Demo Cleanup ✅
 - One-time migration:
   - Uses `db.migrations` marker `unpublish_demo_posts_v1`
-  - Unpublishes demo/sample essays (sets them to `draft`) so they don’t consume narration credits
+  - Unpublishes demo/sample essays (sets to `draft`) so they don’t consume narration credits
 - Status:
   - Preview: unpublished 9 demo essays; now only **4 real essays** are published
-  - Production: same migration will apply once after redeploy (drafting demo posts there too)
+  - Production: same migration will apply once after redeploy
 
-#### C) Credit Refill Warmup (self-service) ✅
+#### C) Credit Refill Warmup ✅
 - Workflow:
   - Top up ElevenLabs credits
-  - Admin clicks **Generate missing narrations**
-  - Warmup fills missing caches (no agent needed)
+  - Admin clicks Generate missing narrations
+  - Warmup fills missing caches
 - Current state (preview): **3/4** published essays have cached narration; 1 remains missing and will generate after credit top-up.
+
+### Phase 27 — Listen Completion Rate ✅ COMPLETED
+> Goal: understand how far readers listen into narrations.
+
+#### A) Backend ✅
+- New schema: `AudioProgressIn` in `schemas.py`
+- New endpoint: `POST /api/posts/{slug}/audio/progress` with `{ milestone: 25|50|75|100 }`
+  - Increments `posts.listen_milestones.{milestone}`
+  - Validations:
+    - 400 on invalid milestone
+    - 404 on bad slug
+- `GET /api/admin/narrations` now returns per-essay:
+  - `milestones: {25,50,75,100}`
+  - `completion` = `round(100 * min(finished, listens) / listens)` (None if listens=0)
+
+#### B) Frontend ✅
+- `AudioNarrator` reports milestones **once per essay visit**:
+  - 25/50/75 triggered in `ontimeupdate`
+  - 100 triggered on `onended`
+- Admin → Narrations table gained **Completion** column:
+  - Shows `{completion}% finish` or “No listens yet”
+  - Hover tooltip shows the full milestone funnel counts
+
+#### C) Verification ✅
+- End-to-end verified:
+  - Playback fired 1 listen + 4 milestone calls
+  - Admin displayed completion (example observed: 67% finish)
 
 ---
 
@@ -296,29 +315,34 @@
 
 ### A) Immediate
 1) **Production rollout**
-   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–26**.
+   - Redeploy backend + frontend to `thetradingnarrative.com` to pick up Phases **25–27**.
    - After redeploy, production will:
      - Normalize author identity automatically on startup
      - Draft demo essays via demo cleanup migration
-     - Enable narration status panel + warmup endpoints
+     - Enable narration status panel + warmup endpoints + completion tracking
 
 2) **ElevenLabs operations**
    - Top up ElevenLabs credits.
-   - (Optional) Update the ElevenLabs API key permissions to include **User → Read** so credits show in the panel.
+   - (Optional) Update the ElevenLabs API key permissions to include **User → Read** so credits show in the Narrations panel.
    - Then use **Admin → Narrations → Generate missing narrations** to warm everything.
 
-3) **More Editions**: Import LinkedIn newsletter editions as numbered briefings
+3) **Delivery & Systems**: Import a real delivery-focused essay ⛔
+   - Blocked until you paste the article text
+   - After import:
+     - publish under `category="delivery"`
+     - append to `REAL_POSTS` for durability
+     - (optional) sync to production via the Sync tool
+
+4) **More Editions**: Import LinkedIn newsletter editions as numbered briefings
    - ⛔ Blocked until you paste Edition #2 text.
    - After import: append to `REAL_POSTS` for durability.
 
-4) **Delivery & Systems**: Import a real delivery-focused essay
-   - ⛔ Blocked until you paste the article text.
-   - After import: append to `REAL_POSTS` for durability.
-
-5) **PayPal**: Proceed after you answer:
-   - subscriptions vs one-time
-   - sandbox/live credentials
-   - pricing-page placement
+5) **PayPal (Recurring subscriptions)**
+   - Still blocked until you provide:
+     - Confirm recurring subscription (yes/no)
+     - Sandbox vs Live
+     - PayPal Client ID + Secret
+     - Pricing page placement preference
 
 ### B) Production note (workflow)
 - Two environments exist:
@@ -345,9 +369,11 @@
 - Paywall-aware scopes (preview vs full)
 - Caching
 - Listen analytics
+- Completion milestones + completion %
 - Pre-generation hooks
-✅ Phase 26 success criteria
+✅ Phase 26–27 success criteria
 - Admin can view narration coverage and cached/missing status per essay.
+- Admin can view completion rate per essay (finish % + milestone funnel).
 - Admin can start a warmup run from the UI.
 - Demo essays do not consume narration credits (auto-drafted once).
 - Credits display is available when ElevenLabs API key includes `user_read` permission.
@@ -355,5 +381,5 @@
 ⚠️ Operational caveat (ElevenLabs quota)
 - If credits are exhausted, uncached essays will 502 on narration play until credits are topped up.
 
-⛔ PayPal integration: blocked until credentials + mode decisions.
+⛔ PayPal integration: blocked until credentials + final decisions.
 ⛔ Content imports: blocked until you paste Edition #2 text and the Delivery essay.

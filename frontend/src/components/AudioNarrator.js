@@ -25,12 +25,14 @@ export const AudioNarrator = ({ slug }) => {
   const audioRef = useRef(null);
   const urlsRef = useRef({}); // voice -> objectURL (per-essay cache in the browser)
   const listenedRef = useRef(false); // one listen counted per essay visit
+  const milestonesRef = useRef(new Set()); // 25/50/75/100 — each reported once per visit
 
   // reset when navigating between essays
   useEffect(() => {
     setStatus("idle");
     setProgress({ t: 0, d: 0 });
     listenedRef.current = false;
+    milestonesRef.current = new Set();
     const urls = urlsRef.current;
     return () => {
       audioRef.current?.pause();
@@ -40,10 +42,25 @@ export const AudioNarrator = ({ slug }) => {
     };
   }, [slug]);
 
+  const sendMilestone = (m) => {
+    if (milestonesRef.current.has(m)) return;
+    milestonesRef.current.add(m);
+    api.post(`/posts/${encodeURIComponent(slug)}/audio/progress`, { milestone: m }).catch(() => {});
+  };
+
   const attach = (audio) => {
     audio.playbackRate = parseFloat(rate);
-    audio.ontimeupdate = () => setProgress({ t: audio.currentTime, d: audio.duration || 0 });
-    audio.onended = () => setStatus("done");
+    audio.ontimeupdate = () => {
+      setProgress({ t: audio.currentTime, d: audio.duration || 0 });
+      if (audio.duration) {
+        const pct = (audio.currentTime / audio.duration) * 100;
+        [25, 50, 75].forEach((m) => { if (pct >= m) sendMilestone(m); });
+      }
+    };
+    audio.onended = () => {
+      setStatus("done");
+      sendMilestone(100);
+    };
     audioRef.current = audio;
   };
 

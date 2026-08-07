@@ -160,9 +160,15 @@ async def admin_narrations(admin=Depends(get_admin_user)):
                 total_bytes += c.get('bytes', 0)
             else:
                 cached = False
+        ms = p.get('listen_milestones', {}) or {}
+        listens = p.get('listens', 0)
+        finished = ms.get('100', 0)
         essays.append({'slug': p['slug'], 'title': p['title'], 'tier': p.get('tier', 'free'),
                        'cached': cached, 'scopes': ready_scopes, 'bytes': total_bytes,
-                       'listens': p.get('listens', 0)})
+                       'listens': listens,
+                       'milestones': {'25': ms.get('25', 0), '50': ms.get('50', 0),
+                                      '75': ms.get('75', 0), '100': finished},
+                       'completion': round(100 * min(finished, listens) / listens) if listens else None})
     return {'enabled': TTS_ENABLED, 'warming': WARMUP_STATE['running'], 'credits': credits,
             'cached_count': sum(1 for e in essays if e['cached']), 'total': len(essays),
             'essays': essays}
