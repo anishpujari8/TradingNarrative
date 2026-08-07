@@ -23,6 +23,7 @@ import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import PaymentCancelPage from "@/pages/PaymentCancelPage";
 import AccountPage from "@/pages/AccountPage";
 import ReadingListPage from "@/pages/ReadingListPage";
+import HighlightsPage from "@/pages/HighlightsPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminEditorPage from "@/pages/AdminEditorPage";
 import CommunityPage from "@/pages/CommunityPage";
@@ -63,6 +64,7 @@ function App() {
                   <Route path="/payment/cancel" element={<PaymentCancelPage />} />
                   <Route path="/account" element={<AccountPage />} />
                   <Route path="/reading-list" element={<ReadingListPage />} />
+                  <Route path="/highlights" element={<HighlightsPage />} />
                   <Route path="/lounge" element={<CommunityPage />} />
                   <Route path="/briefings" element={<BriefingsPage />} />
                   <Route path="/admin" element={<AdminPage />} />

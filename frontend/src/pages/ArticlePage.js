@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Clock, Check, Sparkles } from "lucide-react";
+import { Lock, Clock, Check, Sparkles, Highlighter } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
@@ -70,9 +70,86 @@ const Paywall = ({ post }) => {
 export default function ArticlePage() {
   const { slug } = useParams();
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [error, setError] = useState(null);
+  const [highlights, setHighlights] = useState([]);
+  const [selInfo, setSelInfo] = useState(null);
   const bodyRef = useRef(null);
+
+  // load the reader's saved highlights for this essay
+  useEffect(() => {
+    setHighlights([]);
+    if (!user) return;
+    api.get(`/highlights?slug=${encodeURIComponent(slug)}`)
+      .then((res) => setHighlights(res.data.highlights || []))
+      .catch(() => {});
+  }, [slug, user?.id]);
+
+  // hide the floating highlight button on scroll
+  useEffect(() => {
+    if (!selInfo) return;
+    const hide = () => setSelInfo(null);
+    window.addEventListener("scroll", hide, { passive: true, once: true });
+    return () => window.removeEventListener("scroll", hide);
+  }, [selInfo]);
+
+  const handleSelection = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) { setSelInfo(null); return; }
+    const text = sel.toString().trim();
+    if (text.length < 3 || text.length > 500) { setSelInfo(null); return; }
+    let node = sel.anchorNode;
+    while (node && node.nodeType !== 1) node = node.parentNode;
+    const blockEl = node?.closest?.("[data-block-index]");
+    if (!blockEl) { setSelInfo(null); return; }
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    setSelInfo({
+      text,
+      blockIndex: parseInt(blockEl.dataset.blockIndex, 10),
+      top: Math.max(8, rect.top - 46),
+      left: rect.left + rect.width / 2,
+    });
+  };
+
+  const saveHighlight = () => {
+    if (!selInfo) return;
+    const { text, blockIndex } = selInfo;
+    setSelInfo(null);
+    try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+    if (!user) {
+      toast("Sign in to save highlights", {
+        description: "Create a free account to keep your favourite lines.",
+        action: { label: "Sign in", onClick: () => navigate(`/auth?next=/post/${slug}`) },
+      });
+      return;
+    }
+    api.post("/highlights", { slug, block_index: blockIndex, text })
+      .then((res) => {
+        if (!res.data.already) setHighlights((h) => [res.data, ...h]);
+        toast.success(res.data.already ? "Already in your highlights" : "Saved to your highlights", {
+          action: { label: "View", onClick: () => navigate("/highlights") },
+        });
+      })
+      .catch((err) => toast.error(err?.response?.data?.detail || "Could not save the highlight."));
+  };
+
+  const renderWithHighlights = (text, blockIndex) => {
+    const marks = highlights.filter((h) => h.block_index === blockIndex).map((h) => h.text);
+    if (!marks.length) return text;
+    let parts = [text];
+    marks.forEach((m) => {
+      parts = parts.flatMap((seg) => {
+        if (typeof seg !== "string") return [seg];
+        const idx = seg.indexOf(m);
+        if (idx === -1) return [seg];
+        return [seg.slice(0, idx), { mark: m }, seg.slice(idx + m.length)];
+      });
+    });
+    return parts.map((seg, j) =>
+      typeof seg === "string" ? seg : <mark key={j} className="reader-highlight">{seg.mark}</mark>
+    );
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -141,6 +218,19 @@ export default function ArticlePage() {
     <article data-testid="article-page">
       <Seo title={post.title} description={post.excerpt} image={post.cover_image} path={`/post/${post.slug}`} type="article" />
       <ReadingProgress targetRef={bodyRef} readTime={post.read_time} slug={post.slug} />
+
+      {selInfo && (
+        <button
+          className="fixed z-[200] -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-foreground text-background text-xs font-medium px-3.5 py-2 shadow-lg hover:bg-accent hover:text-accent-foreground transition-colors duration-150"
+          style={{ top: selInfo.top, left: selInfo.left }}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={saveHighlight}
+          data-testid="highlight-save-button"
+          aria-label="Save highlight"
+        >
+          <Highlighter className="h-3.5 w-3.5" /> Highlight
+        </button>
+      )}
 
       <div className="container-editorial pt-10 sm:pt-14">
         <div className="reading-col">
@@ -213,12 +303,12 @@ export default function ArticlePage() {
             </div>
           </div>
 
-          <div className="article-body" data-testid="article-body">
+          <div className="article-body" data-testid="article-body" onMouseUp={handleSelection} onTouchEnd={handleSelection}>
             {visibleBlocks.map((block, i) =>
               block.startsWith("## ") ? (
-                <h2 key={i} className="font-serif text-2xl font-semibold mt-10 mb-4">{block.slice(3)}</h2>
+                <h2 key={i} className="font-serif text-2xl font-semibold mt-10 mb-4" data-block-index={i}>{block.slice(3)}</h2>
               ) : (
-                <p key={i}>{block}</p>
+                <p key={i} data-block-index={i}>{renderWithHighlights(block, i)}</p>
               )
             )}
             {post.is_locked && blurredBlock && (

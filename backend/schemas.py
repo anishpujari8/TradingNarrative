@@ -106,6 +106,12 @@ class RazorpayVerifyIn(BaseModel):
     signature: Optional[str] = None
 
 
+class HighlightIn(BaseModel):
+    slug: str
+    block_index: int = Field(ge=0)
+    text: str = Field(min_length=3, max_length=500)
+
+
 class DigestSendIn(BaseModel):
     subject: Optional[str] = None
 

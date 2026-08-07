@@ -193,6 +193,16 @@ code {
     color: hsl(var(--accent));
 }
 
+/* Reader highlights — saved lines inside essays */
+mark.reader-highlight {
+    background: hsl(var(--accent) / 0.18);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0.05em 0.15em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}
+
 /* Card hover image zoom */
 .card-img-zoom img {
     transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);

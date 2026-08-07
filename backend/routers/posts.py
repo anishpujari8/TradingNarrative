@@ -66,9 +66,20 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     if is_locked:
         # SERVER-SIDE PAYWALL: only preview paragraphs ever leave the server
         blocks = blocks[:PREVIEW_BLOCKS]
-    # related posts: same category, exclude self
-    related_cursor = db.posts.find({'category': post['category'], 'slug': {'$ne': slug}, **published_query()}).sort('published_at', -1).limit(3)
-    related = [post_summary(clean(r)) for r in await related_cursor.to_list(3)]
+    # related posts: score by shared tags first, category as fallback signal
+    tags = set(post.get('tags', []))
+    rel_filter = {'$or': [{'tags': {'$in': list(tags)}}, {'category': post['category']}]} if tags \
+        else {'category': post['category']}
+    candidates = await db.posts.find(
+        {'$and': [published_query(), {'slug': {'$ne': slug}}, rel_filter]}
+    ).sort('published_at', -1).to_list(50)
+
+    def _rel_score(p):
+        shared = len(tags & set(p.get('tags', [])))
+        same_cat = 1 if p['category'] == post['category'] else 0
+        return (shared * 2 + same_cat, p.get('published_at') or '')
+
+    related = [post_summary(clean(r)) for r in sorted(candidates, key=_rel_score, reverse=True)[:3]]
     # increment views (fire & forget semantics)
     await db.posts.update_one({'slug': slug}, {'$inc': {'views': 1}})
     result = post_summary(post)
