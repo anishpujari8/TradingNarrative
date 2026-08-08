@@ -132,12 +132,22 @@ export const QuoteCardDialog = ({ highlight, open, onOpenChange }) => {
       const blob = await toBlob();
       const file = new File([blob], "trading-narrative-quote.png", { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
+        // native sheet with the image attached (iOS Safari, Android Chrome)
         await navigator.share({ files: [file], title: "The Trading Narrative" });
+      } else if (navigator.share) {
+        // device can share text/links but not files — share the essay link instead
+        await navigator.share({ title: "The Trading Narrative", url: window.location.href });
+        toast("Link shared — use Download to attach the image itself.");
       } else {
+        // desktop / in-app browsers: give them the image + guidance, never a dead end
         await download();
+        toast("Image downloaded — attach it in WhatsApp, LinkedIn, or anywhere else.");
       }
     } catch (e) {
-      if (e?.name !== "AbortError") toast.error("Sharing isn't supported here — use Download instead.");
+      if (e?.name !== "AbortError") {
+        await download();
+        toast("Sharing isn't supported here, so the image was downloaded instead.");
+      }
     } finally {
       setBusy(false);
     }

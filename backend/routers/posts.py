@@ -344,6 +344,23 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
     })
 
 
+@router.get('/founding-members')
+async def founding_members():
+    """Public thank-you wall: readers who backed the publication as Founding Members."""
+    subs = await db.subscriptions.find({'plan': 'founding', 'status': 'active'}).sort('created_at', 1).to_list(500)
+    members, seen = [], set()
+    for s in subs:
+        uid = s.get('user_id')
+        if not uid or uid in seen:
+            continue
+        seen.add(uid)
+        u = await db.users.find_one({'id': uid})
+        if u:
+            members.append({'name': u.get('name') or u['email'].split('@')[0].title(),
+                            'since': (s.get('created_at') or '')[:10]})
+    return {'members': members, 'count': len(members)}
+
+
 @router.post('/posts/{slug}/audio/listen')
 async def track_audio_listen(slug: str, user=Depends(get_optional_user)):
     """Count a narration play: bump the post's listens counter + log an analytics event."""

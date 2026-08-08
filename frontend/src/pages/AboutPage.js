@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Seo } from "@/components/Seo";
 import { Linkedin, Instagram } from "lucide-react";
 import { NewsletterForm } from "@/components/NewsletterForm";
+import { FoundingWall } from "@/components/FoundingWall";
 
 export default function AboutPage() {
   return (
@@ -71,6 +72,8 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
+
+      <FoundingWall />
     </div>
   );
 }

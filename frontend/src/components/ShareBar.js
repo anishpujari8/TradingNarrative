@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Linkedin, Instagram, Link2, Share2, ImageDown, Download, Twitter } from "lucide-react";
+import { Linkedin, Instagram, Link2, Share2, ImageDown, Download, Twitter, MessageCircle, Send, Facebook, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { SITE_URL, SITE_NAME, trackEvent } from "@/lib/api";
 
@@ -225,6 +225,7 @@ const IgCardDialog = ({ post }) => {
 export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) => {
   // OG-rich share URL: crawlers read per-essay meta tags, humans get redirected to the article
   const unfurlUrl = `${SITE_URL}/api/share/${post.slug}`;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const copyLink = async () => {
     try {
@@ -241,36 +242,55 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
     trackEvent("share_copy_link", `/post/${post.slug}`);
   };
 
-  const shareLinkedIn = () => {
-    window.open(
-      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(unfurlUrl)}`,
-      "_blank",
-      "noopener,width=600,height=600"
-    );
-    trackEvent("share_linkedin", `/post/${post.slug}`);
+  const openShareWindow = (url, event) => {
+    window.open(url, "_blank", "noopener,width=600,height=600");
+    trackEvent(event, `/post/${post.slug}`);
   };
 
-  const shareX = () => {
-    window.open(
-      `https://twitter.com/intent/tweet?url=${encodeURIComponent(unfurlUrl)}&text=${encodeURIComponent(post.title)}`,
-      "_blank",
-      "noopener,width=600,height=600"
-    );
-    trackEvent("share_x", `/post/${post.slug}`);
+  const shareLinkedIn = () =>
+    openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(unfurlUrl)}`, "share_linkedin");
+
+  const shareX = () =>
+    openShareWindow(`https://twitter.com/intent/tweet?url=${encodeURIComponent(unfurlUrl)}&text=${encodeURIComponent(post.title)}`, "share_x");
+
+  const shareWhatsApp = () =>
+    openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${post.title}\n${unfurlUrl}`)}`, "share_whatsapp");
+
+  const shareTelegram = () =>
+    openShareWindow(`https://t.me/share/url?url=${encodeURIComponent(unfurlUrl)}&text=${encodeURIComponent(post.title)}`, "share_telegram");
+
+  const shareFacebook = () =>
+    openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(unfurlUrl)}`, "share_facebook");
+
+  const shareEmail = () => {
+    window.location.href = `mailto:?subject=${encodeURIComponent(post.title)}&body=${encodeURIComponent(`${post.excerpt || post.title}\n\n${unfurlUrl}`)}`;
+    trackEvent("share_email", `/post/${post.slug}`);
   };
 
   const webShare = async () => {
+    // Native sheet where it works (iOS Safari, Android Chrome); everywhere else
+    // (desktop, in-app browsers like LinkedIn/Instagram) opens the all-platform menu.
     if (navigator.share) {
       try {
         await navigator.share({ title: post.title, text: post.excerpt, url: unfurlUrl });
         trackEvent("share_native", `/post/${post.slug}`);
-      } catch {
-        /* user dismissed */
+        return;
+      } catch (e) {
+        if (e?.name === "AbortError") return; // user closed the sheet — not an error
       }
-    } else {
-      copyLink();
     }
+    setMenuOpen(true);
   };
+
+  const MENU_OPTIONS = [
+    { label: "WhatsApp", icon: MessageCircle, onClick: shareWhatsApp, testId: "share-menu-whatsapp" },
+    { label: "Telegram", icon: Send, onClick: shareTelegram, testId: "share-menu-telegram" },
+    { label: "X (Twitter)", icon: Twitter, onClick: shareX, testId: "share-menu-x" },
+    { label: "LinkedIn", icon: Linkedin, onClick: shareLinkedIn, testId: "share-menu-linkedin" },
+    { label: "Facebook", icon: Facebook, onClick: shareFacebook, testId: "share-menu-facebook" },
+    { label: "Email", icon: Mail, onClick: shareEmail, testId: "share-menu-email" },
+    { label: "Copy link", icon: Link2, onClick: copyLink, testId: "share-menu-copy" },
+  ];
 
   const btnCls = "border border-border rounded-lg hover:border-accent hover:text-accent transition-colors duration-150";
   const wrapCls =
@@ -324,6 +344,15 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
 
         <Tooltip>
           <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className={btnCls} onClick={shareWhatsApp} data-testid={`share-whatsapp-button${idSuffix}`} aria-label="Share on WhatsApp">
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Share on WhatsApp</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className={btnCls} onClick={copyLink} data-testid={`share-plain-copy-button${idSuffix}`} aria-label="Copy link">
               <Link2 className="h-4 w-4" />
             </Button>
@@ -339,6 +368,32 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
           </TooltipTrigger>
           <TooltipContent side="right">Share anywhere</TooltipContent>
         </Tooltip>
+
+        {/* All-platform fallback: shown when the device has no native share sheet */}
+        <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
+          <DialogContent className="max-w-sm" data-testid={`share-menu-dialog${idSuffix}`}>
+            <DialogHeader>
+              <DialogTitle className="font-serif text-2xl">Share this essay</DialogTitle>
+              <DialogDescription>Pick a platform — the link unfurls with a rich preview card.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-2">
+              {MENU_OPTIONS.map((o) => (
+                <Button
+                  key={o.label}
+                  variant="outline"
+                  className="justify-start gap-2.5 h-11"
+                  onClick={() => {
+                    o.onClick();
+                    if (o.label !== "Copy link") setMenuOpen(false);
+                  }}
+                  data-testid={`${o.testId}${idSuffix}`}
+                >
+                  <o.icon className="h-4 w-4 text-accent" /> {o.label}
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
