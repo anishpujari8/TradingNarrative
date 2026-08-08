@@ -1,26 +1,26 @@
 [
   {
     "content": "Add ADMIN_NOTIFY_EMAIL to config.py",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Admin alert email in newsletter subscribe + activate_premium_from_transaction",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Streak endpoint POST /api/users/streak/read + schema + public_user streak fields",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Frontend: ArticlePage streak trigger + refreshUser + toast",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Frontend: Navbar streak badge + AccountPage streak card",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test backend (testing agent) + UI screenshots",
-    "status": "pending"
+    "status": "completed"
   }
 ]
