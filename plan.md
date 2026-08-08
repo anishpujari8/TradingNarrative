@@ -34,6 +34,8 @@
 - Weekly digest preview + send ✅
 - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
 - **Weekly Listen Digest Social Proof** ✅ *(digest includes “Most listened this week” block when narration listen data exists)*
+- Weekly briefings archive + tooling ✅
+  - **Briefings are premium-only** ✅ *(Edition #1 set to premium; new briefing template defaults to premium)*
 
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
@@ -74,7 +76,8 @@
   - `the-ai-infrastructure-gold-rush-...` (male/full + male/preview)
 - Missing (cannot regenerate until credits are topped up):
   - `170-kilometres-...`
-  - `five-things-commodity-desks-...`
+  - `five-things-commodity-desks-...` *(now premium)*
+  - `delivering-a-power-trading-desk-...` *(new premium Delivery essay)*
 
 ### AI features (Gemini)
 - **Gemini 2.5 Flash integration via emergentintegrations + EMERGENT_LLM_KEY** ✅
@@ -105,6 +108,7 @@
 - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
 - **Spinning logo** ✅ *(slow, elegant rotation ~9s per turn; respects reduced motion)*
 - **Demo Cleanup** ✅ *(sample/demo essays auto-drafted/unpublished so credits are spent on real writing)*
+- **New Delivery essay imported** ✅ *(durable + premium-gated; see Phase 34)*
 
 ### Stability
 - Modular backend (monolith `server.py` split into routers/services) ✅
@@ -197,10 +201,10 @@
 - Route parity verified; background loops confirmed running
 - Regression testing complete; test data cleaned
 
-### Phase 16 — Delivery & Systems Article Import ⛔ BLOCKED (waiting on user content)
-- Awaiting user to paste delivery-focused essay text
-- Import as `category="delivery"` and verify on frontend
-- After import: append to `REAL_POSTS` for durability
+### Phase 16 — Delivery & Systems Article Import ✅ COMPLETED (superseded by Phase 34)
+- ✅ User pasted the delivery essay
+- ✅ Imported under `category="delivery"` and published
+- ✅ Appended to `REAL_POSTS` for durability
 
 ### Phase 17 — Reader Highlights + Related By Tags ✅ COMPLETED
 #### A) Reader Highlights ✅
@@ -321,33 +325,23 @@
 **User-reported recurring issue:** narration continues to show “temporarily unavailable / Cloudflare invalid or incomplete response”.
 
 **True root cause**
-- During Phase 30 testing, a **1004-byte dummy payload** was POSTed to `/api/admin/audio-cache/import` using the **real** slug `170-kilometres-...`, overwriting its ~2MB cached narration.
-- The player then received corrupt audio → surfaced as Cloudflare/origin incomplete response.
-- The original ~2MB narration blob is **unrecoverable until ElevenLabs credits are topped up**.
+- A tiny dummy payload overwrote a real cached narration in `audio_cache`.
 
 **Fixes delivered (permanent)**
-1) Purged the corrupt cache entry.
-   - `170-kilometres-...` now returns an honest **503** with a clear “credits refilling” message.
-2) Hardened the import endpoint (`/api/admin/audio-cache/import`):
-   - Validates payload is a real MP3 narration (≥50KB and `ID3`/MPEG-frame magic bytes) → **400**
-   - Refuses overwriting a much larger existing narration with a tiny payload → **409**
-3) Hardened serving path (`tts_service.get_or_generate_audio`):
-   - Auto-purges corrupt cache entries (<50KB or invalid MP3 magic) instead of serving them.
-4) Hardened narration sync sender (`/api/admin/sync/narrations`):
-   - Skips pushing cache entries <50KB.
+1) Purged corrupt cache entry.
+2) Hardened the import endpoint (`/api/admin/audio-cache/import`).
+3) Hardened serving path (`tts_service.get_or_generate_audio`) to purge corrupt cache.
+4) Hardened narration sync sender to skip tiny entries.
 
 **Testing**
 - Iteration_23: 100% pass.
-
-**Safety note (future testing)**
-- Never allow automated test runs to write to `audio_cache` or call audio import endpoints with real slugs.
 
 ### Phase 33 — Narration Health Alert ✅ COMPLETED
 **Purpose:** warn in Admin when any published essay has missing or corrupt narration.
 
 **Backend**
 - `GET /api/admin/narrations` now returns:
-  - Per-essay `health`: `ok | missing | corrupt` *(corrupt = cache entry exists but <50KB)*
+  - Per-essay `health`: `ok | missing | corrupt`
   - `issues`: `[{slug, title, problem}]` for non-OK essays
 
 **Frontend**
@@ -358,6 +352,33 @@
 
 **Testing**
 - Iteration_24: 100% pass; verified audio cache untouched.
+
+### Phase 34 — Delivery Essay Import + Premium Gating ✅ COMPLETED
+**User request:** import delivery-focused longform essay, make it premium-only; make weekly briefings premium-only.
+
+1) **Imported longform Delivery essay** ✅
+- Title: **Delivering a Power Trading Desk: System Compliance, Lifecycle Design, and Why Agile/SAFe Changes the Economics**
+- Slug: `delivering-a-power-trading-desk-system-compliance-lifecycle-design-and-why-agile`
+- Category: `delivery` (Delivery & Systems)
+- Tier: `premium`
+- Featured: `true`
+- Content: 113 blocks, 24 `##` headings; cover image (power pylons); tags: Power Trading / ETRM / Compliance / SAFe / Agile / Delivery
+- Durability: appended to `REAL_POSTS` in `seed_data.py` so it self-heals on DB resets
+- Paywall: anonymous sees exactly 3 preview blocks + premium CTA; entitled users see full 113 blocks
+
+2) **Weekly Briefing premium-only** ✅
+- `five-things-commodity-desks-need-to-know-this-week` is now `tier="premium"` in seed data + DB
+- Admin editor briefing template now defaults `tier: "premium"` for future editions
+
+3) **Site content state** ✅
+- 5 published posts total now (4 earlier real essays + new delivery premium essay)
+
+**Testing**
+- Iteration_25: backend 21/21 100%, anonymous frontend 100%; entitled full-content flow manually verified.
+
+**Note (production sync caveat)**
+- Existing Content Sync tool pushes **missing posts** to production, but does **not** update tiers/fields of posts that already exist on production.
+- This matters for the briefing: production may still have Edition #1 as free unless we add a “field update” mode or you manually update it on prod.
 
 ---
 
@@ -376,19 +397,25 @@
    - Top up ElevenLabs credits.
    - Then use **Admin → Narrations → Generate missing narrations** to synthesize:
      - `170-kilometres-...`
-     - `five-things-commodity-desks-...`
+     - `five-things-commodity-desks-...` *(premium — will also generate a preview scope)*
+     - `delivering-a-power-trading-desk-...` *(premium — will also generate a preview scope)*
    - Then re-run **Send narrations to live site** to push newly cached narrations to production.
 
-3) **Delivery & Systems essay import** ⛔
-   - Paste your delivery-focused essay text (title + body).
+3) **Sync new Delivery essay to production** ⛔ (requires user)
+   - Use **Admin → Sync to production** so the new post exists on production.
 
-4) **Edition #2 import** ⛔
+4) **Tier update sync (important)** ⛔ *(new work)*
+   - Because sync currently does not update existing post fields on production, confirm the desired behavior:
+     - Option A: build “Sync updates” mode (diff + patch updates, safe allowlist: tier/featured/excerpt/tags/cover_image/content_blocks)
+     - Option B: manually edit the Edition #1 briefing on production to premium in the admin editor
+
+5) **Edition #2 import** ⛔
    - Paste Edition #2 newsletter text.
 
-5) **PayPal (recurring subscriptions)** ⛔
+6) **PayPal (recurring subscriptions)** ⛔
    - Provide PayPal decisions + credentials as listed in Phase 19.
 
-6) **Resend integration** ⛔
+7) **Resend integration** ⛔
    - Answer the 4 setup decisions + provide Resend API key.
 
 ### B) Production note (workflow)
@@ -419,6 +446,9 @@
 ✅ AI features:
 - Admin AI writing assistant works (draft/polish/expand; streaming)
 - “Ask this essay” is grounded + paywall-aware; streaming
+✅ Content readiness:
+- Delivery & Systems premium essay imported as durable real content
+- Weekly briefings are premium-only
 
 ⚠️ Operational caveats
 - ElevenLabs: uncached narrations may be unavailable if credits are exhausted.
@@ -426,8 +456,8 @@
 - Deployments can be rate-limited; retry after cooldown.
 
 ⛔ Blockers
-- Delivery essay import: awaiting text.
 - Edition #2 import: awaiting text.
 - PayPal: awaiting decisions + credentials.
 - Resend: awaiting decisions + API key + sender domain verification.
-- ElevenLabs: credits must be topped up to regenerate missing narrations (170km + five-things).
+- ElevenLabs: credits must be topped up to regenerate missing narrations (170km + five-things + delivery essay).
+- Production sync limitation: current sync does not update tiers/fields of already-existing posts (needs decision + implementation or manual workaround).
