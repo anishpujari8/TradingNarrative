@@ -1,7 +1,7 @@
 # plan.md — The Trading Narrative (FARM)
 
 ## 1) Objectives
-- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, server-side paywall previews, and a freemium → premium conversion model.
+- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, **server-side paywall previews**, and a freemium → premium conversion model.
 - Support **four pillars/themes**:
   - **Tech & AI** (`tech-business`)
   - **Business & Finance** (`finance`)
@@ -30,6 +30,12 @@
   - **Highlight Sharing** ✅ (download/share/copy a branded quote card)
   - **Share From Article** ✅ (share quote card directly from selection popover)
   - **Popular Highlights** ✅ (Kindle-style most-highlighted markers)
+- **Cross-platform sharing** ✅ *(Phase 36)*
+  - ShareBar “Share anywhere” now:
+    - Uses native share sheet when available (iOS/Android)
+    - Falls back to an all-platform dialog with WhatsApp/Telegram/X/LinkedIn/Facebook/Email/Copy Link when native share is unavailable or fails
+  - WhatsApp quick-share button added
+  - Quote-card sharing never dead-ends: native file share → link share → auto-download with guidance
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -106,6 +112,9 @@
 - **Spinning logo** ✅ *(slow, elegant rotation ~9s per turn; respects reduced motion)*
 - **Demo Cleanup** ✅ *(sample/demo essays auto-drafted/unpublished so credits are spent on real writing)*
 - **New Delivery essay imported** ✅ *(durable + premium-gated; see Phase 34)*
+- **Founding Member Wall** ✅ *(Phase 36)*
+  - `/about` includes a public thank-you wall that lists active Founding members
+  - Empty-state CTA routes to pricing until the first founding member subscribes
 
 ### Stability
 - Modular backend (monolith `server.py` split into routers/services) ✅
@@ -313,7 +322,7 @@
 - Weekly briefing edition #1 made premium-only.
 
 ### Phase 35 — Premium Growth Batch (Plans + Checkout Auth Fix + Narration Restore + Sync Updates) ✅ COMPLETED
-**Verified by testing agent iteration_26 (frontend 100%; backend pass; one tester probe targeted a nonexistent endpoint).**
+**Verified by testing agent iteration_26 (frontend 100%; backend pass).**
 
 1) **Narration resolved** ✅
 - User recharged ElevenLabs credits (paid).
@@ -336,7 +345,27 @@
 - Sync now updates already-live production posts using a safe allowlist.
 - Diff endpoint returns both `missing` and `outdated`.
 - UI updated to show New vs Update items and per-action results.
-- Verified: diff flags the briefing tier drift on production (five-things should be premium).
+
+### Phase 36 — Founding Member Wall + Cross-Platform Sharing ✅ COMPLETED
+**Verified by testing agent iteration_27 (backend 5/5, frontend 100%).**
+
+1) **Founding Member Wall** ✅
+- Backend: `GET /api/founding-members` (public)
+  - Lists users with active subscriptions where `plan='founding'`
+  - Returns `{members: [{name, since}], count}`
+- Frontend:
+  - `FoundingWall` on `/about`
+  - Empty-state CTA (Become a Founding Member → `/pricing`)
+  - Member chips + count badge once subscribers exist
+
+2) **Share bug fix (Android / non-iOS environments)** ✅
+- ShareBar:
+  - “Share anywhere” uses native share sheet when available
+  - Otherwise opens a dialog with WhatsApp/Telegram/X/LinkedIn/Facebook/Email/Copy link
+  - WhatsApp quick button added to the bar
+- Quote-card share:
+  - Native file share when supported
+  - Otherwise link share or auto-download with guidance
 
 ---
 
@@ -353,6 +382,7 @@
 
 3) **Redeploy production** ⛔ *(user action)*
    - Required for:
+     - Founding wall + cross-platform sharing
      - New pricing tiers and amounts
      - Checkout auth redirect fix
      - Sync update mode UI and server code
@@ -397,6 +427,10 @@
 - Logged-out users are redirected to /auth instead of seeing “Not authenticated”
 ✅ Production sync:
 - New posts AND drift updates (tier flips, edits) can be synced safely
+✅ Cross-platform share:
+- Sharing works on iOS AND on Android/desktop/in-app browsers via fallback share dialog
+✅ Founding wall:
+- About page shows empty-state CTA until first founding member; then lists members reliably
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on the key.
