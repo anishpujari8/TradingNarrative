@@ -7,7 +7,7 @@ from typing import Optional
 import stripe as stripe_sdk
 from emergentintegrations.payments.stripe.checkout import StripeCheckout
 
-from config import STRIPE_API_KEY, IS_SHARED_STRIPE_KEY, FRONTEND_URL, PLANS, logger
+from config import STRIPE_API_KEY, IS_SHARED_STRIPE_KEY, FRONTEND_URL, PLANS, ADMIN_NOTIFY_EMAIL, logger
 from db import db
 from utils import now_utc, iso
 from services.emailer import log_email
@@ -80,3 +80,18 @@ async def activate_premium_from_transaction(txn):
                                    'user_id': user['id'], 'created_at': iso(now_utc())})
     await log_email(user['email'], 'Welcome to Premium — The Trading Narrative',
                     f"Your {plan['label']} pass is active. Enjoy full access.", 'premium_welcome')
+    # Admin alert: new paid subscriber (fires once, behind the idempotent activation gate above)
+    amount = txn.get('amount', plan.get('amount'))
+    currency = (txn.get('currency') or plan.get('currency') or '').upper()
+    gateway = txn.get('provider', 'stripe')
+    await log_email(
+        ADMIN_NOTIFY_EMAIL, 'tradingnarrative email subscriber',
+        f"New paid subscriber on The Trading Narrative.\n\n"
+        f"Email: {user['email']}\n"
+        f"Name: {user.get('name', '')}\n"
+        f"Plan: {plan['label']} ({plan_id})\n"
+        f"Amount: {amount} {currency}\n"
+        f"Provider: {gateway}{' (MOCK payment)' if txn.get('mock') else ''}\n"
+        f"Transaction: {txn['session_id']}\n"
+        f"Time (UTC): {iso(now_utc())}",
+        'admin_subscriber_alert')

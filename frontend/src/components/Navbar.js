@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark, Highlighter } from "lucide-react";
+import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark, Highlighter, Flame } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { useTheme } from "@/context/ThemeContext";
@@ -97,6 +97,17 @@ export const Navbar = () => {
           <Button variant="ghost" size="icon" onClick={toggleTheme} data-testid="dark-mode-toggle" aria-label="Toggle dark mode">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
+
+          {user && (user.current_streak || 0) > 0 && (
+            <Badge
+              variant="secondary"
+              className="hidden sm:inline-flex items-center gap-1 rounded-md font-mono text-[11px] tabular-nums cursor-default"
+              title={`${user.current_streak}-day reading streak — longest: ${user.longest_streak || user.current_streak} days`}
+              data-testid="nav-streak-counter"
+            >
+              <Flame className="h-3 w-3 text-accent" /> {user.current_streak}
+            </Badge>
+          )}
 
           {user?.is_premium && (
             <Badge className="hidden sm:inline-flex bg-accent/10 text-accent border border-accent/30 hover:bg-accent/10 gap-1 rounded-md" data-testid="nav-premium-badge">

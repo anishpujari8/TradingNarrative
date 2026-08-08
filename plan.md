@@ -36,6 +36,9 @@
     - Falls back to an all-platform dialog with WhatsApp/Telegram/X/LinkedIn/Facebook/Email/Copy Link when native share is unavailable or fails
   - WhatsApp quick-share button added
   - Quote-card sharing never dead-ends: native file share → link share → auto-download with guidance
+- **NEW: Reading Streaks** ⏳ *(planned; Phase 37)*
+  - Reward regular readers with a visible streak counter (current + longest)
+  - Update streak on article reads (logged-in users)
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -47,6 +50,10 @@
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
 - **Resend** ⛔ *(planned; blocked pending user decisions + API key + sender domain verification)*
+- **NEW: Admin Alerts (Email Notifications)** ⏳ *(planned; Phase 37)*
+  - Notify admin on:
+    - newsletter subscribe
+    - paid subscription activation
 
 ### Audio narration (ElevenLabs)
 - **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
@@ -367,35 +374,130 @@
   - Native file share when supported
   - Otherwise link share or auto-download with guidance
 
+### Phase 37 — Reader Engagement + Admin Alerts ⏳ IN PROGRESS (current)
+> Adds retention (streaks) + operational awareness (admin subscribe alerts). Must follow `design_guidelines.md` (single accent color, calm premium surfaces).
+
+#### A) Admin notification email (newsletter + paid subscriptions) ⏳
+**Goal**: Admin receives immediate notification whenever the audience or revenue grows.
+
+1) **Config**
+- Add `ADMIN_NOTIFY_EMAIL` to `/app/backend/config.py` (default `anishpujari8@gmail.com`).
+
+2) **Newsletter subscribe alert**
+- In `/app/backend/routers/newsletter.py` `POST /api/newsletter/subscribe`:
+  - After successful insert, send `log_email(ADMIN_NOTIFY_EMAIL, "tradingnarrative email subscriber", ...)`
+  - Body includes:
+    - subscriber email
+    - source (if available)
+    - timestamp (UTC)
+
+3) **Paid subscription activation alert (Stripe + Razorpay)**
+- Implement once in `/app/backend/services/stripe_service.py` inside `activate_premium_from_transaction(txn)` (shared activation point):
+  - After user + plan are loaded and activation succeeds (idempotent gate already exists), send admin notification:
+    - **To**: `ADMIN_NOTIFY_EMAIL`
+    - **Subject**: `tradingnarrative email subscriber`
+    - Body includes:
+      - user email
+      - plan (`plan_id`, `plan.label`)
+      - amount + currency (from txn, fallback to plan)
+      - provider/gateway (`txn.provider`, `txn.gateway`)
+      - whether mock
+      - transaction/session id
+
+4) **Idempotency / spam guardrails**
+- Ensure admin email only fires when `activated` flips from false→true (i.e., behind the same `modified_count` gate).
+
+5) **Testing**
+- Backend test: create a mocked txn, call activation, assert an email log entry was created to admin.
+
+#### B) Reading streaks (user retention) ⏳
+**Goal**: Track reading consistency for logged-in users and surface it in the UI.
+
+1) **User schema extension (MongoDB)**
+- Add fields to `users` documents (optional defaults):
+  - `current_streak: int` (default 0)
+  - `longest_streak: int` (default 0)
+  - `last_read_date: str` (ISO date string; local day derived from client tz)
+
+2) **Backend API**
+- Add `POST /api/users/streak/read` in `/app/backend/routers/auth.py` (or a small new router if preferred) that:
+  - Requires auth (`get_current_user`)
+  - Accepts:
+    - `tz_offset_minutes` from client (Date.getTimezoneOffset())
+    - optional `slug` for analytics/debug
+  - Computes **user-local calendar day** by shifting `now_utc()` with offset.
+  - Updates streak:
+    - if first ever read day: `current=1`, `longest=max(longest,1)`
+    - if same local day as `last_read_date`: no change
+    - if last day is exactly yesterday (local): `current += 1`, update `longest`
+    - else: reset `current=1`, keep `longest`
+  - Persists updated fields to user.
+  - Returns `{current_streak, longest_streak, last_read_date}`.
+
+3) **Expose streak in session user**
+- Update `public_user()` in `/app/backend/security.py` to include:
+  - `current_streak`, `longest_streak`, `last_read_date` (safe public fields)
+- Ensure `/api/auth/me` returns these so UI can show streak without extra calls.
+
+4) **Frontend wiring**
+- `/app/frontend/src/pages/ArticlePage.js`:
+  - After successful post load, if `user` exists:
+    - call `api.post('/users/streak/read', { tz_offset_minutes: new Date().getTimezoneOffset(), slug })`
+    - then call `refreshUser()` to refresh streak in global auth context
+    - optional: toast only when streak increments (avoid noise)
+
+5) **UI surfaces**
+- `/app/frontend/src/components/Navbar.js`:
+  - Show a small, calm streak indicator for logged-in users, aligned with single-accent token system.
+  - Example: flame icon + `user.current_streak` as a subtle badge.
+
+- `/app/frontend/src/pages/AccountPage.js`:
+  - Add “Reading streak” card:
+    - Current streak
+    - Longest streak
+    - Last read day (optional)
+
+6) **Testing**
+- Backend:
+  - Unit tests for streak transitions (same day, next day, missed days) using controlled timestamps.
+- Frontend:
+  - Screenshot/UI verification: Navbar streak appears when logged in; Account page card renders.
+
 ---
 
 ## 3) Next Actions
 
 ### A) Immediate
-1) **Production: run “Sync to production” (now includes updates)** ⛔ *(user action)*
-   - This will:
-     - Create any missing published posts on production
-     - **Update existing production posts** whose fields drifted (e.g., Edition #1 briefing tier → premium)
+1) **Implement Phase 37 (Admin Alerts + Reading Streaks)** ⏳
+- Deliver:
+  - admin notification emails for newsletter signups + paid activations
+  - streak endpoint + UI surfaces
 
-2) **Production: run “Send narrations to live site”** ⛔ *(user action)*
-   - Now that preview has 5/5 cached, this will push all cached audio to production without spending new ElevenLabs credits.
+2) **Production: run “Sync to production” (now includes updates)** ⛔ *(user action)*
+- This will:
+  - Create any missing published posts on production
+  - **Update existing production posts** whose fields drifted (e.g., Edition #1 briefing tier → premium)
 
-3) **Redeploy production** ⛔ *(user action)*
-   - Required for:
-     - Founding wall + cross-platform sharing
-     - New pricing tiers and amounts
-     - Checkout auth redirect fix
-     - Sync update mode UI and server code
+3) **Production: run “Send narrations to live site”** ⛔ *(user action)*
+- Now that preview has 5/5 cached, this will push all cached audio to production without spending new ElevenLabs credits.
+
+4) **Redeploy production** ⛔ *(user action)*
+- Required for:
+  - Founding wall + cross-platform sharing
+  - New pricing tiers and amounts
+  - Checkout auth redirect fix
+  - Sync update mode UI and server code
+  - (After Phase 37) streak UI + admin alerts
 
 ### B) Upcoming
-4) **Edition #2 import** ⛔
-   - Paste Edition #2 newsletter text.
+5) **Edition #2 import** ⛔
+- Paste Edition #2 newsletter text.
 
-5) **PayPal (recurring subscriptions)** ⛔
-   - Provide PayPal decisions + credentials (Phase 19).
+6) **PayPal (recurring subscriptions)** ⛔
+- Provide PayPal decisions + credentials (Phase 19).
 
-6) **Resend integration** ⛔
-   - Answer the 4 setup decisions + provide Resend API key.
+7) **Resend integration** ⛔
+- Answer the 4 setup decisions + provide Resend API key.
 
 ---
 
@@ -411,7 +513,7 @@
 - “Most highlighted this week”
 - “Most listened this week”
 ✅ Narration production restore path works:
-- Production can receive cached audio via narration sync without spending new ElevenLabs credits.
+- Production can receive cached audio via narration sync without spending new credits.
 ✅ Narration cache is protected against corruption:
 - Import rejects invalid/tiny audio
 - Serving path purges corrupt cache
@@ -431,6 +533,18 @@
 - Sharing works on iOS AND on Android/desktop/in-app browsers via fallback share dialog
 ✅ Founding wall:
 - About page shows empty-state CTA until first founding member; then lists members reliably
+
+✅ NEW: Admin alerts
+- Admin receives an email to `ADMIN_NOTIFY_EMAIL` for:
+  - newsletter subscribe
+  - paid subscription activation (Stripe + Razorpay)
+- Subject is exactly: `tradingnarrative email subscriber`
+- Email body includes subscriber email + plan + amount + provider
+
+✅ NEW: Reading streaks
+- Logged-in readers accumulate a daily reading streak based on their local calendar day.
+- Streak appears in Navbar and Account page.
+- Backend endpoint is idempotent for same-day reads.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on the key.

@@ -51,6 +51,9 @@ EMAIL_ENABLED = bool(GMAIL_SMTP_USER and GMAIL_SMTP_PASSWORD)
 
 MARKETING_KINDS = {'digest', 'issue', 'welcome'}
 
+# Admin notifications: alerted whenever someone subscribes (newsletter or paid)
+ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', 'anishpujari8@gmail.com')
+
 # ElevenLabs narration (Essay Audio)
 ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', '')
 TTS_ENABLED = bool(ELEVENLABS_API_KEY)

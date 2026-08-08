@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Crown, CalendarClock, Receipt, Sparkles, MailCheck, Loader2 } from "lucide-react";
+import { Crown, CalendarClock, Receipt, Sparkles, MailCheck, Loader2, Flame } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -112,6 +112,42 @@ export default function AccountPage() {
                 <Link to="/admin"><Button variant="outline" size="sm" data-testid="account-admin-button">Open Admin Studio</Button></Link>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Reading streak */}
+        <Card className="rounded-2xl mb-6" data-testid="account-streak-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="font-serif text-xl flex items-center gap-2">
+              <Flame className="h-5 w-5 text-accent" /> Reading streak
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border border-border bg-secondary/40 p-4">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Current streak</div>
+                <div className="font-serif text-3xl font-semibold tabular-nums" data-testid="account-current-streak">
+                  {user.current_streak || 0}
+                  <span className="text-sm text-muted-foreground font-sans font-normal ml-1.5">
+                    {(user.current_streak || 0) === 1 ? "day" : "days"}
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border bg-secondary/40 p-4">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Longest streak</div>
+                <div className="font-serif text-3xl font-semibold tabular-nums" data-testid="account-longest-streak">
+                  {user.longest_streak || 0}
+                  <span className="text-sm text-muted-foreground font-sans font-normal ml-1.5">
+                    {(user.longest_streak || 0) === 1 ? "day" : "days"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3" data-testid="account-streak-hint">
+              {(user.current_streak || 0) > 0
+                ? "Read at least one essay a day to keep your streak alive."
+                : "Read an essay today to start your streak."}
+            </p>
           </CardContent>
         </Card>
 

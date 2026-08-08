@@ -49,6 +49,11 @@ class AudioProgressIn(BaseModel):
     milestone: int  # 25 | 50 | 75 | 100 (percent of the narration reached)
 
 
+class StreakReadIn(BaseModel):
+    tz_offset_minutes: int = 0  # from JS Date.getTimezoneOffset() (positive = behind UTC)
+    slug: str = ''
+
+
 class NewsletterIn(BaseModel):
     email: EmailStr
     source: str = 'site'

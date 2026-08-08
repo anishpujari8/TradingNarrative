@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 
-from config import CATEGORIES, FRONTEND_URL, GMAIL_SMTP_USER
+from config import CATEGORIES, FRONTEND_URL, GMAIL_SMTP_USER, ADMIN_NOTIFY_EMAIL
 from db import db
 from utils import now_utc, iso, clean
 from security import get_current_user, get_admin_user
@@ -29,6 +29,15 @@ async def newsletter_subscribe(body: NewsletterIn):
     await db.analytics.insert_one({'id': str(uuid.uuid4()), 'event': 'newsletter_subscribe',
                                    'path': body.source, 'meta': {}, 'user_id': None,
                                    'created_at': iso(now_utc())})
+    # Admin alert: new newsletter subscriber
+    await log_email(
+        ADMIN_NOTIFY_EMAIL, 'tradingnarrative email subscriber',
+        f"New newsletter subscriber on The Trading Narrative.\n\n"
+        f"Email: {email}\n"
+        f"Type: Newsletter (free)\n"
+        f"Source: {body.source or 'unknown'}\n"
+        f"Time (UTC): {iso(now_utc())}",
+        'admin_subscriber_alert')
     return {'ok': True, 'message': "You're in! Check your inbox for a welcome note.", 'already': False}
 
 

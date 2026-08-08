@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight } from "lucide-react";
+import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight, Flame } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
@@ -72,7 +72,7 @@ const Paywall = ({ post }) => {
 
 export default function ArticlePage() {
   const { slug } = useParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [error, setError] = useState(null);
@@ -222,6 +222,27 @@ export default function ArticlePage() {
       })
       .catch((err) => setError(err?.response?.status === 404 ? "This post doesn't exist." : "Failed to load the article."));
   }, [slug, authLoading, user?.is_premium]);
+
+  // reading streak: count this essay toward the reader's daily streak (once per essay visit)
+  const streakSent = useRef(false);
+  useEffect(() => { streakSent.current = false; }, [slug]);
+  useEffect(() => {
+    if (!post || !user || streakSent.current) return;
+    streakSent.current = true;
+    api.post("/users/streak/read", { tz_offset_minutes: new Date().getTimezoneOffset(), slug })
+      .then((res) => {
+        if (!res.data?.extended) return;
+        refreshUser();
+        const s = res.data.current_streak;
+        toast(s > 1 ? `${s}-day reading streak` : "Reading streak started", {
+          description: s > 1 ? "You've read on consecutive days. Keep it going tomorrow." : "Come back tomorrow to build your streak.",
+          icon: <Flame className="h-4 w-4 text-accent" />,
+          duration: 4000,
+        });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post, user?.id]);
 
   if (error) {
     return (

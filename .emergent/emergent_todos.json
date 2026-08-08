@@ -1,22 +1,26 @@
 [
   {
-    "content": "Verify ElevenLabs credits topped up + regenerate all missing narrations (warmup)",
-    "status": "completed"
+    "content": "Add ADMIN_NOTIFY_EMAIL to config.py",
+    "status": "in_progress"
   },
   {
-    "content": "Fix 'Go premium annual → not authenticated' bug",
-    "status": "completed"
+    "content": "Admin alert email in newsletter subscribe + activate_premium_from_transaction",
+    "status": "pending"
   },
   {
-    "content": "Update premium plans per document: Monthly $10/₹399, Annual $100/₹3,999, add Founding Member $250/₹9,999",
-    "status": "completed"
+    "content": "Streak endpoint POST /api/users/streak/read + schema + public_user streak fields",
+    "status": "pending"
   },
   {
-    "content": "Weekly briefing premium enforcement on production: extend sync tool to update existing posts (tier etc.)",
-    "status": "completed"
+    "content": "Frontend: ArticlePage streak trigger + refreshUser + toast",
+    "status": "pending"
   },
   {
-    "content": "Testing agent verification of all fixes",
-    "status": "completed"
+    "content": "Frontend: Navbar streak badge + AccountPage streak card",
+    "status": "pending"
+  },
+  {
+    "content": "Test backend (testing agent) + UI screenshots",
+    "status": "pending"
   }
 ]

@@ -1,6 +1,6 @@
 """Auth routes: register, login, magic links, password reset."""
 import uuid
-from datetime import timedelta
+from datetime import timedelta, date
 
 from fastapi import APIRouter, HTTPException, Depends
 
@@ -10,7 +10,7 @@ from utils import now_utc, iso
 from security import (hash_password, verify_password, make_token, get_current_user,
                       is_entitled, public_user)
 from schemas import (RegisterIn, LoginIn, MagicRequestIn, MagicVerifyIn,
-                     PasswordResetRequestIn, PasswordResetConfirmIn)
+                     PasswordResetRequestIn, PasswordResetConfirmIn, StreakReadIn)
 from services.emailer import log_email
 
 router = APIRouter(prefix='/api')
@@ -86,6 +86,52 @@ async def magic_verify(body: MagicVerifyIn):
 async def me(user=Depends(get_current_user)):
     premium = await is_entitled(user)
     return {'user': public_user(user, premium)}
+
+
+@router.post('/users/streak/read')
+async def record_streak_read(body: StreakReadIn, user=Depends(get_current_user)):
+    """Record a reading day for the signed-in user and update their streak.
+
+    Streak rules (based on the reader's LOCAL calendar day, derived from the
+    client tz offset): same day = no change; consecutive day = +1; gap = reset to 1.
+    Idempotent for multiple reads on the same day.
+    """
+    # clamp offset to valid range (-14h .. +14h) to avoid abuse
+    offset = max(-840, min(840, int(body.tz_offset_minutes or 0)))
+    # JS getTimezoneOffset(): positive means local is BEHIND UTC -> subtract
+    local_now = now_utc() - timedelta(minutes=offset)
+    today = local_now.date()
+
+    current = int(user.get('current_streak') or 0)
+    longest = int(user.get('longest_streak') or 0)
+    last_str = user.get('last_read_date')
+    extended = False
+
+    last_day = None
+    if last_str:
+        try:
+            last_day = date.fromisoformat(last_str)
+        except (ValueError, TypeError):
+            last_day = None
+
+    if last_day == today:
+        pass  # already counted today
+    elif last_day == today - timedelta(days=1):
+        current += 1
+        extended = True
+    else:
+        current = 1
+        extended = True
+    longest = max(longest, current)
+
+    if extended:
+        await db.users.update_one({'id': user['id']}, {'$set': {
+            'current_streak': current, 'longest_streak': longest,
+            'last_read_date': today.isoformat(),
+        }})
+    return {'ok': True, 'extended': extended,
+            'current_streak': current, 'longest_streak': longest,
+            'last_read_date': today.isoformat()}
 
 
 @router.post('/auth/password-reset/request')
