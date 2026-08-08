@@ -26,10 +26,12 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
 RAZORPAY_ENABLED = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
 
 PLANS = {
-    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 8.00, 'currency': 'usd',
-                'amount_inr': 199.00, 'interval': 'month', 'period_days': 30},
-    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 80.00, 'currency': 'usd',
-               'amount_inr': 1999.00, 'interval': 'year', 'period_days': 365},
+    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 10.00, 'currency': 'usd',
+                'amount_inr': 399.00, 'interval': 'month', 'period_days': 30},
+    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 100.00, 'currency': 'usd',
+               'amount_inr': 3999.00, 'interval': 'year', 'period_days': 365},
+    'founding': {'id': 'founding', 'label': 'Founding Member', 'amount': 250.00, 'currency': 'usd',
+                 'amount_inr': 9999.00, 'interval': 'year', 'period_days': 365},
 }
 
 CATEGORIES = {

@@ -47,7 +47,8 @@ async def maybe_reprobe_razorpay(force: bool = False):
 
 async def get_or_create_razorpay_plan(plan_id: str) -> str:
     plan = PLANS[plan_id]
-    key = f'razorpay_plan_{plan_id}'
+    # amount is part of the cache key: a price change automatically mints a fresh Razorpay plan
+    key = f'razorpay_plan_{plan_id}_{int(plan["amount_inr"])}'
     stored = await db.config.find_one({'key': key})
     if stored:
         return stored['value']
