@@ -257,7 +257,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
   'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. '
              'Edition #1 of The Trading Narrative.',
   'category': 'finance',
-  'tier': 'free',
+  'tier': 'premium',
   'cover_image': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&q=80&auto=format&fit=crop',
   'tags': ['ETRM', 'Commodities', 'Markets', 'Risk', 'Regulation'],
   'featured': True,
@@ -655,3 +655,356 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      'the journal, the morning ride: we all have our version of it.',
                      "And if you're ever on the Pune–Babe Ghaat route on a Royal Enfield, you already know "
                      "exactly what I'm talking about."]}]
+
+REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifecycle-design-and-why-agile',
+  'title': 'Delivering a Power Trading Desk: System Compliance, Lifecycle Design, and Why Agile/SAFe '
+           'Changes the Economics',
+  'excerpt': 'Compliance is not a phase you add at the end — it is a property of every design decision from '
+             'sprint one. What twelve years of ETRM delivery teaches about building the systems behind a '
+             'power desk.',
+  'category': 'delivery',
+  'tier': 'premium',
+  'cover_image': 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['Power Trading', 'ETRM', 'Compliance', 'SAFe', 'Agile', 'Delivery'],
+  'featured': True,
+  'edition': None,
+  'content_blocks': [
+    'Most articles about power trading explain the trade lifecycle. Far fewer explain how you actually '
+    'build the systems that run it — and almost none address the thing that quietly determines whether a '
+    'power desk implementation succeeds or drags into its third year: compliance is not a phase you add '
+    'at the end. It is a property of every design decision you make from sprint one.',
+    'I have spent twelve years delivering ETRM and CTRM programmes across Oil & Gas, LNG, Metals, Agro, '
+    'and Power. Power is the hardest of them. Not because the instruments are more complex — metals '
+    'concentrate contracts are arguably worse — but because power is the only commodity where the '
+    'physical delivery obligation, the regulatory reporting obligation, and the financial settlement '
+    'obligation all run on different clocks, and all three must be satisfied simultaneously, every hour, '
+    'without exception.',
+    'This article covers three things: what system compliance actually means across the power trade '
+    'lifecycle, how the lifecycle translates into delivery scope, and why an Agile or SAFe operating '
+    'model is not a nice-to-have for a power desk build but the only structure that survives contact '
+    'with ISO rule changes.',
+    '## Part 1: Why Power Desk Delivery Is Structurally Different',
+    'Electricity cannot be economically stored at scale. It must be generated and consumed '
+    'simultaneously. Every practitioner knows this sentence. Far fewer trace it through to its delivery '
+    'consequences. Here is what non-storability actually does to your implementation scope:',
+    'Your system has a hard external deadline every single day. Day-ahead nominations must reach the ISO '
+    'by a fixed clock time — typically noon the day before the operating day. If your scheduling module '
+    'is down at 11:45, you do not have a defect; you have a commercial exposure and potentially an ISO '
+    'compliance event. Compare this with a crude cargo, where a nomination sent four hours late is an '
+    'operational annoyance resolved by a phone call.',
+    'Your position is time-granular in a way other commodities are not. An oil position can be '
+    'meaningfully expressed as a monthly volume. A power position cannot. Shape risk — the price '
+    'difference across hours of the day and across seasons — means the position must be held, valued, '
+    'and risk-managed at hourly or sub-hourly granularity. A data model that treats a power trade like a '
+    'monthly forward will fail its first shaped deal, and you will discover this in UAT rather than '
+    'design.',
+    'Your settlement inputs arrive from a third party you cannot control. ISO settlement statements — '
+    'with hourly LMPs, metered quantities, uplift and ancillary service charges — arrive on the ISO\'s '
+    'timetable, in the ISO\'s format, subject to the ISO\'s resettlement rules. Your invoicing module is '
+    'downstream of a data feed that will change format, restate historical periods, and occasionally '
+    'arrive late. Design for that, or build a permanent manual reconciliation team by accident.',
+    'Your compliance obligations are simultaneous and non-negotiable. FERC oversight on market conduct '
+    'and tariff compliance. CFTC and Dodd-Frank swap reporting for financial trades. ISO/RTO tariff '
+    'compliance for scheduling behaviour. FERC Electric Quarterly Reports for bilateral transaction '
+    'disclosure. SOX controls demanding a complete audit trail from execution through payment. Each has '
+    'its own definition of a reportable event, its own deadline, and its own penalty regime.',
+    'That last point is where most delivery programmes underestimate scope by a factor I have repeatedly '
+    'seen land between two and three.',
+    '## Part 2: What "System Compliance" Actually Means',
+    'When a steering committee says "the system must be compliant," they usually mean "we must not get '
+    'fined." That is the outcome, not the requirement. For delivery purposes, system compliance in a '
+    'power desk decomposes into five distinct capabilities, each of which needs explicit backlog items.',
+    '1. Completeness of capture. Every economic event that creates a reporting obligation must land in '
+    'the system, with the fields the regulator requires, at the time the event occurs. A trade executed '
+    'on a broker platform and typed into the ETRM the following morning has already failed a real-time '
+    'reporting requirement regardless of what the system does afterwards. Completeness is an integration '
+    'and workflow problem before it is a reporting problem.',
+    '2. Immutability and audit trail. SOX and FERC both require that you can reconstruct what the system '
+    'knew, and when. This means append-only event logging on trade amendments, price curve versions, '
+    'limit changes, and approval decisions — not just a "last modified by" column. Retrofitting audit '
+    'trail onto a system that overwrites records is one of the most expensive changes you can make late '
+    'in a programme.',
+    '3. Segregation of duties, enforced in the system. The person who books the trade cannot be the '
+    'person who approves it, who cannot be the person who releases the payment. This has to be enforced '
+    'by role-based access control and workflow routing, not by policy documents. Auditors will test it '
+    'by attempting the prohibited action.',
+    '4. Timeliness with evidence. Meeting a deadline is necessary but insufficient — you must be able to '
+    'prove you met it. Submission timestamps, acknowledgement receipts from the trade repository or ISO, '
+    'and exception handling for rejected submissions all need to be first-class features with their own '
+    'screens and reports, not log-file archaeology.',
+    '5. Traceable reconciliation. Scheduled volume versus e-Tagged volume versus ISO-metered volume '
+    'versus invoiced volume versus GL-posted amount. Every step in that chain needs a documented, '
+    'systematised reconciliation with break tracking. When FERC or an internal auditor asks how a '
+    'specific megawatt-hour flowed from schedule to cash, the answer must be a report, not a spreadsheet '
+    'assembled by an analyst who remembers.',
+    'If your backlog does not contain explicit stories for all five of these, your programme has a '
+    'compliance debt it has not yet priced.',
+    '## Part 3: The Lifecycle as Delivery Scope',
+    'Here is the seven-stage power trade lifecycle, translated from a domain description into what it '
+    'actually means for a delivery team — the system capability required, the compliance control that '
+    'must be embedded, and where implementations most often go wrong.',
+    '## Stage 1 — Trade Origination and Deal Structuring',
+    'System capability: Counterparty master with credit limits and legal agreement references (ISDA, '
+    'EEI, NAESB) linked at the entity level. Deal type templates for physical forwards, financial swaps, '
+    'day-ahead, real-time, capacity, options, and tolling agreements — each with its own field set and '
+    'validation rules.',
+    'Compliance control: Counterparty onboarding gate — no trade can be booked against a counterparty '
+    'without an executed master agreement reference, a credit limit, and a completed sanctions and KYC '
+    'check recorded in the system.',
+    'Where it goes wrong: Teams build one generic "power deal" template and try to configure the seven '
+    'deal types as variations. Tolling agreements and capacity products break this model almost '
+    'immediately because their economics are not volumetric in the same way. Model the deal types as '
+    'distinct from the start.',
+    '## Stage 2 — Pricing and Valuation',
+    'System capability: Forward curve construction from exchange settlements and broker quotes, with '
+    'hourly shaping factors. Support for fixed, index, basis, heat rate, and spark spread pricing '
+    'methods. Daily mark-to-market using EOD curves, with unrealised P&L tracked against original deal '
+    'price.',
+    'Compliance control: Curve versioning and approval. The curve used to mark the book on a given date '
+    'must be immutably retrievable, with a record of who approved it. This is the single most common '
+    'finding in trading system audits.',
+    'Where it goes wrong: Underestimating locational granularity. In an ISO market, LMP resolves at '
+    'every node — energy component plus congestion component plus loss component. A curve library built '
+    'at hub level cannot value a nodal position, and basis risk becomes invisible to the risk system. '
+    'This is not a reporting gap; it is a risk management failure.',
+    '## Stage 3 — Deal Capture and Legal Documentation',
+    'System capability: Straight-through capture from execution venues where possible, with structured '
+    'entry covering trade economics, delivery details (node, path, profile), and counterparty data. '
+    'Electronic confirmation via ICE eConfirm, DTCC, or equivalent, with affirmation status tracked and '
+    'discrepancies routed to middle office.',
+    'Compliance control: T+1 confirmation SLA with automated ageing and escalation. Unconfirmed trades '
+    'beyond tolerance must be visible on a dashboard that someone is accountable for clearing.',
+    'Where it goes wrong: Treating confirmation as a back-office batch process rather than a monitored '
+    'workflow. A confirmation backlog is a settlement risk and a regulatory exposure, and it grows '
+    'silently until month-end.',
+    '## Stage 4 — Risk Management',
+    'System capability: VaR and Expected Shortfall at 95 and 99 percent confidence. Greeks for the '
+    'options book. Position limits by commodity, region, and tenor with live utilisation. Basis VaR for '
+    'hub-to-node spreads. Shape analysis at hourly granularity. Credit exposure decomposed into current '
+    'exposure and potential future exposure, with CSA collateral thresholds and margin triggers.',
+    'Compliance control: Limit breach detection with mandatory acknowledgement workflow. A breach that '
+    'is detected but not acknowledged and dispositioned within a defined window is itself a control '
+    'failure.',
+    'Where it goes wrong: Building market risk and credit risk as separate systems with separate '
+    'position sources. When the credit team\'s exposure number cannot be reconciled to the risk team\'s '
+    'position, neither is trusted, and both get shadowed in spreadsheets.',
+    '## Stage 5 — Scheduling and Nominations',
+    'System capability: Day-ahead, hour-ahead, and real-time scheduling workflows aligned to ISO clock '
+    'deadlines. e-Tag creation and management through OATI or equivalent. Transmission reservation '
+    'tracking against OASIS, distinguishing firm from non-firm and point-to-point from network service. '
+    'Curtailment and deviation handling with immediate desk notification.',
+    'Compliance control: Deadline monitoring with pre-emptive alerting. Not "did we miss the noon '
+    'deadline" but "it is 11:15 and three schedules are unsubmitted." Uninstructed deviation tracking '
+    'with root cause tagging, because the ISO will charge for them and Finance will ask why.',
+    'Where it goes wrong: This is the stage most commonly under-scoped by teams whose experience is in '
+    'oil or gas. Scheduling is not a downstream administrative function in power — it is a real-time '
+    'operational system with hard external deadlines, 24/7 coverage requirements, and direct financial '
+    'consequence. Budget it accordingly.',
+    '## Stage 6 — Settlements and Invoicing',
+    'System capability: Ingestion of ISO settlement statements, meter data, counterparty invoices, index '
+    'publications, and transmission invoices. Invoice calculation supporting fixed, index, and '
+    'formula-priced deals. Dispute workflow with the undisputed-portion-pays rule embedded. ISO '
+    'settlement reconciliation comparing scheduled to metered to settled quantities.',
+    'Compliance control: Dispute ageing against the contractual cure period — typically thirty days '
+    'under EEI or ISDA — with escalation before the window closes. Missing an ISO dispute window is a '
+    'permanent loss.',
+    'Where it goes wrong: Building the invoice engine before understanding resettlement. ISOs restate '
+    'prior periods. If your system cannot reprocess a settled month against a restated statement and '
+    'generate the delta without breaking the GL, you will be doing it manually for years.',
+    '## Stage 7 — Payment and Financial Accounting',
+    'System capability: Bilateral and multilateral netting. Payment instruction generation with SSI '
+    'management and dual authorisation. Collateral tracking against CSA thresholds including cash, '
+    'letters of credit, and guarantees. GL posting with hedge accounting support under ASC 815 or IFRS '
+    '9, and NPNS designation for qualifying physical contracts.',
+    'Compliance control: Four-eyes payment release, enforced by the system, with the approver unable to '
+    'be the originator. Hedge documentation retained and linked to the designated hedge relationship — '
+    'auditors will ask for the contemporaneous documentation.',
+    'Where it goes wrong: NPNS and hedge accounting treated as a Finance concern raised in month nine. '
+    'The designation affects data capture at the point of trade entry. It belongs in the Stage 3 data '
+    'model.',
+    '## Part 4: Why Waterfall Fails a Power Desk Build',
+    'I want to be careful here, because "waterfall bad, agile good" is a lazy argument and often wrong. '
+    'Waterfall works perfectly well for a stable, well-understood scope — a metals concentrate module '
+    'against a contract template that has not changed in a decade, for example. Power is not that. Three '
+    'characteristics make sequential delivery structurally unsuitable.',
+    'ISO rules change during your programme. Market rule filings, tariff amendments, and settlement '
+    'methodology changes arrive on the regulator\'s schedule, not yours. A twelve-month waterfall '
+    'programme will absorb at least one material rule change mid-build. In a sequential model, that '
+    'change arrives as a scope variation against a signed design, triggering a change request cycle that '
+    'costs weeks. In an iterative model, it enters the backlog and gets prioritised into the next '
+    'increment.',
+    'Requirements genuinely cannot be fully known upfront. Not because analysis was insufficient, but '
+    'because the interaction between shaped positions, nodal pricing, transmission rights, and ISO '
+    'settlement behaviour produces edge cases that surface only when real data flows through real '
+    'logic. The scheduling team will discover something in sprint eight that no workshop would have '
+    'surfaced.',
+    'The desk cannot wait for a big bang. A power desk being stood up has commercial pressure to start '
+    'trading. A delivery model that produces nothing usable for nine months forces the business to '
+    'trade on spreadsheets in the interim — and those spreadsheets become entrenched, creating a '
+    'parallel shadow system you then have to decommission.',
+    '## Part 5: Agile and SAFe for a Power Desk Setup',
+    'For a single-team enhancement, Scrum is sufficient. For standing up a power desk — which touches '
+    'front office, risk, scheduling, back office, finance, compliance, and multiple external '
+    'integrations simultaneously — you have a multi-team coordination problem, and this is where SAFe '
+    'earns its keep.',
+    '## The Agile Release Train',
+    'Structure the programme as a single ART with five to seven teams, aligned to value streams rather '
+    'than technical layers:',
+    'Trade Capture and Front Office Team — deal types, pricing, curve management, position views. '
+    'Risk Team — VaR, limits, credit exposure, P&L Explain, stress and scenario capability. '
+    'Scheduling and Operations Team — the highest-risk team on the programme: ISO integration, e-Tag '
+    'management, transmission reservations, real-time workflows. '
+    'Settlements and Finance Team — ISO statement ingestion, invoicing, disputes, GL, hedge accounting. '
+    'Integration and Data Team — the ETRM to ISO portal to market data to GL interfaces, plus the '
+    'analytics layer.',
+    'Compliance and Controls Team — sometimes a full team, sometimes a role embedded across teams. Owns '
+    'regulatory reporting, audit trail, segregation of duties, and evidence generation. My strong '
+    'preference is a dedicated team, because when compliance is everyone\'s part-time responsibility it '
+    'becomes nobody\'s.',
+    '## PI Planning as the Compliance Checkpoint',
+    'Program Increment planning every eight to twelve weeks is where power desk delivery differs most '
+    'usefully from generic SAFe. Three additions I would insist on:',
+    'A regulatory horizon review at every PI planning. Standing agenda item: what has FERC filed, what '
+    'has the ISO announced, what CFTC guidance has been issued, and what does it mean for the next '
+    'increment? This converts regulatory change from an emergency into a planned input.',
+    'Compliance acceptance criteria on every feature. Not a separate compliance epic — acceptance '
+    'criteria on the features themselves. A trade capture feature is not done unless the audit trail is '
+    'written, the segregation-of-duties rule is enforced, and the reportable-event flag is set '
+    'correctly.',
+    'An explicit dependency map to ISO calendars. Your scheduling team\'s increment boundaries should '
+    'respect the ISO\'s own change calendar. Deploying a scheduling change the week before a market rule '
+    'goes live is avoidable self-harm.',
+    '## Cadence That Matches the Business',
+    'Two-week sprints work for most teams on the train. The scheduling and operations team often '
+    'benefits from a shorter cycle during ISO integration work, because feedback from connectivity '
+    'testing arrives faster than a fortnight.',
+    'Run a system demo every increment with the actual desk — traders, schedulers, back office analysts '
+    '— not with their managers. The person who will type the nomination at 11:40 will find in ten '
+    'minutes what a steering committee will not find in ten weeks.',
+    'What SAFe buys you specifically here: the honest answer is not "faster delivery." It is earlier '
+    'discovery of expensive problems and structural absorption of regulatory change. On a power desk '
+    'build those are the two things that determine whether you land within budget.',
+    '## Part 6: Business Scenarios — What This Looks Like in Delivery',
+    'Abstractions are easy. Here are five scenarios drawn from the shape of real programmes, expressed '
+    'as they would actually arrive at a delivery team.',
+    '## Scenario 1: The Shaped Deal That Breaks the Data Model',
+    'The situation. Sprint six. The desk books a shaped physical forward — 50 MW peak, 20 MW off-peak, '
+    'weekdays only, across a summer month. The position engine returns a single monthly volume. Risk '
+    'reports a flat position. The trader says the number is wrong.',
+    'What actually happened. The trade model stores volume as a monthly quantity with a profile label '
+    'rather than an hourly volume vector. Every downstream calculation — MTM, VaR, shape risk, '
+    'scheduling quantity — inherits the same flaw.',
+    'The delivery response. This is not a bug fix; it is a data model change touching every team on the '
+    'train. In a sequential programme discovered at UAT, it is a catastrophe. Discovered in sprint six '
+    'through a system demo with an actual trader, it is a painful but survivable refactor, absorbed '
+    'into the next PI with a re-planned increment.',
+    'The lesson for scoping. Build the hourly volume vector into the data model on day one, even if the '
+    'first deals are flat blocks. Retrofitting granularity is exponentially more expensive than '
+    'carrying it from the start.',
+    '## Scenario 2: The ISO Rule Change Mid-Programme',
+    'The situation. Month seven of a twelve-month build. The ISO files and receives approval for a '
+    'change to its settlement methodology affecting how uplift charges are allocated. Go-live is month '
+    'twelve.',
+    'The waterfall path. Signed functional design is now wrong. Change request raised. Impact assessed '
+    'across settlements and reconciliation. Commercial negotiation over whether this is in scope. Three '
+    'to five weeks of elapsed time before anyone writes code, and a strained client relationship.',
+    'The SAFe path. The change surfaces in the regulatory horizon review at the next PI planning. '
+    'Settlements team sizes it. It competes for capacity against other backlog items on transparent '
+    'business value. It enters the increment. Elapsed time to first code: days.',
+    'The commercial point worth making to a sponsor. The Agile approach did not make the change free. '
+    'It made the change routine. On a programme that will absorb two or three of these, that difference '
+    'compounds into months.',
+    '## Scenario 3: The Nomination Deadline Incident',
+    'The situation. UAT. During a simulated day-ahead cycle the scheduling module takes eleven minutes '
+    'to generate and validate schedules for the full portfolio. The ISO deadline is a hard clock. The '
+    'desk\'s operating procedure allows a fifteen-minute window. The margin is four minutes with no '
+    'contingency.',
+    'Why this is a delivery finding, not a performance ticket. The non-functional requirement was '
+    'written as "system should perform adequately." Nobody converted the ISO\'s external deadline into a '
+    'testable performance budget.',
+    'The delivery response. Non-functional requirements for a power desk must be expressed as '
+    'clock-time budgets tied to external deadlines, and load-tested at realistic portfolio scale from '
+    'the first increment that touches scheduling. Add a manual fallback procedure and test it — because '
+    'on the day the system is slow, the desk still has to nominate.',
+    'Scenario extension worth planning for. What happens if the ISO portal itself is unavailable at '
+    '11:50? Your runbook, not your system, answers that. Write it during delivery, not after the first '
+    'incident.',
+    '## Scenario 4: The Reconciliation Nobody Owned',
+    'The situation. Post go-live, month two. Finance reports that settled cash does not reconcile to '
+    'invoiced amounts on roughly four percent of hours. Investigation reveals uninstructed deviations — '
+    'actual delivered volume differing from scheduled volume — generating ISO uplift charges that were '
+    'never allocated to a trading book.',
+    'Root cause in delivery terms. The scheduling team built schedule-versus-tag reconciliation. The '
+    'settlements team built invoice-versus-ISO-statement reconciliation. Nobody built '
+    'schedule-versus-metered, because it sat in the seam between two teams\' backlogs.',
+    'The prevention. Explicitly map the full reconciliation chain — scheduled to tagged to metered to '
+    'settled to invoiced to posted — as a single feature with a single owner, at PI planning, before '
+    'any team starts building any part of it. Seams between teams are where compliance gaps live.',
+    '## Scenario 5: The Audit That Arrives Early',
+    'The situation. Internal audit requests, three months post go-live, a complete trace of one '
+    'specific trade: execution through confirmation, risk capture, scheduling, delivery, settlement, '
+    'payment, and GL posting, with timestamps and approver identity at every control point.',
+    'The good outcome. A report exists. It was built as a feature — "trade lifecycle audit trace" — '
+    'because someone put it in the backlog during design, not because a developer wrote a SQL query at '
+    'midnight.',
+    'The bad outcome. Three analysts spend two weeks assembling it from six systems, and the resulting '
+    'evidence pack has gaps because the price curve version used to mark the trade on day four was '
+    'overwritten.',
+    'The delivery instruction. Write the audit trace report as a feature in the first PI. It is the '
+    'single best forcing function for audit trail completeness, because building it immediately exposes '
+    'every place where the data does not exist.',
+    '## Part 7: Delivery Anti-Patterns Specific to Power',
+    'Compliance as a phase. A "regulatory reporting workstream" starting in month eight guarantees '
+    'rework, because reportability is determined by fields captured at trade entry.',
+    'Copying an oil or gas blueprint. Physical oil and physical power share vocabulary and almost no '
+    'operational reality. A delivery plan lifted from a crude implementation will under-scope '
+    'scheduling by a wide margin.',
+    'Treating the ISO interface as one integration. Day-ahead submission, real-time adjustment, e-Tag '
+    'management, settlement statement retrieval, and OASIS transmission data are separate interfaces '
+    'with separate protocols, failure modes, and change cadences. Size them separately.',
+    'Demoing to managers. The schedulers and back-office analysts find the real defects. Get them in '
+    'the room.',
+    'Deferring the reconciliation chain. It is the least glamorous scope on the programme and the first '
+    'thing an auditor asks about.',
+    'No manual fallback. Every hard external deadline needs a documented, tested manual procedure. '
+    'Systems fail. Deadlines do not move.',
+    '## Part 8: A Compliance-by-Design Checklist for the Backlog',
+    'If I were reviewing a power desk programme backlog, these are the items I would look for by name:',
+    '1. Counterparty onboarding gate with agreement, credit, and sanctions checks enforced at booking. '
+    '2. Curve versioning with approval workflow and immutable historical retrieval. '
+    '3. Append-only audit logging on trades, amendments, limits, curves, and approvals. '
+    '4. Role-based segregation of duties enforced in workflow, testable by attempted violation. '
+    '5. Confirmation ageing dashboard with T+1 SLA and escalation.',
+    '6. Limit breach acknowledgement workflow with dispositioning. '
+    '7. Nomination deadline pre-emptive alerting, not post-hoc detection. '
+    '8. Uninstructed deviation capture with root cause tagging and book allocation. '
+    '9. Full reconciliation chain — scheduled, tagged, metered, settled, invoiced, posted — as one '
+    'owned feature. '
+    '10. ISO resettlement reprocessing without GL corruption.',
+    '11. Dispute ageing against contractual cure periods with pre-expiry escalation. '
+    '12. Four-eyes payment release with originator exclusion enforced in system. '
+    '13. Regulatory submission timestamps and acknowledgement receipts as first-class records. '
+    '14. Trade lifecycle audit trace report, built in the first increment. '
+    '15. Hedge designation and NPNS flags captured at trade entry, not derived later.',
+    'Fifteen items. If a programme cannot point to where each lives in the backlog, the compliance debt '
+    'is real and unpriced.',
+    '## Conclusion',
+    'The power trade lifecycle is well documented as a domain process. What is less well documented is '
+    'that delivering the systems behind it is a distinct discipline — one where the hardest problems '
+    'are not the pricing models but the seams: between teams, between systems, between the ISO\'s clock '
+    'and yours, and between what the design document said and what the desk actually does at 11:40 on a '
+    'Tuesday.',
+    'Compliance is not a module. It is a set of properties that either exist in your data model, your '
+    'workflow, and your audit trail from the first increment, or get retrofitted later at multiples of '
+    'the cost.',
+    'And an Agile or SAFe operating model is not chosen for speed. It is chosen because power markets '
+    'change during your programme, because the genuinely expensive requirements are the ones nobody '
+    'could have written down in month one, and because the desk needs something usable long before '
+    'month twelve.',
+    'Get those two things right — compliance embedded in design, and a delivery cadence that absorbs '
+    'change rather than resisting it — and the rest of a power desk build becomes an engineering '
+    'problem rather than an existential one.',
+    'Anish Pujari is a Senior ETRM/CTRM Product Manager and Consultant with over 12 years delivering '
+    'front-to-back commodity trading platforms across Oil & Gas, Power, LNG, Metals, and Agro. '
+    'Platforms include Endur (OpenLink), Eka, RightAngle, Triple Point, and Aligne TRM. PMI Agile '
+    'Certified Practitioner, Scrum Product Owner, IBM RAG & Agentic AI certified.']}]

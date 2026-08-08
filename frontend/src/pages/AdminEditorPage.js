@@ -35,7 +35,7 @@ const briefingTemplate = (edition) => ({
   title: "Five Things Commodity Desks Need to Know This Week",
   excerpt: `Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. Edition #${edition} of The Trading Narrative.`,
   category: "finance",
-  tier: "free",
+  tier: "premium",
   tags: "ETRM, Commodities, Markets, Risk, Regulation",
   edition: String(edition),
   content: [
