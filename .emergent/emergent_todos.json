@@ -1,22 +1,22 @@
 [
   {
     "content": "Verify ElevenLabs credits topped up + regenerate all missing narrations (warmup)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Fix 'Go premium annual → not authenticated' bug",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Update premium plans per document: Monthly $10/₹399, Annual $100/₹3,999, add Founding Member $250/₹9,999",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Weekly briefing premium enforcement on production: extend sync tool to update existing posts (tier etc.)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Testing agent verification of all fixes",
-    "status": "pending"
+    "status": "completed"
   }
 ]

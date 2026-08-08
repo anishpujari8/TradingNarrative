@@ -1,7 +1,7 @@
 # plan.md — The Trading Narrative (FARM)
 
 ## 1) Objectives
-- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, server-side paywall previews, and a freemium model.
+- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, server-side paywall previews, and a freemium → premium conversion model.
 - Support **four pillars/themes**:
   - **Tech & AI** (`tech-business`)
   - **Business & Finance** (`finance`)
@@ -13,6 +13,7 @@
     - UPI Autopay/Subscriptions when enabled on Razorpay dashboard
     - Fallback to one-time Razorpay Orders when Subscriptions is not enabled
     - Live re-probe so Autopay switches on without restart
+    - **Plan pricing cache hardening** ✅ *(Razorpay Plan cache key includes amount so price changes mint new Razorpay plans)*
   - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
     - Target: **Recurring subscription** *(user intent indicated; must confirm definitively + provide credentials)*
 
@@ -64,20 +65,12 @@
   - Distinguishes `missing` vs `corrupt` in Narrations table
 
 **ElevenLabs operational caveats**
-- Credits may be exhausted; uncached essays will be unavailable until credits are topped up.
 - Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
-- Production narration can be restored **without new credits** by syncing existing preview cache to production.
-- Current ElevenLabs status: **0 credits remaining** (probe confirmed `quota_exceeded`).
+- Narrations can be restored to production **without new credits** by syncing preview cache to production.
 
-**Current audio cache state (preview)**
-- Valid cached narrations retained:
-  - `the-shipping-industry-...` (male/full)
-  - `freight-management-...` (male/full)
-  - `the-ai-infrastructure-gold-rush-...` (male/full + male/preview)
-- Missing (cannot regenerate until credits are topped up):
-  - `170-kilometres-...`
-  - `five-things-commodity-desks-...` *(now premium)*
-  - `delivering-a-power-trading-desk-...` *(new premium Delivery essay)*
+**Current audio state (preview)** ✅
+- **Phase 35: user credits recharged; warmup completed** ✅
+- **All published essays are cached**: **5/5 cached**, **0 health issues**.
 
 ### AI features (Gemini)
 - **Gemini 2.5 Flash integration via emergentintegrations + EMERGENT_LLM_KEY** ✅
@@ -92,7 +85,11 @@
 - Conversion funnels + plan split ✅
 - Post conversion stats (“Essays that convert”) ✅
 - CSV export ✅
-- **Content Sync Tool (Preview → Production)** ✅ *(one-click admin sync for missing published posts)*
+- **Content Sync Tool (Preview → Production)** ✅
+  - **Missing-post sync** ✅
+  - **Update-mode sync** ✅ *(Phase 35)*: can update already-live posts (tier/content/featured/etc.) using a safe allowlist
+  - Diff endpoint now returns both **missing** and **outdated** posts
+  - UI shows New/Update badges and per-action results
 - **Sync carries normalized author identity** ✅ *(author object normalized to “Anish Pujari” by startup migration; production self-heals on redeploy)*
 
 ### Community
@@ -294,24 +291,8 @@
   - `AskEssayWidget` on `ArticlePage` (hidden when AI disabled)
   - Streams assistant replies; keeps short client-side history
 
-#### C) Testing ✅
-- Iteration_21: backend 12/12 passed; frontend core features passed.
-
 ### Phase 30 — Narration Bug RCA + Narration Sync Tool ✅ COMPLETED
-**User bug:** “audio essay not working / Cloudflare invalid response”
-
-**RCA**
-- Preview: transient 502 due to backend restart; verified healthy after restart.
-- Production: audio cache empty + ElevenLabs credits exhausted → narration unavailable.
-
-**Fix delivered (works without new credits): Narration Sync (Preview → Production)**
-- Backend:
-  - `POST /api/admin/audio-cache/import` *(production receiver)*
-  - `POST /api/admin/sync/narrations` *(preview sender)*
-- Frontend:
-  - New Admin → Narrations button: **“Send narrations to live site”**
-- Testing:
-  - Iteration_22: 100% pass.
+- Production restore path built: push cached preview audio to production without spending new credits.
 
 ### Phase 31 — Resend Integration ⛔ NOT STARTED (blocked)
 **Blocked on user decisions + credentials**
@@ -322,112 +303,76 @@
   4) Sender domain status: verified `thetradingnarrative.com` vs `onboarding@resend.dev` test sender
 
 ### Phase 32 — Recurring Narration Bug: True Root Cause + Permanent Hardening ✅ COMPLETED
-**User-reported recurring issue:** narration continues to show “temporarily unavailable / Cloudflare invalid or incomplete response”.
-
-**True root cause**
-- A tiny dummy payload overwrote a real cached narration in `audio_cache`.
-
-**Fixes delivered (permanent)**
-1) Purged corrupt cache entry.
-2) Hardened the import endpoint (`/api/admin/audio-cache/import`).
-3) Hardened serving path (`tts_service.get_or_generate_audio`) to purge corrupt cache.
-4) Hardened narration sync sender to skip tiny entries.
-
-**Testing**
-- Iteration_23: 100% pass.
+- Import endpoint hardened; serving path purges corrupt cache; sync skips tiny entries.
 
 ### Phase 33 — Narration Health Alert ✅ COMPLETED
-**Purpose:** warn in Admin when any published essay has missing or corrupt narration.
-
-**Backend**
-- `GET /api/admin/narrations` now returns:
-  - Per-essay `health`: `ok | missing | corrupt`
-  - `issues`: `[{slug, title, problem}]` for non-OK essays
-
-**Frontend**
-- Admin Studio uses controlled tabs (`activeTab` state)
-- **Red alert banner** above tabs (hidden while on Narrations tab) listing affected essay titles + **“Review in Narrations”** jump button
-- Red alert dot on the Narrations tab trigger
-- Narrations table shows `Corrupt` (destructive badge) vs `Missing` (outline)
-
-**Testing**
-- Iteration_24: 100% pass; verified audio cache untouched.
+- Admin alert banner + tab dot; backend health flags and issues.
 
 ### Phase 34 — Delivery Essay Import + Premium Gating ✅ COMPLETED
-**User request:** import delivery-focused longform essay, make it premium-only; make weekly briefings premium-only.
+- Delivery longform essay imported, premium-only.
+- Weekly briefing edition #1 made premium-only.
 
-1) **Imported longform Delivery essay** ✅
-- Title: **Delivering a Power Trading Desk: System Compliance, Lifecycle Design, and Why Agile/SAFe Changes the Economics**
-- Slug: `delivering-a-power-trading-desk-system-compliance-lifecycle-design-and-why-agile`
-- Category: `delivery` (Delivery & Systems)
-- Tier: `premium`
-- Featured: `true`
-- Content: 113 blocks, 24 `##` headings; cover image (power pylons); tags: Power Trading / ETRM / Compliance / SAFe / Agile / Delivery
-- Durability: appended to `REAL_POSTS` in `seed_data.py` so it self-heals on DB resets
-- Paywall: anonymous sees exactly 3 preview blocks + premium CTA; entitled users see full 113 blocks
+### Phase 35 — Premium Growth Batch (Plans + Checkout Auth Fix + Narration Restore + Sync Updates) ✅ COMPLETED
+**Verified by testing agent iteration_26 (frontend 100%; backend pass; one tester probe targeted a nonexistent endpoint).**
 
-2) **Weekly Briefing premium-only** ✅
-- `five-things-commodity-desks-need-to-know-this-week` is now `tier="premium"` in seed data + DB
-- Admin editor briefing template now defaults `tier: "premium"` for future editions
+1) **Narration resolved** ✅
+- User recharged ElevenLabs credits (paid).
+- Warmup regenerated missing narrations; preview now has **5/5 cached**, **0 issues**.
+- Paywall-aware audio confirmed for premium posts (preview scope for anonymous).
+- Note: credits balance display still shows `—` because key lacks `user_read` permission (harmless).
 
-3) **Site content state** ✅
-- 5 published posts total now (4 earlier real essays + new delivery premium essay)
+2) **Checkout auth bug fixed** ✅
+- “Go Premium annual” when logged out now redirects to **/auth?next=/pricing** with a friendly toast.
+- Expired session (401/403) triggers logout + “session expired” toast + auth redirect.
 
-**Testing**
-- Iteration_25: backend 21/21 100%, anonymous frontend 100%; entitled full-content flow manually verified.
+3) **Premium pricing updated per growth plan** ✅
+- Backend `PLANS`:
+  - Monthly: **$10 / ₹399**
+  - Annual: **$100 / ₹3,999**
+  - Founding Member: **$250 / ₹9,999**
+- Pricing UI: 3 cards (Free / Premium / Founding) + comparison table with Founding-exclusive benefits.
 
-**Note (production sync caveat)**
-- Existing Content Sync tool pushes **missing posts** to production, but does **not** update tiers/fields of posts that already exist on production.
-- This matters for the briefing: production may still have Edition #1 as free unless we add a “field update” mode or you manually update it on prod.
+4) **Sync update mode added** ✅
+- Sync now updates already-live production posts using a safe allowlist.
+- Diff endpoint returns both `missing` and `outdated`.
+- UI updated to show New vs Update items and per-action results.
+- Verified: diff flags the briefing tier drift on production (five-things should be premium).
 
 ---
 
 ## 3) Next Actions
 
 ### A) Immediate
-1) **Restore narration on production without credits (shipping + freight)** ✅ (user action)
-   - Production has the import endpoint but cache is empty.
-   - Go to **Admin → Narrations → Send narrations to live site** and enter the **production admin password**.
-   - Result: cached narrations for:
-     - Shipping essay
-     - Freight essay
-     will play immediately on production without spending credits.
+1) **Production: run “Sync to production” (now includes updates)** ⛔ *(user action)*
+   - This will:
+     - Create any missing published posts on production
+     - **Update existing production posts** whose fields drifted (e.g., Edition #1 briefing tier → premium)
 
-2) **ElevenLabs operations (to regenerate missing audio)** ⛔ (requires user)
-   - Top up ElevenLabs credits.
-   - Then use **Admin → Narrations → Generate missing narrations** to synthesize:
-     - `170-kilometres-...`
-     - `five-things-commodity-desks-...` *(premium — will also generate a preview scope)*
-     - `delivering-a-power-trading-desk-...` *(premium — will also generate a preview scope)*
-   - Then re-run **Send narrations to live site** to push newly cached narrations to production.
+2) **Production: run “Send narrations to live site”** ⛔ *(user action)*
+   - Now that preview has 5/5 cached, this will push all cached audio to production without spending new ElevenLabs credits.
 
-3) **Sync new Delivery essay to production** ⛔ (requires user)
-   - Use **Admin → Sync to production** so the new post exists on production.
+3) **Redeploy production** ⛔ *(user action)*
+   - Required for:
+     - New pricing tiers and amounts
+     - Checkout auth redirect fix
+     - Sync update mode UI and server code
 
-4) **Tier update sync (important)** ⛔ *(new work)*
-   - Because sync currently does not update existing post fields on production, confirm the desired behavior:
-     - Option A: build “Sync updates” mode (diff + patch updates, safe allowlist: tier/featured/excerpt/tags/cover_image/content_blocks)
-     - Option B: manually edit the Edition #1 briefing on production to premium in the admin editor
-
-5) **Edition #2 import** ⛔
+### B) Upcoming
+4) **Edition #2 import** ⛔
    - Paste Edition #2 newsletter text.
 
-6) **PayPal (recurring subscriptions)** ⛔
-   - Provide PayPal decisions + credentials as listed in Phase 19.
+5) **PayPal (recurring subscriptions)** ⛔
+   - Provide PayPal decisions + credentials (Phase 19).
 
-7) **Resend integration** ⛔
+6) **Resend integration** ⛔
    - Answer the 4 setup decisions + provide Resend API key.
-
-### B) Production note (workflow)
-- **Preview**: changes implemented and tested here.
-- **Production** (`https://thetradingnarrative.com`): requires redeploy for code changes.
 
 ---
 
 ## 4) Success Criteria
 ✅ Premium posts never return full content to non-premium users from the API.
-✅ Stripe recurring checkout works and updates entitlements.
-✅ Razorpay INR checkout works.
+✅ Stripe checkout works (recurring capability ready; test URLs verified).
+✅ Razorpay INR checkout works and mints correct-priced plans after price changes.
 ✅ Email sending is LIVE with unsubscribe + digest systems.
 ✅ Community lounge features work.
 ✅ Highlights system complete (highlights, notes, quote cards, popular highlights).
@@ -446,18 +391,19 @@
 ✅ AI features:
 - Admin AI writing assistant works (draft/polish/expand; streaming)
 - “Ask this essay” is grounded + paywall-aware; streaming
-✅ Content readiness:
-- Delivery & Systems premium essay imported as durable real content
-- Weekly briefings are premium-only
+✅ Growth-plan pricing:
+- Monthly $10/₹399, Annual $100/₹3,999, Founding $250/₹9,999 (UI + backend)
+✅ Checkout UX:
+- Logged-out users are redirected to /auth instead of seeing “Not authenticated”
+✅ Production sync:
+- New posts AND drift updates (tier flips, edits) can be synced safely
 
 ⚠️ Operational caveats
-- ElevenLabs: uncached narrations may be unavailable if credits are exhausted.
-- Gemini: usage consumes the Emergent LLM key credits.
+- ElevenLabs credits balance display requires `user_read` permission on the key.
+- Gemini usage consumes Emergent LLM key credits.
 - Deployments can be rate-limited; retry after cooldown.
 
 ⛔ Blockers
 - Edition #2 import: awaiting text.
 - PayPal: awaiting decisions + credentials.
 - Resend: awaiting decisions + API key + sender domain verification.
-- ElevenLabs: credits must be topped up to regenerate missing narrations (170km + five-things + delivery essay).
-- Production sync limitation: current sync does not update tiers/fields of already-existing posts (needs decision + implementation or manual workaround).
