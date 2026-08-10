@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessagesSquare, Send, Loader2 } from "lucide-react";
+import { MessagesSquare, Send, Loader2, Lock } from "lucide-react";
 import { api } from "@/lib/api";
 import { streamAi } from "@/lib/aiStream";
+import { useAuth } from "@/context/AuthContext";
 
 export const AskEssayWidget = ({ slug }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [enabled, setEnabled] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -53,6 +57,33 @@ export const AskEssayWidget = ({ slug }) => {
   };
 
   if (!enabled) return null;
+
+  // ACCESS MODEL: essay chat is for signed-in readers
+  if (!user) {
+    return (
+      <Card className="rounded-2xl mt-12" data-testid="ask-essay-widget-locked">
+        <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+              <Lock className="h-4 w-4 text-accent" />
+            </div>
+            <div>
+              <div className="font-medium text-sm">Ask this essay anything</div>
+              <p className="text-xs text-muted-foreground mt-0.5">Sign in to chat with an AI grounded in this essay.</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="shrink-0"
+            onClick={() => navigate(`/auth?next=/post/${slug}`)}
+            data-testid="ask-essay-signin-button"
+          >
+            Sign in — it's free
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="rounded-2xl mt-12" data-testid="ask-essay-widget">

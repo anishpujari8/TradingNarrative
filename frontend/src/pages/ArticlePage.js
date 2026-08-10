@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight, Flame, Trophy } from "lucide-react";
+import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight, Flame, Trophy, CalendarClock } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
@@ -25,6 +25,61 @@ import { useAuth } from "@/context/AuthContext";
 const Paywall = ({ post }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // ACCESS MODEL: logged-out visitors see no essay content — invite them to sign in
+  if (post.signin_required) {
+    const isFree = post.tier !== "premium";
+    return (
+      <div className="my-4" data-testid="signin-gate-container">
+        <Card className="border-accent/40 shadow-[var(--shadow-float)] rounded-2xl">
+          <CardContent className="p-8 sm:p-10 text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
+              <Lock className="h-5 w-5 text-accent" />
+            </div>
+            <h3 className="font-serif text-2xl sm:text-3xl font-semibold" data-testid="signin-gate-title">
+              Sign in to keep reading
+            </h3>
+            <p className="text-muted-foreground mt-2 max-w-md mx-auto" data-testid="signin-gate-copy">
+              {isFree
+                ? "This essay is free — create a free account to read Business & Finance essays and every free briefing."
+                : "Create a free account to preview this Premium essay, or go Premium to unlock every pillar."}
+            </p>
+            <ul className="text-sm text-left max-w-xs mx-auto mt-5 space-y-2">
+              {["Business & Finance essays, free", "Weekly briefings (free through Edition #6)", "Reading streaks and 20s audio previews", "Premium unlocks every pillar + the Lounge"].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-accent mt-0.5 shrink-0" /> {f}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                className="bg-accent text-accent-foreground hover:bg-accent/90 h-11 px-8"
+                onClick={() => navigate(`/auth?next=/post/${post.slug}`)}
+                data-testid="signin-gate-signin-button"
+              >
+                Sign in — it's free
+              </Button>
+              {!isFree && (
+                <Button
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => {
+                    trackEvent("subscribe_cta_click", `/post/${post.slug}`);
+                    navigate("/pricing");
+                  }}
+                  data-testid="signin-gate-premium-button"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" /> Go Premium
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground font-mono mt-4">Free account, no card required.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="my-4" data-testid="paywall-container">
       <Card className="border-accent/40 shadow-[var(--shadow-float)] rounded-2xl">
@@ -40,7 +95,7 @@ const Paywall = ({ post }) => {
             paragraphs await. Unlock every essay, ad-free reading, and early access.
           </p>
           <ul className="text-sm text-left max-w-xs mx-auto mt-5 space-y-2">
-            {["Full access to all premium essays", "Ad-free, distraction-free reading", "Early access to new posts", "Cancel anytime"].map((f) => (
+            {["Full access to all premium essays", "The Lounge: market takes + early drafts", "Full audio narrations", "Cancel anytime"].map((f) => (
               <li key={f} className="flex items-start gap-2">
                 <Check className="h-4 w-4 text-accent mt-0.5 shrink-0" /> {f}
               </li>
@@ -63,7 +118,7 @@ const Paywall = ({ post }) => {
               </Button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground font-mono mt-4">From $6.67/month, billed annually.</p>
+          <p className="text-xs text-muted-foreground font-mono mt-4">From ₹99/month — cancel anytime.</p>
         </CardContent>
       </Card>
     </div>
@@ -392,6 +447,16 @@ export default function ArticlePage() {
                 View all <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </Link>
+          )}
+
+          {post.early_access && (
+            <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm" data-testid="early-access-notice">
+              <CalendarClock className="h-4 w-4 text-accent shrink-0" />
+              <span>
+                <strong className="font-medium">Early access</strong> — a Lounge exclusive. This publishes for everyone on{" "}
+                {formatDate(post.publish_at)}.
+              </span>
+            </div>
           )}
 
           <AudioNarrator slug={slug} />

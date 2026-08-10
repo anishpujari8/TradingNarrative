@@ -1,22 +1,30 @@
 [
   {
-    "content": "Backend: /api/early-supporters public counter + streak milestone/badges in streak endpoint + public_user",
+    "content": "Backend: anon gate in get_post (0 blocks, signin_required) + ask-essay sign-in",
     "status": "completed"
   },
   {
-    "content": "Frontend: Briefings free-until-Edition-6 banner",
+    "content": "Backend: Market Narrative endpoints (list/create/delete/react)",
     "status": "completed"
   },
   {
-    "content": "Frontend: HomePage early supporter promo counter banner",
+    "content": "Backend: Early Access endpoint + get_post scheduled access for premium",
     "status": "completed"
   },
   {
-    "content": "Frontend: ArticlePage milestone celebration toast + AccountPage streak badges",
+    "content": "Frontend: ArticlePage sign-in paywall variant + early-access notice",
     "status": "completed"
   },
   {
-    "content": "Test (backend curl + screenshots) and finish",
+    "content": "Frontend: Lounge hub tabs (Discussions | Market Narrative | Early Access) + admin composer + reactions",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: AskEssayWidget sign-in state; locked-gate copy update",
+    "status": "completed"
+  },
+  {
+    "content": "Test (testing agent + screenshots), cleanup, finish",
     "status": "completed"
   }
 ]

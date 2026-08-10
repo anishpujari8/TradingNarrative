@@ -15,13 +15,21 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin, LockOpen, CalendarClock, Pencil } from "lucide-react";
+import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, Pin, LockOpen, CalendarClock, Pencil, Activity, TrendingUp, TrendingDown, Lightbulb, ArrowRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const initials = (name) => (name || "M").slice(0, 2).toUpperCase();
+
+const NARRATIVE_TAGS = [
+  { value: "bullish", label: "Bullish", Icon: TrendingUp },
+  { value: "bearish", label: "Bearish", Icon: TrendingDown },
+  { value: "insight", label: "Insight", Icon: Lightbulb },
+];
+const REACTIONS = ["📈", "📉", "💡"];
 
 const AuthorLine = ({ author, date, onProfile }) => (
   <div className="flex items-center gap-2">
@@ -53,6 +61,10 @@ export default function CommunityPage() {
 
   const [announcements, setAnnouncements] = useState(null);
   const [threads, setThreads] = useState(null);
+  const [narrative, setNarrative] = useState(null); // editor's market takes
+  const [drafts, setDrafts] = useState(null); // early-access scheduled posts
+  const [takeForm, setTakeForm] = useState({ body: "", tag: "" });
+  const [takeBusy, setTakeBusy] = useState(false);
   const [locked, setLocked] = useState(false);
   const [selected, setSelected] = useState(null); // {thread, replies}
   const [detailBusy, setDetailBusy] = useState(false);
@@ -80,6 +92,12 @@ export default function CommunityPage() {
     api.get("/community/threads")
       .then((r) => setThreads(r.data.threads))
       .catch(() => setThreads([]));
+    api.get("/community/narrative")
+      .then((r) => setNarrative(r.data.takes))
+      .catch(() => setNarrative([]));
+    api.get("/community/early-access")
+      .then((r) => setDrafts(r.data.drafts))
+      .catch(() => setDrafts([]));
   }, []);
 
   useEffect(() => {
@@ -186,6 +204,30 @@ export default function CommunityPage() {
     }
   };
 
+  const postTake = async () => {
+    if (takeForm.body.trim().length < 3) { toast.error("Write a little more than that."); return; }
+    setTakeBusy(true);
+    try {
+      await api.post("/community/narrative", { body: takeForm.body, tag: takeForm.tag || null });
+      toast.success("Take posted to the narrative feed.");
+      setTakeForm({ body: "", tag: "" });
+      loadLounge();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not post the take.");
+    } finally {
+      setTakeBusy(false);
+    }
+  };
+
+  const reactToTake = async (nid, emoji) => {
+    try {
+      const res = await api.post(`/community/narrative/${nid}/react`, { emoji });
+      setNarrative((list) => (list || []).map((t) => (t.id === nid ? res.data : t)));
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Reaction failed.");
+    }
+  };
+
   const sendReply = async () => {
     if (!replyBody.trim()) return;
     setReplying(true);
@@ -233,6 +275,7 @@ export default function CommunityPage() {
       if (type === "announcement") await api.delete(`/community/announcements/${id}`);
       if (type === "thread") await api.delete(`/community/threads/${id}`);
       if (type === "reply") await api.delete(`/community/replies/${id}`);
+      if (type === "take") await api.delete(`/community/narrative/${id}`);
       toast.success("Deleted.");
       setDeleteTarget(null);
       if (type === "thread") setSelected(null);
@@ -259,8 +302,9 @@ export default function CommunityPage() {
           <span className="section-label">Members only</span>
           <h1 className="font-serif text-3xl sm:text-4xl font-semibold mt-3 mb-4">The Lounge</h1>
           <p className="text-muted-foreground leading-relaxed mb-8">
-            A private space for Premium members — editor announcements, reader discussions,
-            and the conversations behind the essays.
+            A private space for Premium members — the editor's live Market Narrative feed,
+            early access to upcoming editions before they publish, and discussions with
+            fellow readers on desks around the world.
           </p>
           {user ? (
             <Button onClick={() => navigate("/pricing")} className="bg-accent text-accent-foreground hover:bg-accent/90 h-11 px-8" data-testid="community-upgrade-button">
@@ -381,7 +425,7 @@ export default function CommunityPage() {
           <h1 className="font-serif text-3xl sm:text-4xl font-semibold mt-2 flex items-center gap-3">
             The Lounge <Crown className="h-6 w-6 text-accent" />
           </h1>
-          <p className="text-sm text-muted-foreground mt-2">Announcements from the desk and discussions between Premium readers.</p>
+          <p className="text-sm text-muted-foreground mt-2">Live market takes, early-access drafts, announcements, and discussions between Premium readers.</p>
         </div>
         <div className="flex gap-2">
           {isAdmin && (
@@ -445,62 +489,225 @@ export default function CommunityPage() {
           )}
         </div>
 
-        {/* Discussions */}
+        {/* Main hub: Discussions | Market Narrative | Early access */}
         <div className="lg:col-span-2">
-          <h2 className="font-serif text-xl font-semibold mb-4 flex items-center gap-2">
-            <MessagesSquare className="h-4 w-4 text-accent" /> Discussions
-          </h2>
-          {threads === null ? (
-            <Skeleton className="h-64 rounded-xl" />
-          ) : threads.length === 0 ? (
-            <Card className="rounded-xl">
-              <CardContent className="py-14 text-center" data-testid="community-no-threads">
-                <MessagesSquare className="h-9 w-9 text-muted-foreground mx-auto mb-3" />
-                <h3 className="font-serif text-lg font-semibold mb-1">No discussions yet</h3>
-                <p className="text-sm text-muted-foreground mb-5">Kick things off — what's on your mind this week?</p>
-                <Button onClick={() => setNewThreadOpen(true)} variant="outline" data-testid="community-empty-start-button">
-                  <Plus className="h-4 w-4 mr-2" /> Start the first discussion
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3" data-testid="community-threads-list">
-              {threads.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => openThread(t.id)}
-                  disabled={detailBusy}
-                  className="w-full text-left"
-                  data-testid={`community-thread-${t.id}`}
-                >
-                  <Card className={`rounded-xl transition-colors duration-150 hover:border-accent/40 ${t.pinned ? "border-accent/30 bg-accent/[0.03]" : ""}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2">
-                        {t.pinned && (
-                          <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 gap-1 text-[10px] px-1.5 py-0" data-testid={`community-pinned-badge-${t.id}`}>
-                            <Pin className="h-3 w-3" /> Pinned
-                          </Badge>
-                        )}
-                        {t.locked && (
-                          <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0" data-testid={`community-locked-badge-${t.id}`}>
-                            <Lock className="h-3 w-3" /> Locked
-                          </Badge>
-                        )}
-                        <h3 className="font-medium">{t.title}</h3>
+          <Tabs defaultValue="narrative" data-testid="lounge-tabs">
+            <TabsList className="mb-4">
+              <TabsTrigger value="narrative" data-testid="lounge-tab-narrative">
+                <Activity className="h-3.5 w-3.5 mr-1.5" /> Market Narrative
+              </TabsTrigger>
+              <TabsTrigger value="discussions" data-testid="lounge-tab-discussions">
+                <MessagesSquare className="h-3.5 w-3.5 mr-1.5" /> Discussions
+              </TabsTrigger>
+              <TabsTrigger value="early" data-testid="lounge-tab-early">
+                <CalendarClock className="h-3.5 w-3.5 mr-1.5" /> Early access
+              </TabsTrigger>
+            </TabsList>
+
+            {/* ---- Market Narrative: the editor's live raw takes ---- */}
+            <TabsContent value="narrative">
+              <p className="text-sm text-muted-foreground mb-4">
+                Quick, raw takes from the desk — the market notes that don't make the weekly briefing.
+              </p>
+              {isAdmin && (
+                <Card className="rounded-xl mb-4 border-accent/30" data-testid="narrative-composer">
+                  <CardContent className="p-4 space-y-3">
+                    <Textarea
+                      value={takeForm.body}
+                      onChange={(e) => setTakeForm({ ...takeForm, body: e.target.value })}
+                      placeholder="Drop a quick take — what's moving and why it matters…"
+                      rows={2}
+                      className="resize-none"
+                      data-testid="narrative-composer-input"
+                    />
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex gap-1.5">
+                        {NARRATIVE_TAGS.map(({ value, label, Icon }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setTakeForm({ ...takeForm, tag: takeForm.tag === value ? "" : value })}
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                              takeForm.tag === value
+                                ? "border-accent/50 bg-accent/10 text-accent"
+                                : "border-border text-muted-foreground hover:border-accent/40"
+                            }`}
+                            data-testid={`narrative-tag-${value}`}
+                          >
+                            <Icon className="h-3 w-3" /> {label}
+                          </button>
+                        ))}
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{t.body}</p>
-                      <div className="flex items-center justify-between mt-3">
-                        <AuthorLine author={t.author} date={t.created_at} onProfile={openProfile} />
-                        <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
-                          <MessagesSquare className="h-3.5 w-3.5" /> {t.reply_count}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </button>
-              ))}
-            </div>
-          )}
+                      <Button size="sm" onClick={postTake} disabled={takeBusy || !takeForm.body.trim()} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="narrative-composer-submit">
+                        {takeBusy ? "Posting…" : "Post take"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {narrative === null ? (
+                <Skeleton className="h-40 rounded-xl" />
+              ) : narrative.length === 0 ? (
+                <Card className="rounded-xl">
+                  <CardContent className="py-12 text-center" data-testid="narrative-empty">
+                    <Activity className="h-9 w-9 text-muted-foreground mx-auto mb-3" />
+                    <h3 className="font-serif text-lg font-semibold mb-1">No takes yet</h3>
+                    <p className="text-sm text-muted-foreground">When markets move, the editor's raw notes land here first.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3" data-testid="narrative-feed">
+                  {narrative.map((t) => {
+                    const tagMeta = NARRATIVE_TAGS.find((x) => x.value === t.tag);
+                    return (
+                      <Card key={t.id} className="rounded-xl" data-testid={`narrative-take-${t.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <AuthorLine author={t.author} date={t.created_at} onProfile={openProfile} />
+                              {tagMeta && (
+                                <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0" data-testid={`narrative-take-tag-${t.id}`}>
+                                  <tagMeta.Icon className="h-3 w-3" /> {tagMeta.label}
+                                </Badge>
+                              )}
+                            </div>
+                            {isAdmin && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => setDeleteTarget({ type: "take", id: t.id })} data-testid={`narrative-delete-${t.id}`} aria-label="Delete take">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2">{t.body}</p>
+                          <div className="flex gap-1.5 mt-3">
+                            {REACTIONS.map((emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => reactToTake(t.id, emoji)}
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                                  t.my_reaction === emoji
+                                    ? "border-accent/50 bg-accent/10"
+                                    : "border-border hover:border-accent/40"
+                                }`}
+                                data-testid={`narrative-react-${t.id}-${emoji}`}
+                                aria-label={`React ${emoji}`}
+                              >
+                                <span>{emoji}</span>
+                                {t.reactions?.[emoji] > 0 && <span className="font-mono tabular-nums">{t.reactions[emoji]}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ---- Discussions ---- */}
+            <TabsContent value="discussions">
+              {threads === null ? (
+                <Skeleton className="h-64 rounded-xl" />
+              ) : threads.length === 0 ? (
+                <Card className="rounded-xl">
+                  <CardContent className="py-14 text-center" data-testid="community-no-threads">
+                    <MessagesSquare className="h-9 w-9 text-muted-foreground mx-auto mb-3" />
+                    <h3 className="font-serif text-lg font-semibold mb-1">No discussions yet</h3>
+                    <p className="text-sm text-muted-foreground mb-5">Kick things off — what's on your mind this week?</p>
+                    <Button onClick={() => setNewThreadOpen(true)} variant="outline" data-testid="community-empty-start-button">
+                      <Plus className="h-4 w-4 mr-2" /> Start the first discussion
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3" data-testid="community-threads-list">
+                  {threads.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => openThread(t.id)}
+                      disabled={detailBusy}
+                      className="w-full text-left"
+                      data-testid={`community-thread-${t.id}`}
+                    >
+                      <Card className={`rounded-xl transition-colors duration-150 hover:border-accent/40 ${t.pinned ? "border-accent/30 bg-accent/[0.03]" : ""}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2">
+                            {t.pinned && (
+                              <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 gap-1 text-[10px] px-1.5 py-0" data-testid={`community-pinned-badge-${t.id}`}>
+                                <Pin className="h-3 w-3" /> Pinned
+                              </Badge>
+                            )}
+                            {t.locked && (
+                              <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0" data-testid={`community-locked-badge-${t.id}`}>
+                                <Lock className="h-3 w-3" /> Locked
+                              </Badge>
+                            )}
+                            <h3 className="font-medium">{t.title}</h3>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{t.body}</p>
+                          <div className="flex items-center justify-between mt-3">
+                            <AuthorLine author={t.author} date={t.created_at} onProfile={openProfile} />
+                            <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
+                              <MessagesSquare className="h-3.5 w-3.5" /> {t.reply_count}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ---- Early access: read scheduled drafts before everyone ---- */}
+            <TabsContent value="early">
+              <p className="text-sm text-muted-foreground mb-4">
+                Scheduled essays and briefings, readable here before they publish for everyone.
+              </p>
+              {drafts === null ? (
+                <Skeleton className="h-40 rounded-xl" />
+              ) : drafts.length === 0 ? (
+                <Card className="rounded-xl">
+                  <CardContent className="py-12 text-center" data-testid="early-access-empty">
+                    <CalendarClock className="h-9 w-9 text-muted-foreground mx-auto mb-3" />
+                    <h3 className="font-serif text-lg font-semibold mb-1">Nothing scheduled right now</h3>
+                    <p className="text-sm text-muted-foreground">When the next edition is drafted, you'll read it here first.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3" data-testid="early-access-list">
+                  {drafts.map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => navigate(`/post/${d.slug}`)}
+                      className="w-full text-left"
+                      data-testid={`early-access-draft-${d.id}`}
+                    >
+                      <Card className="rounded-xl border-accent/30 transition-colors duration-150 hover:border-accent/60">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className="bg-accent/10 text-accent border-accent/30 hover:bg-accent/10 gap-1 text-[10px] px-1.5 py-0">
+                              <CalendarClock className="h-3 w-3" /> Early access
+                            </Badge>
+                            {d.edition && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Edition #{d.edition}</Badge>}
+                          </div>
+                          <h3 className="font-serif text-lg font-semibold mt-2">{d.title}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{d.excerpt}</p>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-[11px] font-mono text-muted-foreground">publishes {formatDate(d.publish_at)}</span>
+                            <span className="text-xs text-accent flex items-center gap-1 font-medium">
+                              Read it now <ArrowRight className="h-3.5 w-3.5" />
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 

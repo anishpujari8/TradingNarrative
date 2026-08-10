@@ -111,6 +111,9 @@ async def ask_essay(slug: str, body: AskIn, user=Depends(get_optional_user)):
     essays get answers grounded only in the free preview."""
     if not AI_ENABLED:
         raise HTTPException(status_code=503, detail='Essay chat is not configured')
+    if not user:
+        # ACCESS MODEL: essays (and essay chat) are for signed-in readers only
+        raise HTTPException(status_code=401, detail='Sign in to ask this essay questions.')
     post = await db.posts.find_one({'slug': slug, **published_query()})
     if not post:
         raise HTTPException(status_code=404, detail='Post not found')

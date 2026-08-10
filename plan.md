@@ -1,7 +1,7 @@
 # plan.md — The Trading Narrative (FARM)
 
 ## 1) Objectives
-- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, **server-side paywall previews**, and a freemium → premium conversion model.
+- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, a freemium → premium conversion model, and a **premium community destination (Lounge)**.
 - Support **four pillars/themes**:
   - **Tech & AI** (`tech-business`)
   - **Business & Finance** (`finance`)
@@ -81,13 +81,13 @@
 
 ### Audio narration (ElevenLabs)
 - **Essay Audio Narration (ElevenLabs)** ✅ (cached)
-- **Listen analytics** ✅
-- **Listen completion rate** ✅
-- **Pre-generated narrations** ✅ *(warm cache)*
-- **Narration Status Panel** ✅
-- **Narration sync (Preview → Production)** ✅
-- **Narration hardening (cache corruption protection)** ✅
-- **Narration health alert** ✅
+- Listen analytics ✅
+- Listen completion rate ✅
+- Pre-generated narrations ✅ *(warm cache)*
+- Narration Status Panel ✅
+- Narration sync (Preview → Production) ✅
+- Narration hardening (cache corruption protection) ✅
+- Narration health alert ✅
 - **Audio narration access policy** ✅ *(Phase 38)*
   - Logged-out visitors: narration requires sign-in (**401**)
   - Logged-in free users: **20-second preview clip** (byte-clipped from cached MP3; `X-Audio-Scope: clip`; **no extra ElevenLabs credits**)
@@ -102,6 +102,8 @@
 - **Gemini 2.5 Flash integration via emergentintegrations + EMERGENT_LLM_KEY** ✅
   - **Admin AI Writing Assistant** ✅ (draft / polish / expand; streaming)
   - **“Ask this essay” reader chat** ✅ (grounded in essay content; paywall-aware; streaming)
+- **Ask-essay access model** ✅ *(Phase 40)*
+  - Logged-out readers receive **401** (sign-in required)
 - Note: Gemini usage consumes the Emergent LLM key credits.
 
 ### Admin & growth tooling
@@ -114,12 +116,26 @@
 - **Content Sync Tool (Preview → Production)** ✅
   - Missing-post sync ✅
   - Update-mode sync ✅ (safe allowlist)
-- **Sync carries normalized author identity** ✅
+- Sync carries normalized author identity ✅
 
-### Community
+### Community (Premium Lounge)
 - Private Community Lounge ✅
 - Pins/locks/scheduled announcements/editing ✅
 - Member profiles ✅
+- **Premium Lounge Hub (hybrid)** ✅ *(Phase 40)*
+  - **Market Narrative feed** (editor “raw takes”, reactions)
+  - **Early access drafts** (premium-only scheduled posts readable before publish)
+  - **Member discussions** (threads + replies)
+
+### Access model (SIGNED-IN READING)
+- **Anonymous browsing allowed, but no essay content unless signed in** ✅ *(Phase 40)*
+  - Logged-out users can browse: homepage/archive/briefings lists (titles/excerpts/SEO)
+  - Opening any essay requires sign-in (no content blocks returned; `signin_required: true`)
+  - Signed-in free users:
+    - Full access to **Business & Finance** essays + briefings (Editions 1–6 free)
+    - Premium pillars are preview-only (3 blocks) unless entitled
+    - Early supporter perk stays (first 5 published essays fully readable for the first 50 readers)
+  - Premium users: all pillars + Lounge hub
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -128,7 +144,7 @@
 - Import existing writing ✅
   - Edition #1 ✅
   - Edition #2 ✅ *(Phase 38 import)*
-- **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
+- Hardcoded default content ✅ *(real articles are hardcoded and self-heal on DB reset)*
 - Spinning logo ✅
 - Demo cleanup ✅
 - Founding Member Wall ✅
@@ -306,7 +322,7 @@
   - Edition #2 created on production
   - Tier flips pushed (Ed1 free; categories premium)
   - Narrations pushed (including Ed2)
-- **Slug mismatch issue resolved** (no duplicate risk on redeploy)
+- Slug mismatch issue resolved (no duplicate risk on redeploy)
 
 ### Phase 39 — Engagement Boosters (Countdown + Milestones + Promo Counter) ✅ COMPLETED
 **Verified by testing agent iteration_30**: backend 10/10 (100%), frontend 3/3 (100%).
@@ -336,21 +352,80 @@
     - user is already an early supporter
     - user is premium
 
+### Phase 40 — Access Model + Premium Lounge Hub (Hybrid) ✅ COMPLETED
+**Verified by testing agent iteration_31**: backend 30/30 (100%), frontend flows 100%.
+
+#### A) Anonymous essay gate (no content blocks when logged out) ✅
+- Backend (`posts.get_post`):
+  - When `user is None`, returns `signin_required: true` with **zero** content blocks for all essays
+  - Keeps SEO/unfurl fields intact: title/excerpt/tags/cover
+  - Listings unchanged (homepage/archive/briefings still show titles/excerpts)
+- Backend (AI): `ask-essay` requires sign-in (401 logged-out)
+- Frontend (`ArticlePage`):
+  - Logged-out visitors see a dedicated sign-in gate card (`signin-gate-container`)
+  - Copy varies depending on free vs premium tier (free reads vs premium unlock)
+  - Premium paywall copy refreshed to mention Lounge perks + ₹99 entry pricing
+- Frontend (`AskEssayWidget`):
+  - Logged-out visitors see locked sign-in card (`ask-essay-widget-locked`)
+
+#### B) Market Narrative feed (Premium Lounge) ✅
+- Backend:
+  - New collection: `narrative_takes`
+  - Endpoints:
+    - `GET /api/community/narrative` (premium)
+    - `POST /api/community/narrative` (admin only: body + optional tag)
+    - `DELETE /api/community/narrative/{id}` (admin)
+    - `POST /api/community/narrative/{id}/react` (premium: toggle reaction)
+  - Reactions supported: 📈 / 📉 / 💡
+  - One reaction per member; toggle removes; switching updates
+  - Tags supported: `bullish` / `bearish` / `insight`
+- Frontend:
+  - “Market Narrative” tab in Lounge
+  - Reaction buttons with live counts
+  - Admin composer + tag chips
+
+#### C) Early Access drafts (Premium Lounge) ✅
+- Backend:
+  - `GET /api/community/early-access` lists scheduled posts (`status=scheduled`, `publish_at > now`) for premium
+  - `get_post`: premium + admin can read scheduled posts before publish with:
+    - `early_access: true`
+    - `publish_at` returned
+- Frontend:
+  - “Early access” tab lists upcoming drafts
+  - Article page displays early-access notice banner (`early-access-notice`)
+
+#### D) Lounge hub UI as a hybrid destination ✅
+- Frontend (`CommunityPage`):
+  - Announcements remain left column
+  - Main column is a tabbed hub:
+    - Market Narrative
+    - Discussions
+    - Early access
+  - Locked-gate copy updated to sell the new perks
+
+#### E) Testing + hygiene ✅
+- Automated testing agent: iteration_31
+- Test data cleaned (11 real users preserved)
+
 ---
 
 ## 3) Next Actions
 
-### A) Production rollout (user action)
-- **Redeploy production** to ship the code changes from Phase 37–39:
-  - reading streaks + milestone badges
-  - admin alerts
-  - early supporters + promo counter banner
-  - updated pricing
-  - audio gating
-  - briefing autosend loop
-  - briefings countdown banner
+### A) Production rollout (required)
+- **Redeploy production** to ship the Phase 37–40 code changes to https://thetradingnarrative.com:
+  - Anonymous essay gate
+  - Ask-essay sign-in gate
+  - Lounge hub tabs + Market Narrative + Early access
+  - Streaks + milestone badges
+  - Pricing updates + audio gating + early supporters
 
-### B) Upcoming (still blocked)
+### B) Lounge operational playbook (content cadence)
+- Create a weekly rhythm:
+  - 2–3 Market Narrative takes per week (mid-week + expiry after close)
+  - 24h early draft posting before public publish
+  - One pinned “discussion prompt of the week” thread
+
+### C) Upcoming (still blocked)
 - **PayPal Checkout** (recurring subscriptions) ⛔
   - Need PayPal client ID + secret and final flow decisions
 - **Resend Integration** ⛔
@@ -388,6 +463,14 @@
 - Free Edition Countdown banner on briefings
 - Streak milestone badges (7/30/100) with celebration + account display
 - Promo counter endpoint + homepage urgency banner
+
+✅ Phase 40 delivered
+- Logged-out users can browse but cannot read any essay content (sign-in required)
+- Ask-essay AI requires sign-in
+- Premium Lounge hub includes:
+  - Market Narrative feed (admin posts + reactions)
+  - Early access drafts (scheduled posts readable early)
+  - Discussions (threads + replies)
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

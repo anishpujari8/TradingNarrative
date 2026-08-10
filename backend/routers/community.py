@@ -7,14 +7,90 @@ from fastapi import APIRouter, HTTPException, Depends
 from db import db
 from utils import now_utc, iso, clean
 from security import get_admin_user, get_premium_user, is_entitled
-from schemas import AnnouncementIn, CommunityThreadIn, CommunityReplyIn
+from schemas import AnnouncementIn, CommunityThreadIn, CommunityReplyIn, NarrativeTakeIn, NarrativeReactIn
 
 router = APIRouter(prefix='/api')
+
+NARRATIVE_TAGS = {'bullish', 'bearish', 'insight'}
+NARRATIVE_REACTIONS = ('📈', '📉', '💡')
 
 
 def community_author(user):
     return {'id': user['id'], 'name': user.get('name') or user['email'].split('@')[0],
             'role': user.get('role', 'user')}
+
+
+# ---------------------- Market Narrative (editor's live takes) ----------------------
+
+def _narrative_out(t, user_id: str):
+    """Shape a take for the API: aggregate reactions + the caller's own reaction."""
+    reactions = t.get('reactions', {})  # {user_id: emoji}
+    counts = {e: 0 for e in NARRATIVE_REACTIONS}
+    for e in reactions.values():
+        if e in counts:
+            counts[e] += 1
+    return {'id': t['id'], 'body': t['body'], 'tag': t.get('tag'),
+            'author': t['author'], 'created_at': t['created_at'],
+            'reactions': counts, 'my_reaction': reactions.get(user_id)}
+
+
+@router.get('/community/narrative')
+async def narrative_feed(user=Depends(get_premium_user)):
+    takes = await db.narrative_takes.find().sort('created_at', -1).to_list(100)
+    return {'takes': [_narrative_out(clean(t), user['id']) for t in takes]}
+
+
+@router.post('/community/narrative')
+async def narrative_create(body: NarrativeTakeIn, admin=Depends(get_admin_user)):
+    text = body.body.strip()
+    if len(text) < 3:
+        raise HTTPException(status_code=400, detail='Write a little more than that.')
+    tag = body.tag if body.tag in NARRATIVE_TAGS else None
+    take = {'id': str(uuid.uuid4()), 'body': text[:2000], 'tag': tag,
+            'author': community_author(admin), 'reactions': {},
+            'created_at': iso(now_utc())}
+    await db.narrative_takes.insert_one(dict(take))
+    return _narrative_out(take, admin['id'])
+
+
+@router.delete('/community/narrative/{nid}')
+async def narrative_delete(nid: str, admin=Depends(get_admin_user)):
+    res = await db.narrative_takes.delete_one({'id': nid})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail='Take not found')
+    return {'ok': True}
+
+
+@router.post('/community/narrative/{nid}/react')
+async def narrative_react(nid: str, body: NarrativeReactIn, user=Depends(get_premium_user)):
+    if body.emoji not in NARRATIVE_REACTIONS:
+        raise HTTPException(status_code=400, detail='Unknown reaction')
+    take = await db.narrative_takes.find_one({'id': nid})
+    if not take:
+        raise HTTPException(status_code=404, detail='Take not found')
+    reactions = take.get('reactions', {})
+    # toggle: same emoji removes it, different emoji switches (one reaction per member)
+    if reactions.get(user['id']) == body.emoji:
+        reactions.pop(user['id'], None)
+    else:
+        reactions[user['id']] = body.emoji
+    await db.narrative_takes.update_one({'id': nid}, {'$set': {'reactions': reactions}})
+    take['reactions'] = reactions
+    return _narrative_out(clean(take), user['id'])
+
+
+# ---------------------- Early access (scheduled drafts for members) ----------------------
+
+@router.get('/community/early-access')
+async def early_access_list(user=Depends(get_premium_user)):
+    now = iso(now_utc())
+    drafts = await db.posts.find({'status': 'scheduled', 'publish_at': {'$gt': now}}) \
+        .sort('publish_at', 1).to_list(20)
+    return {'drafts': [{
+        'id': d['id'], 'slug': d['slug'], 'title': d['title'], 'excerpt': d.get('excerpt', ''),
+        'category': d.get('category'), 'tier': d.get('tier'), 'edition': d.get('edition'),
+        'cover_image': d.get('cover_image'), 'publish_at': d.get('publish_at'),
+    } for d in map(clean, drafts)]}
 
 
 @router.get('/community/announcements')

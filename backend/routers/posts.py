@@ -56,12 +56,20 @@ async def list_posts(category: Optional[str] = None, q: Optional[str] = None,
 @router.get('/posts/{slug}')
 async def get_post(slug: str, user=Depends(get_optional_user)):
     post = await db.posts.find_one({'slug': slug, **published_query()})
+    early_access = False
+    if not post and user:
+        # EARLY ACCESS (Lounge perk): premium members + admins can read scheduled drafts before publish
+        scheduled = await db.posts.find_one({'slug': slug, 'status': 'scheduled'})
+        if scheduled and (user.get('role') == 'admin' or await is_entitled(user)):
+            post = scheduled
+            early_access = True
     if not post:
         raise HTTPException(status_code=404, detail='Post not found')
     clean(post)
     entitled = await is_entitled(user)
     blocks = post.get('content_blocks', [])
     total_blocks = len(blocks)
+    signin_required = user is None
     is_locked = post.get('tier') == 'premium' and not entitled
     early_unlock = False
     if is_locked and user and user.get('early_supporter'):
@@ -71,7 +79,12 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
         if post['slug'] in {d['slug'] for d in early_docs}:
             is_locked = False
             early_unlock = True
-    if is_locked:
+    if signin_required:
+        # ACCESS MODEL: essays are for signed-in readers only — no content leaves the
+        # server for anonymous visitors (title/excerpt/cover stay for SEO + unfurls)
+        blocks = []
+        is_locked = True
+    elif is_locked:
         # SERVER-SIDE PAYWALL: only preview paragraphs ever leave the server
         blocks = blocks[:PREVIEW_BLOCKS]
     # related posts: score by shared tags first, category as fallback signal
@@ -97,7 +110,10 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     result.update({
         'content_blocks': blocks,
         'is_locked': is_locked,
+        'signin_required': signin_required,
         'early_unlock': early_unlock,
+        'early_access': early_access,
+        'publish_at': post.get('publish_at') if early_access else None,
         'total_blocks': total_blocks,
         'shown_blocks': len(blocks),
         'related': related,

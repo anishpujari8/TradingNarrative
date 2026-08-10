@@ -105,6 +105,15 @@ class CommunityReplyIn(BaseModel):
     body: str
 
 
+class NarrativeTakeIn(BaseModel):
+    body: str
+    tag: Optional[str] = None  # bullish | bearish | insight
+
+
+class NarrativeReactIn(BaseModel):
+    emoji: str  # one of the allowed reaction emojis
+
+
 class RazorpayCheckoutIn(BaseModel):
     plan: str
 
