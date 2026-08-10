@@ -97,6 +97,17 @@ async def me(user=Depends(get_current_user)):
     return {'user': public_user(user, premium)}
 
 
+@router.get('/early-supporters')
+async def early_supporters_status():
+    """Public promo counter: how many of the first-50 early supporter spots remain."""
+    taken = await db.users.count_documents({'early_supporter': True})
+    left = max(0, EARLY_SUPPORTER_LIMIT - taken)
+    return {'limit': EARLY_SUPPORTER_LIMIT, 'taken': min(taken, EARLY_SUPPORTER_LIMIT), 'left': left}
+
+
+STREAK_MILESTONES = (7, 30, 100)
+
+
 @router.post('/users/streak/read')
 async def record_streak_read(body: StreakReadIn, user=Depends(get_current_user)):
     """Record a reading day for the signed-in user and update their streak.
@@ -133,13 +144,22 @@ async def record_streak_read(body: StreakReadIn, user=Depends(get_current_user))
         extended = True
     longest = max(longest, current)
 
+    # milestone celebration + permanent badges (7 / 30 / 100 consecutive days)
+    badges = sorted(set(int(b) for b in (user.get('streak_badges') or [])))
+    milestone = current if (extended and current in STREAK_MILESTONES) else None
+    new_badges = [m for m in STREAK_MILESTONES if longest >= m and m not in badges]
+    if new_badges:
+        badges = sorted(badges + new_badges)
+
     if extended:
         await db.users.update_one({'id': user['id']}, {'$set': {
             'current_streak': current, 'longest_streak': longest,
             'last_read_date': today.isoformat(),
+            'streak_badges': badges,
         }})
     return {'ok': True, 'extended': extended,
             'current_streak': current, 'longest_streak': longest,
+            'milestone': milestone, 'streak_badges': badges,
             'last_read_date': today.isoformat()}
 
 

@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, Clock, ArrowRight } from "lucide-react";
+import { Lock, Clock, ArrowRight, Zap } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
@@ -25,6 +25,11 @@ export default function HomePage() {
   const [featured, setFeatured] = useState(null);
   const [filter, setFilter] = useState("all");
   const [recs, setRecs] = useState(null);
+  const [promo, setPromo] = useState(null); // early supporter spots {limit, taken, left}
+
+  useEffect(() => {
+    api.get("/early-supporters").then((res) => setPromo(res.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -57,6 +62,26 @@ export default function HomePage() {
   return (
     <div data-testid="home-page">
       <Seo path="/" />
+
+      {/* EARLY SUPPORTER PROMO — signup urgency while first-50 spots remain */}
+      {promo && promo.left > 0 && !user?.early_supporter && !user?.is_premium && (
+        <div className="bg-accent text-accent-foreground" data-testid="early-supporter-banner">
+          <Link
+            to="/auth"
+            className="container-editorial flex items-center justify-center gap-2 py-2.5 text-sm hover:opacity-90 transition-opacity"
+            data-testid="early-supporter-banner-link"
+          >
+            <Zap className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              Early supporter offer — <strong data-testid="early-supporter-count">{promo.left} of {promo.limit}</strong> spots
+              left · first 5 essays free for early readers
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1 font-medium underline underline-offset-4 shrink-0">
+              Claim yours <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* HERO */}
       <section

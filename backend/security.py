@@ -87,5 +87,6 @@ def public_user(user, premium: bool):
         'current_streak': user.get('current_streak', 0),
         'longest_streak': user.get('longest_streak', 0),
         'last_read_date': user.get('last_read_date'),
+        'streak_badges': sorted(set(int(b) for b in (user.get('streak_badges') or []))),
         'early_supporter': bool(user.get('early_supporter')),
     }

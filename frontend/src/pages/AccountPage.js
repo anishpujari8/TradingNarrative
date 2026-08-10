@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Crown, CalendarClock, Receipt, Sparkles, MailCheck, Loader2, Flame } from "lucide-react";
+import { Crown, CalendarClock, Receipt, Sparkles, MailCheck, Loader2, Flame, Medal, Trophy } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -155,6 +155,33 @@ export default function AccountPage() {
                 ? "Read at least one essay a day to keep your streak alive."
                 : "Read an essay today to start your streak."}
             </p>
+            {/* Milestone badges: 7 / 30 / 100 consecutive reading days */}
+            <div className="mt-4 pt-4 border-t border-border">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2.5">Milestone badges</div>
+              <div className="flex flex-wrap gap-2" data-testid="account-streak-badges">
+                {[
+                  { days: 7, label: "7-Day Reader", Icon: Flame },
+                  { days: 30, label: "30-Day Devotee", Icon: Medal },
+                  { days: 100, label: "100-Day Legend", Icon: Trophy },
+                ].map(({ days, label, Icon }) => {
+                  const earned = (user.streak_badges || []).includes(days);
+                  return (
+                    <span
+                      key={days}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        earned
+                          ? "border-accent/40 bg-accent/10 text-accent"
+                          : "border-border bg-secondary/40 text-muted-foreground/60"
+                      }`}
+                      title={earned ? `Earned — ${days} consecutive reading days` : `Read ${days} days in a row to earn this badge`}
+                      data-testid={`streak-badge-${days}`}
+                    >
+                      <Icon className="h-3.5 w-3.5" /> {label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
           </CardContent>
         </Card>
 

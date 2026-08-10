@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight, Flame } from "lucide-react";
+import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight, Flame, Trophy } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
@@ -234,6 +234,16 @@ export default function ArticlePage() {
         if (!res.data?.extended) return;
         refreshUser();
         const s = res.data.current_streak;
+        if (res.data.milestone) {
+          // milestone celebration: 7 / 30 / 100 consecutive days — badge earned
+          toast.success(`${res.data.milestone}-day streak — badge earned!`, {
+            description: `Incredible consistency. The ${res.data.milestone}-Day Reader badge is now on your account page.`,
+            icon: <Trophy className="h-4 w-4 text-accent" />,
+            duration: 7000,
+            action: { label: "See badge", onClick: () => navigate("/account") },
+          });
+          return;
+        }
         toast(s > 1 ? `${s}-day reading streak` : "Reading streak started", {
           description: s > 1 ? "You've read on consecutive days. Keep it going tomorrow." : "Come back tomorrow to build your streak.",
           icon: <Flame className="h-4 w-4 text-accent" />,

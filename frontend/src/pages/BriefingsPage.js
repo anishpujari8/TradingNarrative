@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, Clock, ArrowRight, Newspaper } from "lucide-react";
+import { Lock, Clock, ArrowRight, Newspaper, Sparkles } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
 
@@ -27,6 +27,33 @@ export default function BriefingsPage() {
       </div>
 
       <div className="mt-10 max-w-3xl space-y-4">
+        {briefings && briefings.length > 0 && Math.max(...briefings.map((b) => b.edition || 0)) <= 6 && (
+          <Card className="rounded-xl border-accent/40 bg-accent/5" data-testid="briefings-free-banner">
+            <CardContent className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 font-medium">
+                  <Sparkles className="h-4 w-4 text-accent shrink-0" />
+                  <span data-testid="briefings-free-banner-title">Free through Edition #6</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1" data-testid="briefings-free-banner-copy">
+                  {(() => {
+                    const remaining = 6 - Math.max(...briefings.map((b) => b.edition || 0));
+                    return remaining > 0
+                      ? `${remaining} free ${remaining === 1 ? "edition remains" : "editions remain"} — from Edition #7 the briefing is premium-only. Subscribe before the paywall.`
+                      : "This is the last free edition — from Edition #7 the briefing is premium-only. Subscribe before the paywall.";
+                  })()}
+                </p>
+              </div>
+              <Link
+                to="/pricing"
+                className="inline-flex items-center justify-center gap-1.5 shrink-0 h-10 px-4 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:bg-accent/90 transition-colors"
+                data-testid="briefings-free-banner-cta"
+              >
+                Go Premium early <ArrowRight className="h-4 w-4" />
+              </Link>
+            </CardContent>
+          </Card>
+        )}
         {briefings === null ? (
           <>
             <Skeleton className="h-32 rounded-xl" />

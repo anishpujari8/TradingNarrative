@@ -40,10 +40,18 @@
   - Reward regular readers with a streak counter (current + longest)
   - Updates on article reads (logged-in users; local-calendar-day aware)
   - UI surfaced in Navbar + Account page
+- **Streak Milestones + Badges** ✅ *(Phase 39)*
+  - Milestones: **7 / 30 / 100** consecutive days
+  - Backend persists `streak_badges` (computed from **longest** streak so badges survive streak resets)
+  - Article milestone celebration toast + “See badge” deep-link to Account
+  - Account page shows badges with earned (accent) vs locked (muted) states
 - **Early supporter promo** ✅ *(Phase 38)*
   - First 50 registered users are flagged as early supporters
   - Early supporters can read the first 5 published essays fully (even if premium)
   - Badge shown on Account page
+- **Early supporter promo counter** ✅ *(Phase 39)*
+  - Public counter endpoint + homepage urgency banner (“X of 50 spots left”) linking to /auth
+  - Hidden for premium members / already early supporters / when spots exhausted
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -58,6 +66,9 @@
   - Sends latest briefing as high-level summary (title + intro + section headings + CTA link)
   - Once per ISO week guardrail
   - Toggle: `briefing_autosend` (default ON)
+- **Free Edition Countdown banner** ✅ *(Phase 39)*
+  - `/briefings` shows “Free through Edition #6” banner
+  - Dynamic countdown: remaining free editions until #6 + “Go Premium early” CTA
 
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
@@ -297,18 +308,47 @@
   - Narrations pushed (including Ed2)
 - **Slug mismatch issue resolved** (no duplicate risk on redeploy)
 
+### Phase 39 — Engagement Boosters (Countdown + Milestones + Promo Counter) ✅ COMPLETED
+**Verified by testing agent iteration_30**: backend 10/10 (100%), frontend 3/3 (100%).
+
+#### A) Free Edition Countdown banner ✅
+- `/briefings` page shows a “Free through Edition #6” banner (`briefings-free-banner`)
+- Dynamic countdown of remaining free editions until #6
+- “Go Premium early” CTA links to `/pricing`
+
+#### B) Streak Milestone badges ✅
+- Backend:
+  - Streak endpoint returns `milestone` when hitting **7 / 30 / 100**
+  - Persists `streak_badges` based on **longest streak** (badges survive streak resets)
+  - Exposed via `public_user()` and `/auth/me`
+- Frontend:
+  - ArticlePage shows celebration toast on milestone + “See badge” action to `/account`
+  - AccountPage displays 3 badges with earned vs locked states
+
+#### C) Early supporter promo counter + homepage banner ✅
+- Backend:
+  - Public `GET /api/early-supporters` returns `{limit, taken, left}`
+- Frontend:
+  - Homepage accent banner: “Early supporter offer — X of 50 spots left” (`early-supporter-banner`)
+  - Links to `/auth`
+  - Hidden when:
+    - spots are exhausted
+    - user is already an early supporter
+    - user is premium
+
 ---
 
 ## 3) Next Actions
 
 ### A) Production rollout (user action)
-- **Redeploy production** to ship the code changes from Phase 37 + 38:
-  - new pricing
-  - audio gating
-  - early supporters
-  - reading streaks
+- **Redeploy production** to ship the code changes from Phase 37–39:
+  - reading streaks + milestone badges
   - admin alerts
-  - briefing autosend
+  - early supporters + promo counter banner
+  - updated pricing
+  - audio gating
+  - briefing autosend loop
+  - briefings countdown banner
 
 ### B) Upcoming (still blocked)
 - **PayPal Checkout** (recurring subscriptions) ⛔
@@ -343,6 +383,11 @@
 - Early supporters entitlement live
 - Audio gating live (401 anon, 20s clip free, full premium)
 - Production content synced; slug mismatch resolved
+
+✅ Phase 39 delivered
+- Free Edition Countdown banner on briefings
+- Streak milestone badges (7/30/100) with celebration + account display
+- Promo counter endpoint + homepage urgency banner
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

@@ -1,38 +1,22 @@
 [
   {
-    "content": "Backend: PLANS pricing overhaul + founding_monthly + founding wall query",
+    "content": "Backend: /api/early-supporters public counter + streak milestone/badges in streak endpoint + public_user",
     "status": "completed"
   },
   {
-    "content": "Backend: audio gating (401 anon, 20s clip free, full premium) + warm full-only",
+    "content": "Frontend: Briefings free-until-Edition-6 banner",
     "status": "completed"
   },
   {
-    "content": "Backend: early supporter promo (migration + registration + is_locked override + public_user)",
+    "content": "Frontend: HomePage early supporter promo counter banner",
     "status": "completed"
   },
   {
-    "content": "Backend: briefing autosend loop Wed 9:30 IST + register in server.py",
+    "content": "Frontend: ArticlePage milestone celebration toast + AccountPage streak badges",
     "status": "completed"
   },
   {
-    "content": "Content: import Edition #2 (DB + REAL_POSTS), tier flips (editions<=6 free, 3 categories premium)",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: PricingPage new prices + founding monthly toggle",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: AudioNarrator sign-in prompt + 20s preview label/CTA; AdminEditor briefing template free<=6; Account early supporter badge",
-    "status": "completed"
-  },
-  {
-    "content": "Test everything (testing agent) + screenshots",
-    "status": "completed"
-  },
-  {
-    "content": "Sync content to production + advise redeploy",
+    "content": "Test (backend curl + screenshots) and finish",
     "status": "completed"
   }
 ]
