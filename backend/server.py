@@ -11,13 +11,13 @@ from datetime import timedelta
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from config import logger  # loads .env first
+from config import logger, EARLY_SUPPORTER_LIMIT  # loads .env first
 from db import client, db
 from utils import now_utc, iso, slugify, read_time
 from security import hash_password
 from seed_data import SAMPLE_POSTS, REAL_POSTS, AUTHOR
 from services.razorpay_service import probe_razorpay_subscriptions
-from services.digest_service import digest_autosend_loop, briefing_reminder_loop
+from services.digest_service import digest_autosend_loop, briefing_reminder_loop, briefing_autosend_loop
 from services.tts_service import warm_all_narrations
 
 from routers import auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync, ai
@@ -100,6 +100,33 @@ async def seed_database():
         if res.modified_count:
             logger.info(f'One-time cleanup: unpublished {res.modified_count} demo essays')
 
+    # LAUNCH PROMO: backfill early-supporter slots — the oldest registered readers claim
+    # the first EARLY_SUPPORTER_LIMIT spots (idempotent; tops up until 50 are marked).
+    flagged = await db.users.count_documents({'early_supporter': True})
+    if flagged < EARLY_SUPPORTER_LIMIT:
+        candidates = await db.users.find({'early_supporter': {'$ne': True}}) \
+            .sort('created_at', 1).limit(EARLY_SUPPORTER_LIMIT - flagged).to_list(EARLY_SUPPORTER_LIMIT)
+        if candidates:
+            await db.users.update_many({'id': {'$in': [u['id'] for u in candidates]}},
+                                       {'$set': {'early_supporter': True}})
+            logger.info(f'Early-supporter promo: marked {len(candidates)} readers (total ≤ {EARLY_SUPPORTER_LIMIT})')
+
+    # PHASE 38 CONTENT STRATEGY (one-time): briefings free through Edition #6;
+    # Tech & AI, Delivery & Systems and Personal Growth essays go premium.
+    if not await db.migrations.find_one({'key': 'phase38_tier_strategy_v1'}):
+        r1 = await db.posts.update_many(
+            {'edition': {'$ne': None, '$lte': 6}, 'tier': {'$ne': 'free'}},
+            {'$set': {'tier': 'free', 'updated_at': iso(now_utc())}})
+        r2 = await db.posts.update_many(
+            {'category': {'$in': ['tech-business', 'delivery', 'lifestyle']},
+             'edition': None, 'status': 'published', 'tier': {'$ne': 'premium'}},
+            {'$set': {'tier': 'premium', 'updated_at': iso(now_utc())}})
+        await db.migrations.insert_one({'key': 'phase38_tier_strategy_v1',
+                                        'applied_at': iso(now_utc()),
+                                        'briefings_freed': r1.modified_count,
+                                        'essays_premiumed': r2.modified_count})
+        logger.info(f'Phase 38 tiers: {r1.modified_count} briefings -> free, {r2.modified_count} essays -> premium')
+
 
 @app.on_event('startup')
 async def startup():
@@ -107,6 +134,7 @@ async def startup():
     await probe_razorpay_subscriptions()
     asyncio.create_task(digest_autosend_loop())
     asyncio.create_task(briefing_reminder_loop())
+    asyncio.create_task(briefing_autosend_loop())
     asyncio.create_task(warm_all_narrations())
 
 

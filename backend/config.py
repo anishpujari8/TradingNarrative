@@ -26,12 +26,14 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
 RAZORPAY_ENABLED = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
 
 PLANS = {
-    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 10.00, 'currency': 'usd',
-                'amount_inr': 399.00, 'interval': 'month', 'period_days': 30},
-    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 100.00, 'currency': 'usd',
-               'amount_inr': 3999.00, 'interval': 'year', 'period_days': 365},
-    'founding': {'id': 'founding', 'label': 'Founding Member', 'amount': 250.00, 'currency': 'usd',
-                 'amount_inr': 9999.00, 'interval': 'year', 'period_days': 365},
+    'monthly': {'id': 'monthly', 'label': 'Monthly', 'amount': 1.04, 'currency': 'usd',
+                'amount_inr': 99.00, 'interval': 'month', 'period_days': 30},
+    'annual': {'id': 'annual', 'label': 'Annual', 'amount': 10.50, 'currency': 'usd',
+               'amount_inr': 999.00, 'interval': 'year', 'period_days': 365},
+    'founding_monthly': {'id': 'founding_monthly', 'label': 'Founding Member Monthly', 'amount': 4.80,
+                         'currency': 'usd', 'amount_inr': 458.00, 'interval': 'month', 'period_days': 30},
+    'founding': {'id': 'founding', 'label': 'Founding Member', 'amount': 57.69, 'currency': 'usd',
+                 'amount_inr': 5499.00, 'interval': 'year', 'period_days': 365},
 }
 
 CATEGORIES = {
@@ -54,11 +56,17 @@ MARKETING_KINDS = {'digest', 'issue', 'welcome'}
 # Admin notifications: alerted whenever someone subscribes (newsletter or paid)
 ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', 'anishpujari8@gmail.com')
 
+# Launch promo: the first N registered readers can read the first 5 published essays free
+EARLY_SUPPORTER_LIMIT = 50
+EARLY_FREE_POSTS = 5
+
 # ElevenLabs narration (Essay Audio)
 ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', '')
 TTS_ENABLED = bool(ELEVENLABS_API_KEY)
 TTS_MODEL = 'eleven_turbo_v2_5'  # half the credit cost of multilingual_v2, near-identical narration quality
 TTS_OUTPUT_FORMAT = 'mp3_44100_64'  # spoken word: good quality, ~0.5 MB/min
+AUDIO_CLIP_SECONDS = 20  # free members hear this much of every narration
+AUDIO_CLIP_BYTES = AUDIO_CLIP_SECONDS * 8000  # 64 kbps mp3 ≈ 8 KB per second
 TTS_VOICES = {
     'male': {'id': 'JBFqnCBsd6RMkjVDRZzb', 'label': 'George — warm male'},
     'female': {'id': '21m00Tcm4TlvDq8ikWAM', 'label': 'Rachel — warm female'},

@@ -87,4 +87,5 @@ def public_user(user, premium: bool):
         'current_streak': user.get('current_streak', 0),
         'longest_streak': user.get('longest_streak', 0),
         'last_read_date': user.get('last_read_date'),
+        'early_supporter': bool(user.get('early_supporter')),
     }

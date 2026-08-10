@@ -202,7 +202,9 @@ async def admin_narrations(admin=Depends(get_admin_user)):
     for p in posts:
         version = p.get('updated_at') or p.get('published_at') or ''
         entries = by_slug.get(p['slug'], {})
-        needed = ['full'] + (['preview'] if p.get('tier') == 'premium' else [])
+        # Only 'full' is required now: free members hear a byte-clipped 20s preview of the
+        # same cached MP3, so separate preview narrations are no longer generated.
+        needed = ['full']
         ready_scopes, total_bytes, cached = [], 0, True
         suspect = False
         for s in needed:

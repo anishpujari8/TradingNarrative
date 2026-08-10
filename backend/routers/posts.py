@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import Response, HTMLResponse
 
-from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLED, TTS_VOICES, logger
+from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLED, TTS_VOICES, AUDIO_CLIP_BYTES, EARLY_FREE_POSTS, logger
 from db import db
 from utils import now_utc, iso, clean, post_summary, published_query
 from security import get_optional_user, get_current_user, is_entitled
@@ -63,6 +63,14 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     blocks = post.get('content_blocks', [])
     total_blocks = len(blocks)
     is_locked = post.get('tier') == 'premium' and not entitled
+    early_unlock = False
+    if is_locked and user and user.get('early_supporter'):
+        # LAUNCH PROMO: early supporters (first 50 readers) can read the first 5 published essays free
+        early_docs = await db.posts.find(published_query(), {'slug': 1}) \
+            .sort('published_at', 1).limit(EARLY_FREE_POSTS).to_list(EARLY_FREE_POSTS)
+        if post['slug'] in {d['slug'] for d in early_docs}:
+            is_locked = False
+            early_unlock = True
     if is_locked:
         # SERVER-SIDE PAYWALL: only preview paragraphs ever leave the server
         blocks = blocks[:PREVIEW_BLOCKS]
@@ -89,6 +97,7 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     result.update({
         'content_blocks': blocks,
         'is_locked': is_locked,
+        'early_unlock': early_unlock,
         'total_blocks': total_blocks,
         'shown_blocks': len(blocks),
         'related': related,
@@ -319,24 +328,29 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
         raise HTTPException(status_code=503, detail='Narration is not configured')
     if voice not in TTS_VOICES:
         raise HTTPException(status_code=400, detail='Unknown voice')
+    # NARRATION ACCESS POLICY: sign-in required; free members hear a 20s preview; premium hears it all
+    if not user:
+        raise HTTPException(status_code=401, detail='Sign in to listen to narrations — free accounts get a 20-second preview.')
     post = await db.posts.find_one({'slug': slug, **published_query()})
     if not post:
         raise HTTPException(status_code=404, detail='Post not found')
     blocks = post.get('content_blocks', [])
-    # SERVER-SIDE PAYWALL: non-entitled listeners only ever hear the preview of premium essays
-    scope = 'full'
-    if post.get('tier') == 'premium' and not await is_entitled(user):
-        blocks = blocks[:PREVIEW_BLOCKS]
-        scope = 'preview'
+    entitled = await is_entitled(user)
     from services.tts_service import get_or_generate_audio
     try:
-        audio, from_cache = await get_or_generate_audio(post, voice, blocks, scope)
+        audio, from_cache = await get_or_generate_audio(post, voice, blocks, 'full')
     except Exception as e:
         logger.error(f'TTS generation failed for {slug}: {e}')
         if 'quota_exceeded' in str(e):
             raise HTTPException(status_code=503,
                                 detail='Narration for this essay is temporarily unavailable while audio credits are being refilled. Please check back soon.')
         raise HTTPException(status_code=502, detail='Narration is temporarily unavailable. Try again shortly.')
+    scope = 'full'
+    if not entitled:
+        # 20-second preview clip for free members, sliced from the cached MP3
+        # (64 kbps ≈ 8 KB/s -> 20s ≈ 160 KB); no extra ElevenLabs credits are spent.
+        scope = 'clip'
+        audio = audio[:AUDIO_CLIP_BYTES]
     return Response(content=audio, media_type='audio/mpeg', headers={
         'Cache-Control': 'private, max-age=86400',
         'X-Audio-Cache': 'hit' if from_cache else 'generated',
@@ -347,7 +361,8 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
 @router.get('/founding-members')
 async def founding_members():
     """Public thank-you wall: readers who backed the publication as Founding Members."""
-    subs = await db.subscriptions.find({'plan': 'founding', 'status': 'active'}).sort('created_at', 1).to_list(500)
+    subs = await db.subscriptions.find({'plan': {'$in': ['founding', 'founding_monthly']},
+                                        'status': 'active'}).sort('created_at', 1).to_list(500)
     members, seen = [], set()
     for s in subs:
         uid = s.get('user_id')

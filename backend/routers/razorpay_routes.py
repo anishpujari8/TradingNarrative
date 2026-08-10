@@ -34,7 +34,7 @@ async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_u
             rz_plan_id = await rzp.get_or_create_razorpay_plan(body.plan)
             sub = await asyncio.to_thread(lambda: rzp.razorpay_client().subscription.create({
                 'plan_id': rz_plan_id,
-                'total_count': 120 if body.plan == 'monthly' else 10,
+                'total_count': 120 if PLANS[body.plan]['interval'] == 'month' else 10,
                 'customer_notify': 1,
                 'notes': {'user_id': user['id'], 'plan': body.plan},
             }))

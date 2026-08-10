@@ -99,7 +99,14 @@ export default function AccountPage() {
                   <Crown className="h-3 w-3" /> Premium member
                 </Badge>
               ) : (
-                <Badge variant="secondary" data-testid="account-free-badge">Free tier</Badge>
+                <span className="flex items-center gap-2">
+                  {user.early_supporter && (
+                    <Badge className="bg-accent/10 text-accent border border-accent/30 hover:bg-accent/10 gap-1" data-testid="account-early-supporter-badge" title="One of the first 50 readers — the first 5 essays are free for you">
+                      <Sparkles className="h-3 w-3" /> Early supporter
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" data-testid="account-free-badge">Free tier</Badge>
+                </span>
               )}
             </CardTitle>
           </CardHeader>

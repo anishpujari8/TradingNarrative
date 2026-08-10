@@ -53,7 +53,7 @@ async def get_or_create_razorpay_plan(plan_id: str) -> str:
     if stored:
         return stored['value']
     rz_plan = await asyncio.to_thread(lambda: razorpay_client().plan.create({
-        'period': 'monthly' if plan_id == 'monthly' else 'yearly', 'interval': 1,
+        'period': 'monthly' if plan['interval'] == 'month' else 'yearly', 'interval': 1,
         'item': {'name': f"The Trading Narrative Premium — {plan['label']} (INR)",
                  'amount': int(round(plan['amount_inr'] * 100)), 'currency': 'INR'},
     }))

@@ -4,7 +4,7 @@ from datetime import timedelta, date
 
 from fastapi import APIRouter, HTTPException, Depends
 
-from config import FRONTEND_URL, logger
+from config import FRONTEND_URL, EARLY_SUPPORTER_LIMIT, logger
 from db import db
 from utils import now_utc, iso
 from security import (hash_password, verify_password, make_token, get_current_user,
@@ -16,6 +16,12 @@ from services.emailer import log_email
 router = APIRouter(prefix='/api')
 
 
+async def _is_early_supporter_slot_open() -> bool:
+    """Launch promo: the first EARLY_SUPPORTER_LIMIT registered readers get early-supporter
+    perks (the first 5 published essays are free for them)."""
+    return await db.users.count_documents({'early_supporter': True}) < EARLY_SUPPORTER_LIMIT
+
+
 @router.post('/auth/register')
 async def register(body: RegisterIn):
     existing = await db.users.find_one({'email': body.email.lower()})
@@ -24,6 +30,7 @@ async def register(body: RegisterIn):
     user = {
         'id': str(uuid.uuid4()), 'email': body.email.lower(), 'name': body.name,
         'password_hash': hash_password(body.password), 'role': 'user',
+        'early_supporter': await _is_early_supporter_slot_open(),
         'created_at': iso(now_utc()),
     }
     await db.users.insert_one(dict(user))
@@ -75,7 +82,9 @@ async def magic_verify(body: MagicVerifyIn):
         user = {
             'id': str(uuid.uuid4()), 'email': rec['email'],
             'name': rec['email'].split('@')[0].replace('.', ' ').title(),
-            'password_hash': None, 'role': 'user', 'created_at': iso(now_utc()),
+            'password_hash': None, 'role': 'user',
+            'early_supporter': await _is_early_supporter_slot_open(),
+            'created_at': iso(now_utc()),
         }
         await db.users.insert_one(dict(user))
     premium = await is_entitled(user)

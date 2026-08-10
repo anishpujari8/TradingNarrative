@@ -21,7 +21,7 @@
 - Bookmarks/reading list ✅
 - Reading progress indicators ✅
 - Continue-reading strips ✅
-- Notifications bell (incl. Lounge reply notifications + deep-linking) ✅
+- Notifications bell (incl. Lounge reply notifications + deep-link) ✅
 - **Reader Highlights** ✅
   - Select-to-highlight in essays
   - Persistent inline highlight rendering
@@ -36,55 +36,56 @@
     - Falls back to an all-platform dialog with WhatsApp/Telegram/X/LinkedIn/Facebook/Email/Copy Link when native share is unavailable or fails
   - WhatsApp quick-share button added
   - Quote-card sharing never dead-ends: native file share → link share → auto-download with guidance
-- **Reading Streaks** ✅ *(Phase 37 — COMPLETED)*
-  - Reward regular readers with a visible streak counter (current + longest)
-  - Updates streak on article reads (logged-in users; local-calendar-day aware)
+- **Reading Streaks** ✅ *(Phase 37)*
+  - Reward regular readers with a streak counter (current + longest)
+  - Updates on article reads (logged-in users; local-calendar-day aware)
   - UI surfaced in Navbar + Account page
+- **Early supporter promo** ✅ *(Phase 38)*
+  - First 50 registered users are flagged as early supporters
+  - Early supporters can read the first 5 published essays fully (even if premium)
+  - Badge shown on Account page
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
 - **Highlight Digest Social Proof** ✅ *(digest includes “Most highlighted this week” block when data exists)*
 - **Weekly Listen Digest Social Proof** ✅ *(digest includes “Most listened this week” block when narration listen data exists)*
 - Weekly briefings archive + tooling ✅
-  - **Briefings are premium-only** ✅ *(Edition #1 set to premium; new briefing template defaults to premium)*
+- **Briefings rollout strategy (Editions 1–6 free)** ✅ *(Phase 38)*
+  - Editions ≤ 6 are free to maximize distribution/awareness
+  - Briefing template defaults to **free** while `nextEdition <= 6`
+- **Briefings weekly autosend** ✅ *(Phase 38)*
+  - Every Wednesday **09:30 AM IST**
+  - Sends latest briefing as high-level summary (title + intro + section headings + CTA link)
+  - Once per ISO week guardrail
+  - Toggle: `briefing_autosend` (default ON)
 
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
 - **Resend** ⛔ *(planned; blocked pending user decisions + API key + sender domain verification)*
-- **Admin Alerts (Email Notifications)** ✅ *(Phase 37 — COMPLETED)*
+- **Admin Alerts (Email Notifications)** ✅ *(Phase 37)*
   - Notify admin on:
     - newsletter subscribe
     - paid subscription activation (Stripe + Razorpay)
+  - Subject: `tradingnarrative email subscriber`
 
 ### Audio narration (ElevenLabs)
-- **Essay Audio Narration (ElevenLabs)** ✅ *(high-quality TTS; cached per essay; paywall-aware preview audio for non-entitled users)*
-- **Listen analytics** ✅ *(count narration plays; show “Listens” in Admin analytics next to page views; one listen per essay visit)*
-- **Listen completion rate** ✅ *(milestone funnel: 25% / 50% / 75% / finish + completion % per essay in Admin Narrations)*
-- **Pre-generated narrations** ✅ *(warm cache on startup + when posts are published/updated so playback is instant when cached; quota-aware)*
-- **Narration Status Panel** ✅ *(Admin self-service for narration coverage + warmup trigger)*
-  - Shows narrated coverage (X/Y), cached/missing per essay, audio size, listens
-  - Shows completion rate + milestone funnel tooltips
-  - “Generate missing narrations” one-click warmup
-  - Auto-refresh while warmup is running
-- **Narration sync (Preview → Production)** ✅ *(push cached audio blobs to live site without spending new ElevenLabs credits)*
-  - Admin endpoint to import cached audio on the receiver
-  - Admin sync endpoint to push preview cache to production
-  - Frontend button + dialog in Admin → Narrations
+- **Essay Audio Narration (ElevenLabs)** ✅ (cached)
+- **Listen analytics** ✅
+- **Listen completion rate** ✅
+- **Pre-generated narrations** ✅ *(warm cache)*
+- **Narration Status Panel** ✅
+- **Narration sync (Preview → Production)** ✅
 - **Narration hardening (cache corruption protection)** ✅
-  - Import endpoint rejects non-MP3 / tiny payloads and refuses suspicious overwrites
-  - Serving path auto-purges corrupt cache entries
-  - Sync sender skips corrupt/tiny cache entries
-- **Narration health alert** ✅ *(warns in Admin when any essay’s audio is missing or corrupt)*
-  - Red alert banner on Admin overview + red dot on Narrations tab
-  - Distinguishes `missing` vs `corrupt` in Narrations table
+- **Narration health alert** ✅
+- **Audio narration access policy** ✅ *(Phase 38)*
+  - Logged-out visitors: narration requires sign-in (**401**)
+  - Logged-in free users: **20-second preview clip** (byte-clipped from cached MP3; `X-Audio-Scope: clip`; **no extra ElevenLabs credits**)
+  - Premium users: full narration (`X-Audio-Scope: full`)
+  - Warmup now generates **full scope only**
 
 **ElevenLabs operational caveats**
 - Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
 - Narrations can be restored to production **without new credits** by syncing preview cache to production.
-
-**Current audio state (preview)** ✅
-- **Phase 35: user credits recharged; warmup completed** ✅
-- **All published essays are cached**: **5/5 cached**, **0 health issues**.
 
 ### AI features (Gemini)
 - **Gemini 2.5 Flash integration via emergentintegrations + EMERGENT_LLM_KEY** ✅
@@ -100,11 +101,9 @@
 - Post conversion stats (“Essays that convert”) ✅
 - CSV export ✅
 - **Content Sync Tool (Preview → Production)** ✅
-  - **Missing-post sync** ✅
-  - **Update-mode sync** ✅ *(Phase 35)*: can update already-live posts (tier/content/featured/etc.) using a safe allowlist
-  - Diff endpoint now returns both **missing** and **outdated** posts
-  - UI shows New/Update badges and per-action results
-- **Sync carries normalized author identity** ✅ *(author object normalized to “Anish Pujari” by startup migration; production self-heals on redeploy)*
+  - Missing-post sync ✅
+  - Update-mode sync ✅ (safe allowlist)
+- **Sync carries normalized author identity** ✅
 
 ### Community
 - Private Community Lounge ✅
@@ -113,21 +112,20 @@
 
 ### Branding + content readiness
 - Official logo + favicon ✅
-- Author identity: Anish Pujari across UI and post metadata ✅ *(enforced via startup migration)*
+- Author identity: Anish Pujari across UI and post metadata ✅
 - Weekly briefing tooling: template + edition numbering + `/briefings` archive ✅
-- Import existing writing (LinkedIn newsletter editions + LinkedIn articles) ✅ *(Edition #1 done; #2 pending)*
+- Import existing writing ✅
+  - Edition #1 ✅
+  - Edition #2 ✅ *(Phase 38 import)*
 - **Hardcoded default content** ✅ *(real articles are hardcoded and self-heal on DB reset)*
-- **Spinning logo** ✅ *(slow, elegant rotation ~9s per turn; respects reduced motion)*
-- **Demo Cleanup** ✅ *(sample/demo essays auto-drafted/unpublished so credits are spent on real writing)*
-- **New Delivery essay imported** ✅ *(durable + premium-gated; see Phase 34)*
-- **Founding Member Wall** ✅ *(Phase 36)*
-  - `/about` includes a public thank-you wall that lists active Founding members
-  - Empty-state CTA routes to pricing until the first founding member subscribes
+- Spinning logo ✅
+- Demo cleanup ✅
+- Founding Member Wall ✅
 
 ### Stability
-- Modular backend (monolith `server.py` split into routers/services) ✅
+- Modular backend (routers/services) ✅
 - Regression testing discipline ✅
-- **DB hygiene:** purged accumulated test users and orphaned billing records ✅ *(post-Phase 37 cleanup)*
+- DB hygiene ✅ *(purged accumulated test users + orphaned billing records)*
 
 ---
 
@@ -136,7 +134,6 @@
 ### Phase 1 — Core Workflow POC (paywall + subscription state + preview API) ✅ DONE
 - Backend-only POC in FastAPI
 - Minimal React pages
-- POC test checklist
 
 ### Phase 2 — V1 App Development (bulk build) ✅ DONE
 - Editorial UI (Tailwind + shadcn/ui)
@@ -151,355 +148,206 @@
 
 ### Phase 4 — Payments Integrations (Stripe + Razorpay) ✅ DONE
 - Stripe Checkout + entitlement via webhooks/status checks
-- Razorpay checkout (autopay detection + fallback order if not enabled)
-- Frontend supports both checkout modes
+- Razorpay checkout (autopay detection + fallback order)
 
 ### Phase 5 — V2 Admin Analytics + Community ✅ DONE
 - Traffic analytics + Admin UI
-- Community Lounge (premium-only) with threads/announcements
+- Community Lounge
 
 ### Phase 6 — V2.2 Enhancements ✅ DONE
 - Autopay live re-probe
-- Lounge reply notifications + deep-link
+- Lounge reply notifications
 - Weekly traffic trend chart
-- Pinned discussions
 
 ### Phase 7 — V2.3 Enhancements ✅ DONE
 - Post attribution
 - CSV export
 - Weekly digest autosend + toggle
-- Thread lock
 
 ### Phase 8 — V2.4 Enhancements ✅ DONE
-- Conversion funnel analytics + Admin UI
-- Gmail SMTP integration (later switched to LIVE)
+- Conversion funnel analytics
+- Gmail SMTP integration
 - Member profiles
-- Scheduled announcements
 
 ### Phase 9 — V2.5 Enhancements ✅ DONE
 - Email LIVE + verified
 - Pillar-personalized digests
-- Announcement edit/reschedule
-- Funnel plan split
 
 ### Phase 10 — V2.6 Enhancements ✅ DONE
 - One-click unsubscribe + List-Unsubscribe
 - Subscriber growth chart
 - Digest preview-to-admin
-- Post conversion stats
 
 ### Phase 11 — Branding + Author Identity + Content Import ✅ DONE
-- Official logo + favicon
-- About page rewritten with Anish Pujari bio + headshot
-- Author identity seeded across DB
+- Logo/favicon
+- About page rewrite
+- Author identity normalization
 - Imported LinkedIn newsletter Edition #1
-- Heading convention support for article rendering
 
 ### Phase 12 — Pillar Cleanup + Briefing Tooling ✅ DONE
-- Travel pillar removed → Delivery & Systems (`delivery`)
-- Weekly briefing template button
-- Edition numbers in posts + badges in UI
+- Delivery & Systems pillar
+- Weekly briefing template
 
 ### Phase 13 — Briefings Series Page + Wednesday Reminder ✅ DONE
-- `/briefings` archive page
-- `GET /api/briefings`
-- Wednesday briefing reminder loop + admin toggle
+- `/briefings` archive
+- Reminder loop
 
-### Phase 14 — Article Import: “Freight Management and Tracking Visibility” ✅ COMPLETED
-- Imported and verified under `category=tech-business` and published
+### Phase 14 — Article Import: “Freight Management and Tracking Visibility” ✅ DONE
 
-### Phase 15 — Backend Modularization Refactor ✅ COMPLETED
-- Split `server.py` into modules:
-  - `config.py`, `db.py`, `utils.py`, `security.py`, `schemas.py`
-  - `services/` (emailer, stripe, razorpay, digest, tts)
-  - `routers/` (auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync, ai)
-- Route parity verified; background loops confirmed running
-- Regression testing complete; test data cleaned
+### Phase 15 — Backend Modularization Refactor ✅ DONE
 
-### Phase 16 — Delivery & Systems Article Import ✅ COMPLETED (superseded by Phase 34)
-- ✅ User pasted the delivery essay
-- ✅ Imported under `category="delivery"` and published
-- ✅ Appended to `REAL_POSTS` for durability
+### Phase 16 — Delivery Essay Import ✅ DONE (superseded by later Delivery essay)
 
-### Phase 17 — Reader Highlights + Related By Tags ✅ COMPLETED
-#### A) Reader Highlights ✅
-- Backend routes:
-  - `POST /api/highlights` (substring validation + paywall-aware)
-  - `GET /api/highlights` (optional `?slug=`)
-  - `DELETE /api/highlights/{id}`
-- Frontend:
-  - Floating selection UX
-  - Inline `<mark class="reader-highlight">` rendering
-  - `/highlights` library page + navbar link
+### Phase 17 — Reader Highlights + Related ✅ DONE
 
-#### B) Related By Tags ✅
-- Related posts scored by shared tags + category
+### Phase 18 — Highlight Notes + Highlight Sharing ✅ DONE
 
-### Phase 18 — Highlight Notes + Highlight Sharing ✅ COMPLETED
-#### A) Highlight Notes ✅
-- Backend: `PUT /api/highlights/{id}/note`
-- Frontend: notes UI + inline editor
-
-#### B) Highlight Sharing ✅
-- Branded quote card sharing (download/copy/share)
-
-### Phase 19 — PayPal Integration ⛔ NOT STARTED (still blocked)
+### Phase 19 — PayPal Integration ⛔ NOT STARTED
 **Blocked on user decisions + credentials**
-- Confirm:
-  1) Recurring subscription (confirm definitively)
-  2) Sandbox vs Live
-  3) PayPal Client ID + Secret
-  4) Placement on pricing page
 
-### Phase 20 — Production Content Bug Fix + Share From Article + Popular Highlights ✅ COMPLETED
-- Production content visibility fixed
-- Share-from-article popover
-- Popular highlights markers
+### Phase 20 — Production Content Bug Fix + Share From Article + Popular Highlights ✅ DONE
 
-### Phase 21 — Hardcoded Real Content + Highlight Digest + Content Sync Tool ✅ COMPLETED
-- `REAL_POSTS` self-healing content
-- Digest includes “Most highlighted this week”
-- Sync tool preview → production
+### Phase 21 — Hardcoded Real Content + Highlight Digest + Content Sync Tool ✅ DONE
 
-### Phase 22 — Two Article Imports + Production Sync ✅ COMPLETED
-- Imported 2 essays, appended to `REAL_POSTS`, synced to production
+### Phase 22 — Additional Imports + Production Sync ✅ DONE
 
-### Phase 23 — Series + Social Unfurls + Baseline Essay Audio ✅ COMPLETED
-- Series page + series banner
-- `/api/share/{slug}` unfurl HTML
+### Phase 23 — Series + Social Unfurls + Baseline Essay Audio ✅ DONE
 
-### Phase 24 — ElevenLabs Essay Narration + Caching ✅ COMPLETED
-- ElevenLabs narration + cache
-- Paywall-aware audio scope
+### Phase 24 — ElevenLabs Essay Narration + Caching ✅ DONE
 
-### Phase 25 — Author Normalization + Spinning Logo + Listen Analytics + Pre-Generated Narrations ✅ COMPLETED
-- Author normalized
-- Spinning logo
-- Listen tracking
-- Startup warmup + publish/update warm hooks
+### Phase 25 — Author Normalization + Spinning Logo + Listen Analytics + Pre-Generated Narrations ✅ DONE
 
-### Phase 26 — Narration Status Panel + Demo Cleanup + Credit Refill Warmup ✅ COMPLETED
-- Narrations tab + warm trigger
-- One-time demo unpublish migration
-- Self-service warmup flow
+### Phase 26 — Narration Status Panel + Demo Cleanup + Warmup ✅ DONE
 
-### Phase 27 — Listen Completion Rate ✅ COMPLETED
-- Milestone reporting endpoints + UI completion column
+### Phase 27 — Listen Completion Rate ✅ DONE
 
-### Phase 28 — Weekly Listen Digest ✅ COMPLETED
-- Digest includes “Most listened this week” based on narration listen analytics
+### Phase 28 — Weekly Listen Digest ✅ DONE
 
-### Phase 29 — Gemini AI Integration (Gemini 2.5 Flash) ✅ COMPLETED
-> Two features: Admin writing assistant + “Ask this essay” reader chat.
+### Phase 29 — Gemini AI Integration ✅ DONE
 
-#### A) Backend ✅
-- Added `EMERGENT_LLM_KEY` to backend env and config flags:
-  - `AI_ENABLED`, `AI_PROVIDER='gemini'`, `AI_MODEL='gemini-2.5-flash'`
-- New router: `/app/backend/routers/ai.py`
-  - `GET /api/ai/status`
-  - `POST /api/admin/ai/assist` (admin-only; `draft|polish|expand`; SSE streaming)
-  - `POST /api/posts/{slug}/ask` (public; essay-grounded; paywall-aware; SSE streaming)
+### Phase 30 — Narration Bug RCA + Narration Sync Tool ✅ DONE
 
-#### B) Frontend ✅
-- `src/lib/aiStream.js`: fetch-based SSE consumer
-- Admin editor:
-  - `AiAssistantDialog` wired into `AdminEditorPage` via an “AI assistant” button next to Content
-  - Streams output; actions: Replace draft / Append / Copy
-- Reader:
-  - `AskEssayWidget` on `ArticlePage` (hidden when AI disabled)
-  - Streams assistant replies; keeps short client-side history
-
-### Phase 30 — Narration Bug RCA + Narration Sync Tool ✅ COMPLETED
-- Production restore path built: push cached preview audio to production without spending new credits.
-
-### Phase 31 — Resend Integration ⛔ NOT STARTED (blocked)
+### Phase 31 — Resend Integration ⛔ NOT STARTED
 **Blocked on user decisions + credentials**
-- Need:
-  1) Scope: replace Gmail SMTP for everything vs only newsletter sends
-  2) Fallback behavior: keep Gmail SMTP as fallback or Resend-only
-  3) Resend API key (`re_...`)
-  4) Sender domain status: verified `thetradingnarrative.com` vs `onboarding@resend.dev` test sender
 
-### Phase 32 — Recurring Narration Bug: True Root Cause + Permanent Hardening ✅ COMPLETED
-- Import endpoint hardened; serving path purges corrupt cache; sync skips tiny entries.
+### Phase 32 — Narration Corruption Hardening ✅ DONE
 
-### Phase 33 — Narration Health Alert ✅ COMPLETED
-- Admin alert banner + tab dot; backend health flags and issues.
+### Phase 33 — Narration Health Alert ✅ DONE
 
-### Phase 34 — Delivery Essay Import + Premium Gating ✅ COMPLETED
-- Delivery longform essay imported, premium-only.
-- Weekly briefing edition #1 made premium-only.
+### Phase 34 — Delivery Essay Import + Premium Gating ✅ DONE
 
-### Phase 35 — Premium Growth Batch (Plans + Checkout Auth Fix + Narration Restore + Sync Updates) ✅ COMPLETED
-**Verified by testing agent iteration_26 (frontend 100%; backend pass).**
+### Phase 35 — Premium Growth Batch (Plans + Checkout Auth Fix + Narration Restore + Sync Updates) ✅ DONE
 
-1) **Narration resolved** ✅
-- User recharged ElevenLabs credits (paid).
-- Warmup regenerated missing narrations; preview now has **5/5 cached**, **0 issues**.
-- Paywall-aware audio confirmed for premium posts (preview scope for anonymous).
-- Note: credits balance display still shows `—` because key lacks `user_read` permission (harmless).
+### Phase 36 — Founding Member Wall + Cross-Platform Sharing ✅ DONE
 
-2) **Checkout auth bug fixed** ✅
-- “Go Premium annual” when logged out now redirects to **/auth?next=/pricing** with a friendly toast.
-- Expired session (401/403) triggers logout + “session expired” toast + auth redirect.
+### Phase 37 — Reader Engagement + Admin Alerts ✅ DONE
+- Reading streaks
+- Admin alerts on newsletter signup + paid activation
 
-3) **Premium pricing updated per growth plan** ✅
-- Backend `PLANS`:
-  - Monthly: **$10 / ₹399**
-  - Annual: **$100 / ₹3,999**
-  - Founding Member: **$250 / ₹9,999**
-- Pricing UI: 3 cards (Free / Premium / Founding) + comparison table with Founding-exclusive benefits.
+### Phase 38 — Growth Revamp (Pricing + Briefings + Premium Mix + Early Supporters + Audio Gating) ✅ COMPLETED
+**Verified by testing agent iteration_29**: backend 37/37 (100%), frontend 18/19 (95% — one selector skipped, unrelated).
 
-4) **Sync update mode added** ✅
-- Sync now updates already-live production posts using a safe allowlist.
-- Diff endpoint returns both `missing` and `outdated`.
-- UI updated to show New vs Update items and per-action results.
+#### A) Edition #2 import ✅
+- Imported `The Trading Narrative #2` into briefings archive as **Edition #2**
+- Canonical slug fixed to match `slugify()` output:
+  - `oil-s-sharp-slide-opec-completes-the-rollback-and-smelters-paying-miners`
+- Stored in DB + appended to `REAL_POSTS` for durability
+- Narration generated and cached
 
-### Phase 36 — Founding Member Wall + Cross-Platform Sharing ✅ COMPLETED
-**Verified by testing agent iteration_27 (backend 5/5, frontend 100%).**
+#### B) Briefings free through edition 6 ✅
+- Edition #1 flipped back to **free**
+- One-time migration: `phase38_tier_strategy_v1`
 
-1) **Founding Member Wall** ✅
-- Backend: `GET /api/founding-members` (public)
-  - Lists users with active subscriptions where `plan='founding'`
-  - Returns `{members: [{name, since}], count}`
-- Frontend:
-  - `FoundingWall` on `/about`
-  - Empty-state CTA (Become a Founding Member → `/pricing`)
-  - Member chips + count badge once subscribers exist
+#### C) Wednesday briefing autosend ✅
+- `briefing_autosend_loop` registered (Wed 09:30 IST)
+- Sends high-level briefing summary + CTA link
+- Once per ISO week; toggle `briefing_autosend` default ON
 
-2) **Share bug fix (Android / non-iOS environments)** ✅
-- ShareBar:
-  - “Share anywhere” uses native share sheet when available
-  - Otherwise opens a dialog with WhatsApp/Telegram/X/LinkedIn/Facebook/Email/Copy link
-  - WhatsApp quick button added to the bar
-- Quote-card share:
-  - Native file share when supported
-  - Otherwise link share or auto-download with guidance
+#### D) Pricing overhaul ✅
+- Backend plans:
+  - Monthly ₹99 / $1.04
+  - Annual ₹999 / $10.50
+  - Founding monthly ₹458 / $4.80 (`founding_monthly`)
+  - Founding annual ₹5,499 / $57.69 (`founding`)
+- Frontend PricingPage updated; founding card respects monthly/annual toggle
+- Razorpay plan minting now interval-driven
+- Founding wall includes `founding_monthly`
 
-### Phase 37 — Reader Engagement + Admin Alerts ✅ COMPLETED
-**Verified by testing agent iteration_28 (backend 9/10, frontend 5/5).**
-> Backend “failure” was a test-script logic error; actual backend behavior is correct.
+#### E) Premium mix by category ✅
+- Published essays in `tech-business`, `delivery`, `lifestyle` are premium
+- Finance remains mixed
+- Seed tiers updated for durability
 
-#### A) Admin notification email (newsletter + paid subscriptions) ✅
-**Goal**: Admin receives immediate notification whenever audience or revenue grows.
+#### F) Early supporter promo ✅
+- First 50 registered users flagged (startup top-up + register + magic-link)
+- Early supporter unlock of first 5 published essays implemented via `early_unlock`
+- `public_user()` exposes flag; Account page badge added
 
-- Added `ADMIN_NOTIFY_EMAIL` in `/app/backend/config.py` (default `anishpujari8@gmail.com`; configurable via env)
-- Newsletter subscribe alert:
-  - `/app/backend/routers/newsletter.py` `POST /api/newsletter/subscribe`
-  - Sends admin email with subject exactly `tradingnarrative email subscriber`
-  - Body includes subscriber email, source, time (UTC)
-- Paid subscription activation alert:
-  - Implemented in `/app/backend/services/stripe_service.py` inside `activate_premium_from_transaction(txn)`
-  - Covers both Stripe + Razorpay (shared activation function)
-  - Idempotent: only fires behind the transaction activation gate
-  - Subject exactly `tradingnarrative email subscriber`
-  - Body includes user email, plan, amount/currency, provider, txn id, time (UTC)
-- Both alerts verified as actually sent via Gmail SMTP.
+#### G) Audio gating ✅
+- Anonymous: 401 sign-in required
+- Free logged-in: 20s clip (160000 bytes) with `X-Audio-Scope: clip`
+- Premium: full audio
+- Warmup now full-only; admin narration health expects only full
+- Frontend narrator: lock icon + sign-in toast + “free preview” label + upgrade CTA
 
-#### B) Reading streaks (user retention) ✅
-**Goal**: Track reading consistency for logged-in users and surface it in the UI.
-
-- Backend API:
-  - `POST /api/users/streak/read` (auth required)
-  - Accepts `{ tz_offset_minutes, slug }`
-  - Computes user-local calendar day using tz offset (JS `Date.getTimezoneOffset()` convention)
-  - Same local day → idempotent (no increment)
-  - Yesterday → +1
-  - Gap → reset to 1, longest preserved
-- User schema fields (stored in `users` collection):
-  - `current_streak`, `longest_streak`, `last_read_date` (ISO date)
-- Session payload:
-  - `public_user()` updated so `/api/auth/me` returns streak fields
-- Frontend wiring:
-  - `ArticlePage` posts to streak endpoint on essay load for logged-in users, shows toast on extension, and `refreshUser()` keeps navbar up to date
-  - `Navbar` displays flame streak badge (`data-testid="nav-streak-counter"`)
-  - `AccountPage` shows “Reading streak” card (`data-testid="account-streak-card"`)
-
-#### C) Hygiene ✅
-- Purged accumulated test users and orphaned billing records (subscriptions/txns/invoices) from prior sessions.
+#### H) Production content ops ✅
+- Production sync executed:
+  - Edition #2 created on production
+  - Tier flips pushed (Ed1 free; categories premium)
+  - Narrations pushed (including Ed2)
+- **Slug mismatch issue resolved** (no duplicate risk on redeploy)
 
 ---
 
 ## 3) Next Actions
 
-### A) Immediate (user actions)
-1) **Production redeploy** ⛔ *(user action)*
-- Ships:
-  - Reading streaks (endpoint + navbar + account page)
-  - Admin subscriber alerts
-  - (plus previously completed batches: Founding wall, cross-platform sharing, pricing updates, sync update mode, etc.)
-
-2) **Production: run “Sync to production” (now includes updates)** ⛔ *(user action)*
-- This will:
-  - Create any missing published posts on production
-  - **Update existing production posts** whose fields drifted (e.g., Edition #1 briefing tier → premium)
-
-3) **Production: run “Send narrations to live site”** ⛔ *(user action)*
-- Pushes cached preview narrations to production without spending new ElevenLabs credits.
+### A) Production rollout (user action)
+- **Redeploy production** to ship the code changes from Phase 37 + 38:
+  - new pricing
+  - audio gating
+  - early supporters
+  - reading streaks
+  - admin alerts
+  - briefing autosend
 
 ### B) Upcoming (still blocked)
-4) **Edition #2 import** ⛔
-- Paste Edition #2 newsletter text.
-
-5) **PayPal (recurring subscriptions)** ⛔
-- Provide PayPal decisions + credentials (Phase 19).
-
-6) **Resend integration** ⛔
-- Answer setup decisions + provide Resend API key.
+- **PayPal Checkout** (recurring subscriptions) ⛔
+  - Need PayPal client ID + secret and final flow decisions
+- **Resend Integration** ⛔
+  - Need Resend API key + verified sender domain
 
 ---
 
 ## 4) Success Criteria
 ✅ Premium posts never return full content to non-premium users from the API.
-✅ Stripe checkout works (recurring capability ready; test URLs verified).
-✅ Razorpay INR checkout works and mints correct-priced plans after price changes.
+✅ Stripe checkout works.
+✅ Razorpay checkout works; plan cache mints new plans on price changes.
 ✅ Email sending is LIVE with unsubscribe + digest systems.
-✅ Community lounge features work.
-✅ Highlights system complete (highlights, notes, quote cards, popular highlights).
-✅ Admin analytics complete (traffic, funnels, conversions, listens, completion).
-✅ Narration ops are self-serve (status + warmup) and digest includes:
-- “Most highlighted this week”
-- “Most listened this week”
-✅ Narration production restore path works:
-- Production can receive cached audio via narration sync without spending new credits.
-✅ Narration cache is protected against corruption:
-- Import rejects invalid/tiny audio
-- Serving path purges corrupt cache
-- Sync skips corrupt cache
-✅ Narration health visibility:
-- Admin receives a clear warning whenever any essay is missing/corrupt
-✅ AI features:
-- Admin AI writing assistant works (draft/polish/expand; streaming)
-- “Ask this essay” is grounded + paywall-aware; streaming
-✅ Growth-plan pricing:
-- Monthly $10/₹399, Annual $100/₹3,999, Founding $250/₹9,999 (UI + backend)
-✅ Checkout UX:
-- Logged-out users are redirected to /auth instead of seeing “Not authenticated”
-✅ Production sync:
-- New posts AND drift updates (tier flips, edits) can be synced safely
-✅ Cross-platform share:
-- Sharing works on iOS AND on Android/desktop/in-app browsers via fallback share dialog
-✅ Founding wall:
-- About page shows empty-state CTA until first founding member; then lists members reliably
+✅ Highlights system complete.
+✅ Admin analytics complete.
+✅ Narration ops are self-serve and hardened.
+✅ AI features work (writing assistant + ask-essay).
+✅ Cross-platform sharing works.
+✅ Founding wall works.
 
-✅ Admin alerts
-- Admin receives an email to `ADMIN_NOTIFY_EMAIL` for:
-  - newsletter subscribe
-  - paid subscription activation (Stripe + Razorpay)
-- Subject is exactly: `tradingnarrative email subscriber`
-- Email body includes subscriber email + plan + amount + provider
+✅ Phase 37 delivered
+- Reading streaks visible and correct
+- Admin alerts on newsletter + paid activations (subject exactly `tradingnarrative email subscriber`)
 
-✅ Reading streaks
-- Logged-in readers accumulate a daily reading streak based on their local calendar day.
-- Streak appears in Navbar and Account page.
-- Backend endpoint is idempotent for same-day reads.
+✅ Phase 38 delivered
+- Edition #2 imported + archived
+- Briefings free through edition 6
+- Wednesday 09:30 IST briefing autosend
+- New pricing + founding monthly plan
+- Category premium strategy applied
+- Early supporters entitlement live
+- Audio gating live (401 anon, 20s clip free, full premium)
+- Production content synced; slug mismatch resolved
 
 ⚠️ Operational caveats
-- ElevenLabs credits balance display requires `user_read` permission on the key.
-- Gemini usage consumes Emergent LLM key credits.
-- Deployments can be rate-limited; retry after cooldown.
+- ElevenLabs credits balance display requires `user_read` permission on key.
+- Gemini usage consumes Emergent LLM credits.
 
 ⛔ Blockers
-- Edition #2 import: awaiting text.
 - PayPal: awaiting decisions + credentials.
 - Resend: awaiting decisions + API key + sender domain verification.

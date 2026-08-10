@@ -25,7 +25,8 @@ const FEATURES = [
   { name: "Preview of premium essays", free: true, premium: true, founding: true },
   { name: "Full premium essay library", free: false, premium: true, founding: true },
   { name: "Weekly premium briefings", free: false, premium: true, founding: true },
-  { name: "Essay audio narrations", free: false, premium: true, founding: true },
+  { name: "20-second narration previews", free: true, premium: true, founding: true },
+  { name: "Full essay audio narrations", free: false, premium: true, founding: true },
   { name: "Ad-free reading", free: false, premium: true, founding: true },
   { name: "Early access to new posts", free: false, premium: true, founding: true },
   { name: "Premium member badge", free: false, premium: true, founding: true },
@@ -36,9 +37,10 @@ const FEATURES = [
 
 // Anchored in USD, localized round numbers for INR (per growth plan)
 const PRICING = {
-  monthly: { usd: "$10", inr: formatINR(399), per: "/month", label: "Monthly" },
-  annual: { usd: "$100", inr: formatINR(3999), per: "/year", label: "Annual" },
-  founding: { usd: "$250", inr: formatINR(9999), per: "/year", label: "Founding Member" },
+  monthly: { usd: "$1.04", inr: formatINR(99), per: "/month", label: "Monthly" },
+  annual: { usd: "$10.50", inr: formatINR(999), per: "/year", label: "Annual" },
+  founding_monthly: { usd: "$4.80", inr: formatINR(458), per: "/month", label: "Founding Member Monthly" },
+  founding: { usd: "$57.69", inr: formatINR(5499), per: "/year", label: "Founding Member" },
 };
 
 export default function PricingPage() {
@@ -73,9 +75,10 @@ export default function PricingPage() {
 
   const isINR = currency === "inr";
   const premiumPlan = annual ? "annual" : "monthly";
+  const foundingPlan = annual ? "founding" : "founding_monthly";
   const priceFor = (planId) => (isINR ? PRICING[planId].inr : PRICING[planId].usd);
   const selected = PRICING[selectedPlan];
-  const monthlyEquiv = isINR ? formatINR(333) : "$8.33";
+  const monthlyEquiv = isINR ? formatINR(83) : "$0.88";
 
   // Session-expiry aware error handling: a stale token must never dead-end at "Not authenticated"
   const handleCheckoutError = (err, fallback) => {
@@ -300,7 +303,7 @@ export default function PricingPage() {
               disabled={redirecting}
               data-testid="pricing-checkout-button"
             >
-              {redirecting && selectedPlan !== "founding" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {redirecting && !selectedPlan.startsWith("founding") ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {user?.is_premium ? "You're Premium" : `Go Premium ${annual ? "annual" : "monthly"}`}
             </Button>
             {mockMode ? (
@@ -331,8 +334,8 @@ export default function PricingPage() {
               Founding Member <Star className="h-5 w-5 text-accent" />
             </h3>
             <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-semibold" data-testid="pricing-founding-amount">{priceFor("founding")}</span>
-              <span className="text-muted-foreground text-sm">/year</span>
+              <span className="text-4xl font-semibold" data-testid="pricing-founding-amount">{priceFor(foundingPlan)}</span>
+              <span className="text-muted-foreground text-sm">{PRICING[foundingPlan].per}</span>
             </div>
             <p className="text-xs text-muted-foreground pt-1">Back the publication early — get everything, plus direct access.</p>
           </CardHeader>
@@ -352,11 +355,11 @@ export default function PricingPage() {
             <Button
               variant="outline"
               className="w-full mt-6 h-11 border-accent/60 text-accent hover:bg-accent/10 hover:text-accent"
-              onClick={() => startCheckout("founding")}
+              onClick={() => startCheckout(foundingPlan)}
               disabled={redirecting}
               data-testid="pricing-founding-button"
             >
-              {redirecting && selectedPlan === "founding" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Star className="h-4 w-4 mr-2" />}
+              {redirecting && selectedPlan.startsWith("founding") ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Star className="h-4 w-4 mr-2" />}
               {user?.is_premium ? "You're Premium" : "Become a Founding Member"}
             </Button>
             <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center">
@@ -405,7 +408,7 @@ export default function PricingPage() {
           <div className="bg-muted/40 border border-border rounded-lg p-4 flex justify-between items-center">
             <div>
               <div className="font-medium">{selected.label} (INR)</div>
-              <div className="text-xs text-muted-foreground font-mono">{selectedPlan === "monthly" ? "30" : "365"}-day pass · cancel anytime</div>
+              <div className="text-xs text-muted-foreground font-mono">{PRICING[selectedPlan].per === "/month" ? "30" : "365"}-day pass · cancel anytime</div>
             </div>
             <div className="text-2xl font-semibold">{priceFor(selectedPlan)}<span className="text-sm text-muted-foreground">{selected.per}</span></div>
           </div>
@@ -433,7 +436,7 @@ export default function PricingPage() {
           <div className="bg-muted/40 border border-border rounded-lg p-4 flex justify-between items-center">
             <div>
               <div className="font-medium">{selected.label}</div>
-              <div className="text-xs text-muted-foreground font-mono">Renews every {selectedPlan === "monthly" ? "month" : "year"} · cancel anytime</div>
+              <div className="text-xs text-muted-foreground font-mono">Renews every {PRICING[selectedPlan].per === "/month" ? "month" : "year"} · cancel anytime</div>
             </div>
             <div className="text-2xl font-semibold">{priceFor(selectedPlan)}<span className="text-sm text-muted-foreground">{selected.per}</span></div>
           </div>

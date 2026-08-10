@@ -126,7 +126,8 @@ async def get_credits():
 
 async def warm_post_audio(post, voice: str = DEFAULT_WARM_VOICE):
     """Pre-generate the default narration for one published post.
-    Premium essays get both scopes: 'full' (entitled readers) and 'preview' (anonymous).
+    Only the 'full' scope is warmed: free members hear a byte-clipped 20s preview of the
+    same cached MP3, so separate preview audio is no longer generated (saves credits).
     Returns 'generated', 'cached', 'quota' (out of ElevenLabs credits) or 'failed'."""
     if not TTS_ENABLED:
         return 'failed'
@@ -134,8 +135,6 @@ async def warm_post_audio(post, voice: str = DEFAULT_WARM_VOICE):
     if not blocks:
         return 'failed'
     scopes = [('full', blocks)]
-    if post.get('tier') == 'premium':
-        scopes.append(('preview', blocks[:PREVIEW_BLOCKS]))
     result = 'cached'
     for scope, blks in scopes:
         try:

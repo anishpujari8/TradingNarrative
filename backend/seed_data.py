@@ -257,7 +257,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
   'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. '
              'Edition #1 of The Trading Narrative.',
   'category': 'finance',
-  'tier': 'premium',
+  'tier': 'free',
   'cover_image': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&q=80&auto=format&fit=crop',
   'tags': ['ETRM', 'Commodities', 'Markets', 'Risk', 'Regulation'],
   'featured': True,
@@ -317,7 +317,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
   'excerpt': 'Why $15 billion in annual demurrage is a data problem — and how AIS, AI, and integrated CTRM '
              'are finally solving it.',
   'category': 'tech-business',
-  'tier': 'free',
+  'tier': 'premium',
   'cover_image': 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=1600&q=80&auto=format&fit=crop',
   'tags': ['AI', 'CTRM', 'Freight', 'Logistics', 'Commodities'],
   'featured': False,
@@ -595,7 +595,7 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
   'excerpt': 'What a group cruiser ride taught me about pacing, partnership, and the leadership principles '
              'we forget at our desks.',
   'category': 'lifestyle',
-  'tier': 'free',
+  'tier': 'premium',
   'cover_image': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=1600&q=80&auto=format&fit=crop',
   'tags': ['Leadership', 'Clarity', 'Motorcycling', 'Product Management', 'Momentum'],
   'featured': True,
@@ -1008,3 +1008,108 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'front-to-back commodity trading platforms across Oil & Gas, Power, LNG, Metals, and Agro. '
     'Platforms include Endur (OpenLink), Eka, RightAngle, Triple Point, and Aligne TRM. PMI Agile '
     'Certified Practitioner, Scrum Product Owner, IBM RAG & Agentic AI certified.']}]
+
+REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelters-paying-miners',
+  'title': "Oil's Sharp Slide, OPEC+ Completes the Rollback, and Smelters Paying Miners",
+  'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. '
+             'Edition #2 of The Trading Narrative.',
+  'category': 'finance',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['ETRM', 'Commodities', 'Markets', 'Risk', 'Regulation'],
+  'featured': False,
+  'edition': 2,
+  'published_at': '2026-08-08T17:30:00.000000+00:00',
+  'content_blocks': [
+    'Welcome back to The Trading Narrative — sharp narratives on markets, technology, and the systems behind the desk.',
+    "What a week to be running a risk book. Crude gave back a big chunk of July's rally in a matter of days, "
+    'OPEC+ quietly closed a chapter that began in 2023, and in copper concentrates the world has turned upside '
+    'down — smelters are now paying miners in some spot deals. Meanwhile, the CFTC is asking whether energy '
+    "futures should trade 24/7. If your ETRM's end-of-day batch assumes markets close, that question just got "
+    "personal. Let's get into it.",
+    '## 🛢️ Oil & Gas — geopolitical premium deflates fast: Brent tracks toward a roughly 8% weekly loss',
+    'Brent slid to the $83–84/bbl area early this week, dropping about 5% on Monday alone after President Trump '
+    'announced that peace talks with Iran would resume following a cancelled military strike. That unwinds much '
+    "of July's 20%+ surge, though residual Strait of Hormuz and Red Sea disruption risk is still putting a floor "
+    'under prices.',
+    "On the supply side, OPEC+'s seven core members agreed on August 2 to raise September output by ~188,000 bpd "
+    '— completing the rollback of the 1.65 million bpd voluntary cuts from 2023, with a pause expected '
+    'thereafter. For trading and risk teams: this is a textbook week for stress-testing event-driven gap risk. '
+    'A 5% single-day move on a headline is exactly the scenario where intraday VaR, margin calls, and hedge '
+    'rebalancing collide. And with analysts projecting a 2026 surplus, the skew of risk has shifted from supply '
+    'shock to demand-side grind.',
+    'In gas, EIA reported a smaller-than-expected 28 Bcf injection for the week ended July 24, with storage '
+    'still 6.4% above the five-year average. Lower 48 production averaged a record-matching 110.6 Bcf/d in July, '
+    'while LNG feedgas eased to 17.2 Bcf/d on Freeport maintenance. Henry Hub hovered near $2.78/MMBtu.',
+    'Sources: Reuters via Trading Economics; Bloomberg; Rigzone; Egypt Oil & Gas; EIA Natural Gas Weekly Update; '
+    'Forbes Advisor.',
+    "## ⛏️ Metals — copper's split personality: record-tight concentrates, firm exchange prices",
+    'Copper finished last week up about 2% (and roughly 4% on the month), trading around $6.45–6.52/lb on COMEX, '
+    'supported by the Fed holding rates steady. But the real story is upstream: spot copper concentrate TC/RCs '
+    'have fallen so far that some deals have turned negative — smelters effectively paying miners for the right '
+    'to process ore. Chinese-led smelting capacity is expanding faster than mine supply, handing miners '
+    'extraordinary leverage. Smelter margins are being propped up by gold and sulfuric acid by-product credits '
+    'and record refined premiums well into the $300/t range.',
+    'For CTRM teams, negative TC/RCs are more than a market curiosity — plenty of concentrates pricing logic, '
+    'contract templates, and P&L attribution models were never built to handle a sign flip on treatment charges. '
+    'If your system hard-codes TC/RC as a deduction, now is the time to test it.',
+    'Sources: Trading Economics; Fastmarkets; Benchmark Mineral Intelligence; Critical Minerals News.',
+    '## ⚙️ ETRM/CTRM — agentic AI moves from slideware to workflow, and the vendor race is on',
+    "Commodity Technology Advisory's updated AI report (published July 22) finds workflow automation emerging as "
+    'the most prominent agentic AI use case across energy and commodities, with vendors at very different stages '
+    'of maturity and adoption still hampered by data-quality and governance concerns. Challenger platforms like '
+    'CTRM Next are explicitly marketing AI-native, modular architectures at roughly half the cost of legacy '
+    "CTRMs — a direct shot at the installed base of ION's four consolidated franchises (Endur, Allegro, "
+    'RightAngle, Aspect). The product-management takeaway: the AI conversation in ETRM has shifted from "can it '
+    'summarize my confirms" to "can an agent run my end-of-day exceptions queue." Buyers should be asking '
+    'vendors for demonstrable agentic workflows in production, not roadmap slides — and asking themselves '
+    'whether their data foundation can support any of it.',
+    'Sources: CTRM Center; Commodity Technology Advisory; Phlo Systems.',
+    '## ⚖️ Regulatory — 24/7 energy futures? CFTC extends the comment clock to August 26',
+    'The CFTC extended its public comment deadline to August 26 on two potentially structural changes: extending '
+    'standard futures contracts to 24/7 trading and listing energy commodity perpetual contracts. On July 30 it '
+    'also published a proposed rulemaking amending Parts 37, 38, and 39 (DCMs, SEFs, DCOs) plus regulations 1.52 '
+    'and 1.55, with a 60-day comment window. Across the Atlantic, ACER opened a consultation on energy '
+    'derivative reporting under REMIT — a proposed new annex to the trade reporting framework — closing '
+    'September 11.',
+    'If 24/7 trading advances, the operational implications for ETRM landscapes are enormous: end-of-day '
+    'snapshots, margin cycles, batch valuation runs, and even the concept of a "trade date" all assume a market '
+    'close. Risk and IT leads should be scoping this now, not after a final rule.',
+    'Sources: CFTC.gov; Gibson Dunn Derivatives Weekly Update (July 31, 2026); CTRM Center; ACER.',
+    '## 🛡️ Compliance IT & Risk — 69% of firms expect AI to create compliance problems within 12 months',
+    'A striking stat from RegTech Analyst this week: 69% of surveyed firms believe accelerating AI use will lead '
+    'to compliance issues in the next year. At the same time, 58% of US firms report difficulty integrating '
+    'trade surveillance with e-comms monitoring — the perennial gap regulators keep probing. The RegTech market '
+    'itself is forecast to grow from ~$29.3bn in 2026 to over $112bn by 2033, driven by continuous-compliance '
+    'platforms and real-time monitoring. The irony for compliance leaders: AI is simultaneously the biggest '
+    'emerging risk and the leading candidate to manage it. The firms getting this right are treating AI '
+    'governance as a control framework — model inventories, human-in-the-loop checkpoints, audit trails — not a '
+    'policy PDF. Expect surveillance RFPs to start scoring vendors on explainability as heavily as detection '
+    'rates.',
+    'Sources: RegTech Analyst; FinTech Global; A-Team Insight; openPR/ResearchAndMarkets.',
+    '## 🌾 Ags — grains firm into the August 12 USDA report; wheat leads on Black Sea risk',
+    'CBOT September wheat settled around 651¢/bu Monday, up from ~639¢ at Friday\'s close, with September corn '
+    'near 449¢ (up ~8–9¢) and August soybeans easing slightly to ~1,169¢. Wheat is drawing support from strong '
+    'export demand and renewed Black Sea disruption — Ukrainian strikes have kept Russian shipments out of the '
+    'Azov Sea — while the US harvest is roughly three-quarters complete after rain delays in Texas. Soybeans '
+    'found support from a 9.3-million-bushel flash sale to unknown destinations for 2026-27 delivery, widely '
+    'read as Chinese buying.',
+    "All eyes now turn to August 12, when USDA releases its first survey-based 2026 corn yield estimate. With "
+    "June's cool, wet Midwest weather flipping to hot and dry in July across the Northern Plains and western "
+    'Corn Belt, yield uncertainty is unusually high — a setup for volatility around the report.',
+    'Sources: USDA AMS; Price Futures Group Grains Report (Aug 3); Farm Progress; Pro Farmer.',
+    '## 🎯 Three Signals to Watch',
+    "1. OPEC+'s pause and the 2027 baseline fight. September's 188k bpd hike completes the voluntary-cut "
+    'rollback; the group now heads into a capacity review that sets 2027 baselines, with Iraq and others pushing '
+    'for bigger quotas. Watch for cohesion cracks.',
+    "2. CFTC's August 26 comment deadline on 24/7 futures and perpetuals. The responses will reveal how "
+    'seriously exchanges and FCMs are taking round-the-clock energy trading — and how unprepared most '
+    'middle/back-office stacks are.',
+    "3. USDA's August 12 crop production report. The first survey-based corn yield of 2026 lands into a market "
+    'with unusually wide yield uncertainty. Position accordingly.',
+    "Enjoyed this edition? Subscribe so next Wednesday's briefing lands in your inbox — and find the full "
+    'archive, essays, and premium narratives at thetradingnarrative.com. Which story matters most to your desk '
+    'this week? Your take might feature in the next edition.',
+    'Written by Anish Pujari, Senior ETRM/CTRM Product Manager, Pune. Views are my own. Nothing here is trading, '
+    'investment, or legal advice — always verify prices and regulatory details against primary sources before '
+    'acting.']}]

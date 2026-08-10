@@ -1,26 +1,38 @@
 [
   {
-    "content": "Add ADMIN_NOTIFY_EMAIL to config.py",
+    "content": "Backend: PLANS pricing overhaul + founding_monthly + founding wall query",
     "status": "completed"
   },
   {
-    "content": "Admin alert email in newsletter subscribe + activate_premium_from_transaction",
+    "content": "Backend: audio gating (401 anon, 20s clip free, full premium) + warm full-only",
     "status": "completed"
   },
   {
-    "content": "Streak endpoint POST /api/users/streak/read + schema + public_user streak fields",
+    "content": "Backend: early supporter promo (migration + registration + is_locked override + public_user)",
     "status": "completed"
   },
   {
-    "content": "Frontend: ArticlePage streak trigger + refreshUser + toast",
+    "content": "Backend: briefing autosend loop Wed 9:30 IST + register in server.py",
     "status": "completed"
   },
   {
-    "content": "Frontend: Navbar streak badge + AccountPage streak card",
+    "content": "Content: import Edition #2 (DB + REAL_POSTS), tier flips (editions<=6 free, 3 categories premium)",
     "status": "completed"
   },
   {
-    "content": "Test backend (testing agent) + UI screenshots",
+    "content": "Frontend: PricingPage new prices + founding monthly toggle",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: AudioNarrator sign-in prompt + 20s preview label/CTA; AdminEditor briefing template free<=6; Account early supporter badge",
+    "status": "completed"
+  },
+  {
+    "content": "Test everything (testing agent) + screenshots",
+    "status": "completed"
+  },
+  {
+    "content": "Sync content to production + advise redeploy",
     "status": "completed"
   }
 ]

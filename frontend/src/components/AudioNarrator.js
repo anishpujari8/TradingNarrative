@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, RotateCcw, Headphones, Loader2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Headphones, Loader2, Lock, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const VOICES = [
   { key: "male", label: "George — warm male" },
@@ -18,9 +20,12 @@ const fmt = (s) => {
 };
 
 export const AudioNarrator = ({ slug }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [status, setStatus] = useState("idle"); // idle | loading | playing | paused | done
   const [voice, setVoice] = useState("male");
   const [rate, setRate] = useState("1");
+  const [scope, setScope] = useState(null); // 'full' | 'clip' (20s free preview)
   const [progress, setProgress] = useState({ t: 0, d: 0 });
   const audioRef = useRef(null);
   const urlsRef = useRef({}); // voice -> objectURL (per-essay cache in the browser)
@@ -31,6 +36,7 @@ export const AudioNarrator = ({ slug }) => {
   useEffect(() => {
     setStatus("idle");
     setProgress({ t: 0, d: 0 });
+    setScope(null);
     listenedRef.current = false;
     milestonesRef.current = new Set();
     const urls = urlsRef.current;
@@ -70,6 +76,7 @@ export const AudioNarrator = ({ slug }) => {
       responseType: "blob",
       timeout: 180000, // first play synthesizes the narration
     });
+    setScope(res.headers["x-audio-scope"] || "full");
     const url = URL.createObjectURL(res.data);
     urlsRef.current[v] = url;
     return url;
@@ -82,6 +89,13 @@ export const AudioNarrator = ({ slug }) => {
   };
 
   const play = async (v = voice) => {
+    if (!user) {
+      // NARRATION POLICY: sign-in required — free accounts get a 20-second preview
+      toast.info("Sign in to listen — free accounts get a 20-second preview.", {
+        action: { label: "Sign in", onClick: () => navigate(`/auth?next=/post/${slug}`) },
+      });
+      return;
+    }
     try {
       if (audioRef.current && urlsRef.current[v] && audioRef.current.src === urlsRef.current[v]) {
         audioRef.current.play();
@@ -188,11 +202,11 @@ export const AudioNarrator = ({ slug }) => {
         <div className="flex items-center gap-1.5 text-sm font-medium">
           <Headphones className="h-3.5 w-3.5 text-accent shrink-0" />
           <span className="truncate" data-testid="audio-status-label">
-            {status === "idle" && "Listen to this essay"}
+            {status === "idle" && (!user ? "Sign in to listen — 20s free preview" : "Listen to this essay")}
             {status === "loading" && "Preparing narration — first play takes a moment…"}
-            {status === "playing" && `${fmt(progress.t)} / ${fmt(progress.d)}`}
+            {status === "playing" && `${fmt(progress.t)} / ${fmt(progress.d)}${scope === "clip" ? " · free preview" : ""}`}
             {status === "paused" && `Paused — ${fmt(progress.t)} / ${fmt(progress.d)}`}
-            {status === "done" && "Finished — play again?"}
+            {status === "done" && (scope === "clip" ? "Preview finished — go Premium for the full narration" : "Finished — play again?")}
           </span>
         </div>
         <div
@@ -206,6 +220,18 @@ export const AudioNarrator = ({ slug }) => {
           <div className="h-full bg-accent transition-transform duration-300 origin-left" style={{ transform: `scaleX(${pct / 100})`, width: "100%" }} />
         </div>
       </div>
+
+      {scope === "clip" && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 h-8 text-xs border-accent/60 text-accent hover:bg-accent/10 hover:text-accent hidden sm:inline-flex"
+          onClick={() => navigate("/pricing")}
+          data-testid="audio-upgrade-button"
+        >
+          <Crown className="h-3 w-3 mr-1.5" /> Full narration
+        </Button>
+      )}
 
       {(status === "playing" || status === "paused") && (
         <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-accent" onClick={restart} aria-label="Restart narration" data-testid="audio-restart-button">

@@ -196,6 +196,76 @@ async def digest_autosend_loop():
         await asyncio.sleep(1800)  # check every 30 minutes
 
 
+async def do_send_briefing(auto: bool = False):
+    """Send the latest published briefing to every newsletter subscriber as a
+    high-level summary (title + intro + section headings) with a read-on link."""
+    briefing = await db.posts.find_one({**published_query(), 'edition': {'$ne': None}},
+                                       sort=[('edition', -1)])
+    if not briefing:
+        return None
+    clean(briefing)
+    url = f"{FRONTEND_URL}/post/{briefing['slug']}"
+    headings = [b[3:].strip() for b in briefing.get('content_blocks', [])
+                if isinstance(b, str) and b.startswith('## ')][:8]
+    intro = next((b for b in briefing.get('content_blocks', [])
+                  if isinstance(b, str) and not b.startswith('##') and len(b) > 80), briefing.get('excerpt', ''))
+    accent = '#1c8570'
+    subject = f"Edition #{briefing['edition']} — {briefing['title']}"
+    text = (f"{briefing['title']}\n\n{briefing.get('excerpt', '')}\n\nIn this edition:\n"
+            + '\n'.join(f'• {h}' for h in headings)
+            + f"\n\nRead the full briefing: {url}")
+    heads_html = ''.join(f'<li style="margin:6px 0;color:#333">{h}</li>' for h in headings)
+    html = (f'<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:8px">'
+            f'<p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{accent};font-family:sans-serif">'
+            f'The Trading Narrative — Wednesday Briefing</p>'
+            f'<h1 style="font-size:26px;line-height:1.25;margin:6px 0 14px">{briefing["title"]}</h1>'
+            f'<p style="font-size:15px;line-height:1.65;color:#444">{intro[:320]}{"…" if len(intro) > 320 else ""}</p>'
+            f'<p style="font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#888;font-family:sans-serif;margin:20px 0 6px">In this edition</p>'
+            f'<ul style="font-size:15px;line-height:1.5;padding-left:20px;margin:0">{heads_html}</ul>'
+            f'<p style="margin:26px 0"><a href="{url}" style="background:{accent};color:#fff;text-decoration:none;'
+            f'padding:12px 22px;border-radius:8px;font-family:sans-serif;font-size:14px">Read the full briefing (5 min)</a></p>'
+            f'</div>')
+    subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
+    sent = 0
+    for sub in subs:
+        await log_email(sub['email'], subject, text, 'issue', html=html)
+        sent += 1
+    issue = {
+        'id': str(uuid.uuid4()), 'post_id': briefing['id'], 'post_title': briefing['title'],
+        'kind': 'briefing', 'subject': subject, 'recipients': sent,
+        'status': ('sent (gmail)' if EMAIL_ENABLED and not emailer.EMAIL_LAST_ERROR else 'sent (mocked)') + (' · auto' if auto else ''),
+        'auto': auto, 'sent_at': iso(now_utc()),
+    }
+    await db.newsletter_issues.insert_one(dict(issue))
+    return issue
+
+
+async def briefing_autosend_loop():
+    """Background loop: every Wednesday at 09:30 IST, email the latest published briefing
+    to all newsletter subscribers as a high-level summary + link — at most once per ISO week.
+    Editions stay free through #6, so this doubles as the growth engine for the list."""
+    IST = timedelta(hours=5, minutes=30)
+    while True:
+        try:
+            cfg = await db.config.find_one({'key': 'briefing_autosend'})
+            enabled = cfg.get('value') if cfg else True  # on by default per growth plan
+            ist_now = now_utc() + IST
+            past_930 = ist_now.hour > 9 or (ist_now.hour == 9 and ist_now.minute >= 30)
+            if enabled and ist_now.weekday() == 2 and past_930:  # Wednesday, from 09:30 IST
+                week_key = f'{ist_now.isocalendar().year}-W{ist_now.isocalendar().week}'
+                sent = await db.config.find_one({'key': 'briefing_autosend_last_week'})
+                if not sent or sent.get('value') != week_key:
+                    issue = await do_send_briefing(auto=True)
+                    await db.config.update_one(
+                        {'key': 'briefing_autosend_last_week'},
+                        {'$set': {'value': week_key, 'sent_at': iso(now_utc())}}, upsert=True)
+                    if issue:
+                        logger.info(f'Wednesday briefing auto-sent to {issue["recipients"]} subscribers ({week_key})')
+        except Exception as e:
+            logger.warning(f'Briefing autosend loop error: {e}')
+        await asyncio.sleep(600)  # check every 10 minutes so the 9:30 IST window is hit promptly
+
+
 async def briefing_reminder_loop():
     """Background loop: every Wednesday morning (UTC), if this week's briefing
     hasn't been published yet, email the author a nudge — at most once per week."""
