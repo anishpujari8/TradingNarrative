@@ -41,7 +41,11 @@ export default function ArchivePage() {
 
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="archive-page">
-      <Seo title="Archive" description="Search and browse every essay published on The Trading Narrative." path="/archive" />
+      <Seo
+        title="Archive · Trading, Freight & Business and Finance Essays"
+        description="Browse every Trading Narrative essay: commodity trading, freight and shipping markets, business and finance mechanics, trading technology, delivery and personal growth."
+        path="/archive"
+      />
       <span className="section-label">The vault</span>
       <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3">Archive</h1>
       <p className="text-muted-foreground text-lg mt-3">Every narrative we've ever published, searchable.</p>

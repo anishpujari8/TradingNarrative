@@ -9,7 +9,7 @@ import { Lock, Clock, ArrowRight, Zap } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
-import { api, CATEGORIES, formatDate } from "@/lib/api";
+import { api, CATEGORIES, formatDate, SITE_URL, SITE_NAME } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { ContinueReading } from "@/components/ContinueReading";
 
@@ -61,7 +61,37 @@ export default function HomePage() {
 
   return (
     <div data-testid="home-page">
-      <Seo path="/" />
+      <Seo
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              "@id": `${SITE_URL}/#website`,
+              name: SITE_NAME,
+              alternateName: ["Trading Narrative", "The Trading Narrative Newsletter"],
+              url: SITE_URL,
+              description:
+                "Sharp essays and a weekly briefing newsletter on commodity trading, freight and shipping markets, business and finance mechanics, and trading technology.",
+              publisher: { "@id": `${SITE_URL}/#organization` },
+              inLanguage: "en",
+            },
+            {
+              "@type": "Organization",
+              "@id": `${SITE_URL}/#organization`,
+              name: SITE_NAME,
+              url: SITE_URL,
+              logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
+              founder: { "@type": "Person", name: "Anish Pujari" },
+              knowsAbout: [
+                "commodity trading", "freight markets", "shipping industry",
+                "business and finance", "trading technology", "ETRM", "CTRM",
+              ],
+            },
+          ],
+        }}
+      />
 
       {/* EARLY SUPPORTER PROMO, signup urgency while first-50 spots remain */}
       {promo && promo.left > 0 && !user?.early_supporter && !user?.is_premium && (

@@ -16,7 +16,12 @@ export default function BriefingsPage() {
 
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="briefings-page">
-      <Seo title="The Weekly Briefing" description="Every edition of the weekly commodity desk briefing, trading technology, markets, risk and regulation in 5 minutes." path="/briefings" />
+      <Seo
+        title="The Weekly Briefing · Commodity Trading & Freight Newsletter"
+        description="The Weekly Briefing is a free trading newsletter: commodity desks, freight and shipping markets, energy and metals, risk and regulation, in five minutes every Wednesday."
+        keywords="weekly briefing, newsletter, trading, freight, commodity trading, shipping, markets, risk, regulation"
+        path="/briefings"
+      />
       <div className="max-w-2xl">
         <span className="section-label">The series</span>
         <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 leading-tight">The Weekly Briefing</h1>

@@ -207,9 +207,14 @@
 - **Topic hubs** ✅ *(Phase 42)*
   - `/topics/{pillar}` pages with 200–400 words of original intro copy
   - Chronological essay grids + archive links
-  - Essay category badge links to topic hub
-- **Documentation** ✅ *(Phase 42)*
-  - `/app/SEO.md` documents the metering + paywall + structured data rules
+  - Essay category badge links to hub
+- **Keyword targeting** ✅ *(Phase 45, PREVIEW)*
+  - Keyword-rich defaults for title/description/keywords
+  - WebSite + Organization JSON-LD on homepage
+  - Briefings + Archive tuned for “Weekly briefing / newsletter / freight / trading”
+  - Topic hubs already keyword-strong
+- **Documentation** ✅ *(Phase 42 + 45)*
+  - `/app/SEO.md` documents metering + paywall + schema rules + keyword map
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -359,7 +364,7 @@
 **Verified by testing agent iteration_31**: backend 30/30 (100%), frontend flows 100%.
 
 ### Phase 41 — Catalog Publish + Welcome Take + Streak Reminders ✅ COMPLETED
-- All 12 demo essays published + categorized/tiered, synced to production, duplicates reconciled
+- All 12 demo essays published + categorized/tiered
 - Welcome Market Narrative take seeded
 - Evening streak reminders implemented + verified
 - ElevenLabs warmup generation cap added
@@ -372,134 +377,75 @@ Delivered:
   re-reads don’t consume quota.
 - 4th free essay locks with `lock_reason='meter'` and returns a ~250-word/2-block preview.
 - Premium essays + `lounge`-tagged posts + latest-3 premium editions are always preview-only for non-entitled.
-- Persistent meter banner (“N of 3 free essays remaining”) + subscribe CTA; meter paywall CTA block (value prop, 3 bullets incl. Lounge deep dives, ₹99 price, sign-in link).
-- SEO: JSON-LD NewsArticle paywall signalling client-side and in `/api/share/{slug}`; `.paywalled-content` wrapper; RSS `/api/feed.xml`; sitemap `/api/sitemap.xml` includes topic hubs + lastmod; robots.txt updated; RSS discovery link in `index.html`.
-- Topic hubs `/topics/{tech-business|finance|delivery|lifestyle}` with original 200–400 word intros and essay grids; essay category badge links to hub.
-- Hyphen cleanup: mid-sentence em/en dashes replaced across DB content, seed data, frontend copy, and backend email copy (numeric ranges + attribution preserved). Seo title separator standardized to `·`.
-- Content synced to production (18 updated; sync diff clean).
+- Persistent meter banner (“N of 3 free essays remaining”) + subscribe CTA.
+- SEO: JSON-LD paywall schema, RSS `/api/feed.xml`, sitemap `/api/sitemap.xml`, robots.txt updated.
+- Topic hubs with original intro copy.
+- Hyphen cleanup.
 
 ### Phase 43 — Per-Essay Audio Micro-Paywall (₹45 / $0.50) ✅ COMPLETED
-**Goal:** Allow free readers to buy **one essay’s full narration** without upgrading to Premium.
+(As described in Objectives section above)
 
-**Policy (implemented):**
-- Anonymous: **sign-in required** for any audio (401) ✅
-- Premium: full narration everywhere ✅
-- Free signed-in:
-  - Full audio FREE for:
-    - newsletter editions (has `edition`)
-    - shipping industry essays (tag match contains `shipping`, case-insensitive)
-  - Otherwise (Business & Finance): 20-second preview clip by default, with one-time unlock per essay
+Includes:
+- `GET /api/posts/{slug}/audio/access`
+- Stripe + Razorpay one-time unlock flows
+- Unlock persistence `users.purchased_audio_slugs`
+- **My Audio Library** on Account page
 
-**Pricing (final, user-approved):**
-- **₹45** via Razorpay
-- **$0.50** via Stripe
-
-**Backend delivered:**
-- Config:
-  - `AUDIO_UNLOCK_SKU='audio_unlock'`
-  - `AUDIO_UNLOCK_PRICE_USD=0.50`, `AUDIO_UNLOCK_PRICE_INR=45.00`
-- User schema (additive):
-  - `users.purchased_audio_slugs: [str]` (stored via `$addToSet`)
-- Entitlement helpers:
-  - `utils.has_free_audio(post)` → `edition` present OR any tag contains `shipping`
-  - `utils.owns_audio(user, slug)` → slug in `purchased_audio_slugs`
-- API endpoints:
-  - `GET /api/posts/{slug}/audio/access` returns entitlement + prices
-  - `GET /api/posts/{slug}/audio` returns full audio for premium/free-audio/purchased; otherwise returns 20-second clip (`X-Audio-Scope: clip`).
-- Checkout flows:
-  - Stripe: `POST /api/billing/audio/checkout` (one-time payment). `success_url` redirects to `/post/{slug}?audio_session_id=...`.
-  - Razorpay: `POST /api/billing/audio/razorpay/checkout` creates a ₹45 order.
-- Fulfillment:
-  - `activate_premium_from_transaction(txn)` routes `plan=='audio_unlock'` to `fulfill_audio_unlock()`.
-  - Unlock: `$addToSet users.purchased_audio_slugs`, analytics event `audio_unlock_purchase`, receipt email.
-  - Works automatically via Stripe webhook + `/api/payments/status/{session_id}` and Razorpay verify/webhook.
-- Guards:
-  - 404 unknown slug
-  - 400 if premium / free-audio essay / already owned
-
-**Frontend delivered (`AudioNarrator.js`):**
-- Fetches `/posts/{slug}/audio/access` and renders UI accordingly.
-- Gated essays:
-  - Shows `Unlock · ₹45` button.
-  - Anonymous click → toast + redirect to `/auth?next=/post/{slug}`.
-  - Signed-in click → dialog (`audio-unlock-dialog`) with Razorpay + Stripe options + “Go Premium” link.
-- Stripe return flow:
-  - Handles `?audio_session_id=` by polling `/payments/status/{session_id}` up to 8 times.
-  - On paid: clears cached audio blobs and re-fetches full audio.
-
-**My Audio Library (Account page) ✅ SHIPPED**
-- Backend:
-  - `GET /api/audio/library` (auth required)
-  - 401 for anonymous
-  - Returns purchased narrations **newest-first** using `post_summary` shape.
-- Frontend:
-  - `AccountPage.js` renders a **My audio library** card below Subscription.
-  - Each item shows cover + title + meta + “Listen” link.
-  - Empty state copy for users with no purchases.
-  - Hidden for Premium users when they have no purchases.
-- Verified:
-  - Testing agent report: `/app/test_reports/iteration_34.json` (backend 100%, frontend 100%).
-
-**Narration ops:**
-- Warmup run completed after credit refill: **18/18 published essays have full-scope cached narrations**.
-
-**Testing:**
+Testing:
 - `/app/test_reports/iteration_33.json` (micro-paywall)
 - `/app/test_reports/iteration_34.json` (My Audio Library)
 
 ### Phase 44 — Premium Pillar Audio Exclusivity + Test Mode Decision ✅ COMPLETED (PREVIEW)
+- Test mode strip cannot be removed without switching to LIVE keys
+- Premium pillars audio is hidden for non-premium; non-premium requests get 403; unlock checkout blocked
 
-#### 44.1 Payment gateway “Test mode” strip (decision recorded)
-- **Root cause:** Stripe/Razorpay display “Test mode” banners when using TEST keys (`sk_test_...`, `rzp_test_...`). This is rendered by the gateways and cannot be removed by code.
-- **User decision:** **KEEP TEST KEYS FOR NOW**.
-  - Result: the “Test mode” strip will continue to appear until LIVE keys are provided.
-- To remove test-mode banners later:
-  - Provide **Stripe live key** `sk_live_...` (Stripe Dashboard → Developers → API keys)
-  - Provide **Razorpay live keys** `rzp_live_...` + secret (Razorpay Dashboard → Settings → API Keys)
-  - Update `/app/backend/.env` and restart backend.
-- Important behavior note:
-  - `config.py` sets `IS_SHARED_STRIPE_KEY` based on `sk_test_emergent`.
-  - `AUTO_RENEW = not IS_SHARED_STRIPE_KEY`; when switching to a live key, Stripe checkout automatically switches to true recurring subscriptions.
+### Phase 45 — Keyword SEO Targeting ✅ COMPLETED (PREVIEW)
+**Goal:** Improve eligibility for head-term searches: Freight, Trading, Business and Finance, Narrative, Weekly briefing, Newsletter.
 
-#### 44.2 Premium pillar audio exclusivity (user choice: no player for non-premium)
-- Goal: Ensure pillars **Tech & AI**, **Personal Growth**, **Delivery & Systems** are Premium-only for both essay reading and narration.
-- Reading was already gated: all posts in these categories are `tier='premium'` (verified in DB).
-- Audio policy change (implemented in PREVIEW):
-  - For `category in {'tech-business','lifestyle','delivery'}`:
-    - `/api/posts/{slug}/audio/access` returns `hidden=true` when reader is not premium (anonymous included)
-    - `/api/posts/{slug}/audio` returns **403** for non-premium (no 20s preview)
-    - Audio unlock checkout endpoints return **400** (“exclusive to Premium members”)
-  - Frontend: `AudioNarrator.js` returns `null` when `access.hidden` (and while `access` is still loading) → **no audio player shown**.
-- Resulting monetization rules:
-  - ₹45 / $0.50 per-essay unlock applies **only** to **Business & Finance** essays
-  - Exceptions remain: newsletter editions + shipping industry essays have free full audio.
-- Verified:
-  - Curl matrix: anon/free → hidden + 403 + 400 on premium pillars; finance essays unchanged; premium user gets full pillar audio
-  - Frontend screenshots: player absent on a pillar essay, present on a finance essay
-  - Frontend compiles clean.
+Delivered:
+- `frontend/public/index.html`
+  - Keyword-rich homepage title and description
+  - Added `meta[name=keywords]`
+  - Static fallback tags marked `data-rh="true"`
+- `frontend/src/components/Seo.js`
+  - Keyword-tuned defaults for title/description/keywords
+  - Added `keywords` and `jsonLd` props
+  - Removes static fallback tags (`meta[data-rh]`) on mount so rendered pages have exactly one description/keywords/og:title
+- `frontend/src/pages/HomePage.js`
+  - Added WebSite + Organization JSON-LD `@graph`
+- `frontend/src/pages/BriefingsPage.js`
+  - Keyword-optimized title/description/keywords for “weekly briefing newsletter” + “freight” + “commodity trading”
+- `frontend/src/pages/ArchivePage.js`
+  - Keyword-optimized title/description
+- Topic hubs already optimized with long-form intro copy.
+- `SEO.md`
+  - Keyword → landing surface mapping
+  - Meta-tag ownership convention notes for `react-helmet-async` v3
 
-**IMPORTANT:** Phase 44 is implemented in **PREVIEW only**. Production (thetradingnarrative.com) requires a redeploy to receive it.
+Verification:
+- Headless Chromium verified single meta description + keywords + og:title on home/briefings/archive/topic pages.
+- Essay pages still emit `NewsArticle` JSON-LD; `/api/share/{slug}` unchanged.
+
+**IMPORTANT:** Phase 45 is in **PREVIEW only** until the user redeploys production.
 
 ---
 
 ## 3) Next Actions
 
-### A) Production rollout (status updated)
-- You have deployed production.
-- If you are seeing the “Test mode” strip in production, that confirms the production environment is still using TEST keys.
+### A) Production deployment status and environment clarity
+If you are seeing an issue, confirm whether it is on:
+- **Preview** (this dev environment) or
+- **Production** (https://thetradingnarrative.com)
 
-**To roll out Phase 44 (premium pillar audio exclusivity) to production:**
-1. Apply the Phase 44 code changes in Preview (done)
-2. **Redeploy** production again so the new code ships to https://thetradingnarrative.com
+### B) Production rollouts pending redeploy (Preview → Production)
+- Phase 44 (premium pillar audio hidden for non-premium) requires a redeploy.
+- Phase 45 (keyword SEO targeting) requires a redeploy.
 
-**To remove “Test mode” strip later:**
-- Switch to **LIVE** keys for Stripe and/or Razorpay (see Phase 44.1); banners cannot be removed by code.
+### C) Payment gateways
+- “Test mode” banners cannot be removed with code.
+- To remove: switch to LIVE Stripe/Razorpay keys.
 
-### B) Narration ops
-- Use Admin → Narrations warmup as needed.
-- To move preview narrations to production without using ElevenLabs credits, use Admin → Sync → Narrations.
-
-### C) Upcoming (still blocked)
+### D) Upcoming (still blocked)
 - **PayPal Checkout** (recurring subscriptions) ⛔
   - Need PayPal client ID + secret and final flow decisions
 - **Resend Integration** ⛔
@@ -525,18 +471,22 @@ Delivered:
 - Locked previews are visible and marked with paywall structured data
 - No cloaking / UA sniffing
 - Topic hubs exist and support discovery
-- Sitemap/robots/RSS correct and production-domain aligned
+- Sitemap/robots/RSS correct
 
 ✅ Phase 43 success targets met
 - Business & Finance: newsletter editions + shipping essays have free full audio; other finance essays offer 20s preview + unlock.
-- Unlock is stored on the user (`purchased_audio_slugs`) and persists across sessions.
-- Pricing consistent with Stripe minimum: **₹45 / $0.50**.
-- **My Audio Library** lists purchased narrations on the Account page.
+- Unlock persists in `purchased_audio_slugs`.
+- **My Audio Library** lists purchased narrations.
 
-✅ Phase 44 success targets (PREVIEW)
-- Premium pillars (Tech & AI, Personal Growth, Delivery & Systems) are Premium-only for narration.
-- Non-premium readers see **no audio player** on those pillar essays and cannot buy a la carte unlock.
-- “Test mode” strip behavior documented and decision recorded: keep test keys; strip remains until live keys are used.
+✅ Phase 44 success targets met (Preview)
+- Premium pillars audio is Premium-only.
+- Non-premium readers see no audio player on those pillar essays.
+
+✅ Phase 45 success targets met (Preview)
+- Keyword-rich defaults exist for title/description/keywords.
+- Homepage emits WebSite + Organization JSON-LD.
+- Briefings and Archive pages are tuned for “weekly briefing / newsletter / freight / trading”.
+- Single meta description + keywords + og:title on rendered pages.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

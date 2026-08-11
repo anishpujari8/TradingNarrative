@@ -1,11 +1,27 @@
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { SITE_NAME, SITE_URL } from "@/lib/api";
 
-export const Seo = ({ title, description, image, path = "", type = "website" }) => {
-  const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} · Sharp narratives on markets, tech & living well`;
-  const desc =
-    description ||
-    "A publication on technology & AI, business and financial mechanics, delivery systems, and personal growth, from inside commodity trading floors.";
+// Site-wide default meta, tuned for the head terms readers search for:
+// trading, freight, business and finance, narrative, weekly briefing, newsletter.
+const DEFAULT_TAGLINE = "Trading, Freight & Business and Finance Newsletter";
+const DEFAULT_DESC =
+  "The Trading Narrative — sharp essays and a weekly briefing newsletter on commodity trading, " +
+  "freight and shipping markets, business and finance mechanics, trading technology and AI.";
+const DEFAULT_KEYWORDS =
+  "trading narrative, trading, freight, business and finance, weekly briefing, newsletter, " +
+  "commodity trading, shipping industry, markets, ETRM, CTRM";
+
+export const Seo = ({ title, description, image, path = "", type = "website", keywords, jsonLd }) => {
+  // The static meta tags in index.html are marked data-rh="true" as crawler fallbacks.
+  // Helmet v3 renders its own tags WITHOUT that attribute, so once React is live we
+  // drop the static ones to avoid duplicate/conflicting descriptions.
+  useEffect(() => {
+    document.querySelectorAll("head meta[data-rh]").forEach((el) => el.remove());
+  }, []);
+
+  const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} · ${DEFAULT_TAGLINE}`;
+  const desc = description || DEFAULT_DESC;
   const url = `${SITE_URL}${path}`;
   const img =
     image ||
@@ -14,6 +30,7 @@ export const Seo = ({ title, description, image, path = "", type = "website" }) 
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
+      <meta name="keywords" content={keywords || DEFAULT_KEYWORDS} />
       <link rel="canonical" href={url} />
       <meta property="og:site_name" content={SITE_NAME} />
       <meta property="og:title" content={fullTitle} />
@@ -25,6 +42,7 @@ export const Seo = ({ title, description, image, path = "", type = "website" }) 
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={desc} />
       <meta name="twitter:image" content={img} />
+      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
     </Helmet>
   );
 };

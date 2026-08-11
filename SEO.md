@@ -70,3 +70,40 @@ Every essay page emits JSON-LD (`NewsArticle`) with:
 3. Meter: 3 anon reads grant full text, the 4th returns the preview; re-reads don't
    consume quota; premium/lounge essays never unlock via the meter.
 4. A premium session sees the full body and no meter banner.
+
+## Keyword targeting (Phase 45)
+
+Head terms the site is tuned for and where each one lands:
+
+| Keyword               | Primary landing surface                                   |
+|-----------------------|-----------------------------------------------------------|
+| trading / narrative   | Homepage (`/`) title, WebSite JSON-LD `alternateName`      |
+| freight               | Freight essay, `/topics/tech-business` hub, home meta      |
+| business and finance  | `/topics/finance` hub ("Business & Finance..."), archive   |
+| weekly briefing       | `/briefings` page title + description                      |
+| newsletter            | Homepage + `/briefings` titles, Organization JSON-LD       |
+| shipping industry     | Shipping essay, home meta keywords                         |
+
+Implementation notes:
+
+- `public/index.html` carries the crawler-first title
+  "The Trading Narrative — Trading, Freight & Business and Finance Newsletter",
+  a keyword-rich meta description, and a `keywords` meta tag.
+- `components/Seo.js` sets the same defaults for every page that does not override
+  them, and accepts `keywords` and `jsonLd` props for page-level tuning.
+- Homepage emits `WebSite` + `Organization` JSON-LD (`@graph`), including
+  `alternateName` ("Trading Narrative", "The Trading Narrative Newsletter") and
+  `knowsAbout` topics, which helps Google map brand + head-term queries to the domain.
+- Keep titles under ~70 chars with the keyword phrase before the separator.
+- Ranking for broad heads (e.g. bare "trading") depends on links + time; the on-page
+  signals here make the site eligible, Search Console tracks the rest.
+
+### Meta tag ownership convention (react-helmet-async v3)
+
+- Static fallback meta tags in `public/index.html` are marked `data-rh="true"`.
+- Helmet v3 renders its tags WITHOUT `data-rh`; the `Seo` component removes all
+  `head meta[data-rh]` on mount so a rendered page has exactly ONE description /
+  og:title / keywords tag (page-specific values win).
+- No-JS crawlers still see the static keyword-rich fallbacks in the raw HTML.
+- If you add new static meta tags to index.html that React should replace, mark
+  them `data-rh="true"`; leave permanent ones (og:site_name, theme-color) unmarked.
