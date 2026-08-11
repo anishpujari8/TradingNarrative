@@ -7,11 +7,12 @@ from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Depends, Request
 
 from config import (MOCK_BILLING, AUTO_RENEW, IS_SHARED_STRIPE_KEY, FRONTEND_URL,
-                    RAZORPAY_ENABLED, RAZORPAY_KEY_ID, PLANS, logger)
+                    RAZORPAY_ENABLED, RAZORPAY_KEY_ID, PLANS, AUDIO_UNLOCK_SKU,
+                    AUDIO_UNLOCK_PRICE_USD, logger)
 from db import db
-from utils import now_utc, iso, clean
+from utils import now_utc, iso, clean, published_query, has_free_audio, owns_audio
 from security import get_current_user, is_entitled
-from schemas import CheckoutIn
+from schemas import CheckoutIn, AudioCheckoutIn
 from services import razorpay_service as rzp
 from services.stripe_service import stripe_client, configure_stripe_sdk, activate_premium_from_transaction
 from services.emailer import log_email
@@ -103,6 +104,73 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
         'session_id': session_id, 'user_id': user['id'], 'plan': body.plan,
         'amount': plan['amount'], 'currency': plan['currency'],
         'auto_renew': AUTO_RENEW,
+        'status': 'initiated', 'payment_status': 'pending', 'activated': False,
+        'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
+    })
+    return {'ok': True, 'mock': False, 'checkout_url': session_url, 'session_id': session_id}
+
+
+async def _validate_audio_purchase(user, slug: str):
+    """Shared guardrails for the ₹45 / $0.50 per-essay narration unlock."""
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Essay not found')
+    if await is_entitled(user):
+        raise HTTPException(status_code=400, detail='Premium members already enjoy full narrations')
+    if has_free_audio(post):
+        raise HTTPException(status_code=400, detail='This narration is already free to listen')
+    if owns_audio(user, slug):
+        raise HTTPException(status_code=400, detail='You already own this narration')
+    return post
+
+
+@router.post('/billing/audio/checkout')
+async def audio_checkout(body: AudioCheckoutIn, user=Depends(get_current_user)):
+    """One-time Stripe purchase ($0.50) unlocking a single essay's full narration."""
+    post = await _validate_audio_purchase(user, body.slug)
+    origin = (body.origin_url or FRONTEND_URL).rstrip('/')
+    success_url = f'{origin}/post/{body.slug}?audio_session_id={{CHECKOUT_SESSION_ID}}'
+    cancel_url = f'{origin}/post/{body.slug}'
+    metadata = {'user_id': user['id'], 'sku': AUDIO_UNLOCK_SKU, 'slug': body.slug,
+                'app': 'trading-narrative'}
+    if MOCK_BILLING:
+        # MOCKED fallback path — unlock instantly (no gateway without keys)
+        await db.users.update_one({'id': user['id']},
+                                  {'$addToSet': {'purchased_audio_slugs': body.slug}})
+        return {'ok': True, 'mock': True}
+    try:
+        if not IS_SHARED_STRIPE_KEY:
+            # One-time payment on the user's own Stripe key
+            sdk = configure_stripe_sdk()
+            session_obj = sdk.checkout.Session.create(
+                mode='payment',
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(round(AUDIO_UNLOCK_PRICE_USD * 100)),
+                        'product_data': {'name': f"Audio narration — {post['title'][:90]}"},
+                    },
+                    'quantity': 1,
+                }],
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata=metadata,
+            )
+            session_url, session_id = session_obj.url, session_obj.id
+        else:
+            checkout_req = CheckoutSessionRequest(
+                amount=AUDIO_UNLOCK_PRICE_USD, currency='usd',
+                success_url=success_url, cancel_url=cancel_url, metadata=metadata,
+            )
+            session = await stripe_client().create_checkout_session(checkout_req)
+            session_url, session_id = session.url, session.session_id
+    except Exception as e:
+        logger.error(f'Stripe audio checkout creation failed: {e}')
+        raise HTTPException(status_code=502, detail='Could not start checkout. Please try again.')
+    await db.payment_transactions.insert_one({
+        'session_id': session_id, 'user_id': user['id'], 'plan': AUDIO_UNLOCK_SKU,
+        'audio_slug': body.slug, 'amount': AUDIO_UNLOCK_PRICE_USD, 'currency': 'usd',
+        'provider': 'stripe', 'kind': 'one_time', 'auto_renew': False,
         'status': 'initiated', 'payment_status': 'pending', 'activated': False,
         'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
     })

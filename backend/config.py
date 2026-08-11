@@ -36,6 +36,13 @@ PLANS = {
                  'amount_inr': 5499.00, 'interval': 'year', 'period_days': 365},
 }
 
+# Per-essay audio narration unlock: one-time micro-purchase for free readers.
+# NARRATION POLICY: newsletter editions + shipping industry essays keep free full audio;
+# every other essay narration can be unlocked a la carte at this price.
+AUDIO_UNLOCK_SKU = 'audio_unlock'
+AUDIO_UNLOCK_PRICE_USD = 0.50  # Stripe hard minimum is $0.50 per charge
+AUDIO_UNLOCK_PRICE_INR = 45.00
+
 CATEGORIES = {
     'tech-business': 'Tech & AI',
     'finance': 'Business & Finance',

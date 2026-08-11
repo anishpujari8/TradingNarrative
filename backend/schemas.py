@@ -118,6 +118,11 @@ class RazorpayCheckoutIn(BaseModel):
     plan: str
 
 
+class AudioCheckoutIn(BaseModel):
+    slug: str
+    origin_url: Optional[str] = None
+
+
 class RazorpayVerifyIn(BaseModel):
     order_id: str
     payment_id: Optional[str] = None

@@ -9,10 +9,11 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from fastapi.responses import Response, HTMLResponse
 
 from config import (CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLED, TTS_VOICES,
-                    AUDIO_CLIP_BYTES, EARLY_FREE_POSTS, METER_FREE_READS, METER_COOKIE,
+                    AUDIO_CLIP_BYTES, AUDIO_UNLOCK_PRICE_USD, AUDIO_UNLOCK_PRICE_INR,
+                    EARLY_FREE_POSTS, METER_FREE_READS, METER_COOKIE,
                     METER_COOKIE_DAYS, PREVIEW_WORDS, logger)
 from db import db
-from utils import now_utc, iso, clean, post_summary, published_query
+from utils import now_utc, iso, clean, post_summary, published_query, has_free_audio, owns_audio
 from security import get_optional_user, get_current_user, is_entitled
 from schemas import CommentIn, BookmarkToggleIn, AudioProgressIn
 
@@ -433,13 +434,41 @@ async def share_page(slug: str):
 
 # ---------------------- essay audio narration (ElevenLabs) ----------------------
 
+@router.get('/posts/{slug}/audio/access')
+async def post_audio_access(slug: str, user=Depends(get_optional_user)):
+    """Narration entitlement for this reader on this essay.
+    NARRATION POLICY: premium = full everywhere; newsletter editions + shipping industry
+    essays are free full audio for signed-in readers; every other essay narration is a
+    20s preview unless bought a la carte (₹45 / $0.50)."""
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    premium = await is_entitled(user) if user else False
+    free_audio = has_free_audio(post)
+    purchased = owns_audio(user, slug)
+    full = premium or free_audio or purchased
+    return {
+        'enabled': TTS_ENABLED,
+        'requires_signin': not bool(user),
+        'is_premium': premium,
+        'free_audio': free_audio,
+        'purchased': purchased,
+        'scope': 'full' if full else 'clip',
+        'unlockable': not full,
+        'price_inr': AUDIO_UNLOCK_PRICE_INR,
+        'price_usd': AUDIO_UNLOCK_PRICE_USD,
+    }
+
+
 @router.get('/posts/{slug}/audio')
 async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_user)):
     if not TTS_ENABLED:
         raise HTTPException(status_code=503, detail='Narration is not configured')
     if voice not in TTS_VOICES:
         raise HTTPException(status_code=400, detail='Unknown voice')
-    # NARRATION ACCESS POLICY: sign-in required; free members hear a 20s preview; premium hears it all
+    # NARRATION ACCESS POLICY: sign-in required; premium hears it all; free members hear the
+    # full track on free-audio essays (newsletter/shipping) or after a per-essay unlock,
+    # otherwise a 20s preview
     if not user:
         raise HTTPException(status_code=401, detail='Sign in to listen to narrations, free accounts get a 20-second preview.')
     post = await db.posts.find_one({'slug': slug, **published_query()})
@@ -447,6 +476,7 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
         raise HTTPException(status_code=404, detail='Post not found')
     blocks = post.get('content_blocks', [])
     entitled = await is_entitled(user)
+    full_access = entitled or has_free_audio(post) or owns_audio(user, slug)
     from services.tts_service import get_or_generate_audio
     try:
         audio, from_cache = await get_or_generate_audio(post, voice, blocks, 'full')
@@ -457,7 +487,7 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
                                 detail='Narration for this essay is temporarily unavailable while audio credits are being refilled. Please check back soon.')
         raise HTTPException(status_code=502, detail='Narration is temporarily unavailable. Try again shortly.')
     scope = 'full'
-    if not entitled:
+    if not full_access:
         # 20-second preview clip for free members, sliced from the cached MP3
         # (64 kbps ≈ 8 KB/s -> 20s ≈ 160 KB); no extra ElevenLabs credits are spent.
         scope = 'clip'

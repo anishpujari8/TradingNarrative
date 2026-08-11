@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, RotateCcw, Headphones, Loader2, Lock, Crown } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Play, Pause, RotateCcw, Headphones, Loader2, Lock, Crown, CreditCard, IndianRupee } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -19,18 +22,33 @@ const fmt = (s) => {
   return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 };
 
+const loadRazorpayScript = () =>
+  new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+
 export const AudioNarrator = ({ slug }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState("idle"); // idle | loading | playing | paused | done
   const [voice, setVoice] = useState("male");
   const [rate, setRate] = useState("1");
   const [scope, setScope] = useState(null); // 'full' | 'clip' (20s free preview)
   const [progress, setProgress] = useState({ t: 0, d: 0 });
+  const [access, setAccess] = useState(null); // narration entitlement for this essay
+  const [payOpen, setPayOpen] = useState(false);
+  const [payBusy, setPayBusy] = useState(null); // 'razorpay' | 'stripe' | null
   const audioRef = useRef(null);
   const urlsRef = useRef({}); // voice -> objectURL (per-essay cache in the browser)
   const listenedRef = useRef(false); // one listen counted per essay visit
   const milestonesRef = useRef(new Set()); // 25/50/75/100, each reported once per visit
+  const stripeHandledRef = useRef(false); // guard: process ?audio_session_id= once
 
   // reset when navigating between essays
   useEffect(() => {
@@ -47,6 +65,143 @@ export const AudioNarrator = ({ slug }) => {
       urlsRef.current = {};
     };
   }, [slug]);
+
+  // NARRATION ENTITLEMENT: premium = full; newsletter/shipping essays = free full audio;
+  // everything else = 20s preview until a one-time ₹39 / $0.41 unlock
+  const fetchAccess = useCallback(async () => {
+    try {
+      const res = await api.get(`/posts/${encodeURIComponent(slug)}/audio/access`);
+      setAccess(res.data);
+    } catch {
+      setAccess(null);
+    }
+  }, [slug]);
+
+  useEffect(() => { fetchAccess(); }, [fetchAccess, user?.id]);
+
+  const clearAudioCache = () => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    Object.values(urlsRef.current).forEach((u) => URL.revokeObjectURL(u));
+    urlsRef.current = {};
+    setStatus("idle");
+    setScope(null);
+    setProgress({ t: 0, d: 0 });
+  };
+
+  const celebrateUnlock = useCallback(() => {
+    clearAudioCache();
+    fetchAccess();
+    toast.success("Full narration unlocked. It is yours forever, enjoy the listen.");
+  }, [fetchAccess]);
+
+  // Stripe return flow: /post/{slug}?audio_session_id=... -> poll until paid, then unlock
+  useEffect(() => {
+    const sid = searchParams.get("audio_session_id");
+    if (!sid || stripeHandledRef.current) return;
+    stripeHandledRef.current = true;
+    let stopped = false;
+    let attempts = 0;
+    const clearParam = () => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("audio_session_id");
+      setSearchParams(next, { replace: true });
+    };
+    const poll = async () => {
+      if (stopped) return;
+      attempts += 1;
+      try {
+        const res = await api.get(`/payments/status/${sid}`);
+        if (res.data.payment_status === "paid") {
+          clearParam();
+          celebrateUnlock();
+          return;
+        }
+        if (res.data.status === "expired") {
+          clearParam();
+          toast.error("Payment session expired. No charge was made.");
+          return;
+        }
+      } catch { /* transient, keep polling */ }
+      if (attempts >= 8) {
+        clearParam();
+        toast.error("Payment confirmation is taking longer than expected. Refresh in a moment.");
+        return;
+      }
+      setTimeout(poll, 2000);
+    };
+    poll();
+    return () => { stopped = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const startUnlock = () => {
+    if (!user) {
+      // Purchase is saved to an account, so readers sign in first
+      toast.info("Sign in first, your narration purchase is saved to your account.");
+      navigate(`/auth?next=/post/${slug}`);
+      return;
+    }
+    setPayOpen(true);
+  };
+
+  const payRazorpay = async () => {
+    setPayBusy("razorpay");
+    try {
+      const res = await api.post("/billing/audio/razorpay/checkout", { slug });
+      if (res.data.mock) {
+        // MOCKED order — verify grants the unlock instantly
+        await api.post("/billing/razorpay/verify", { order_id: res.data.order_id });
+        setPayOpen(false);
+        celebrateUnlock();
+        return;
+      }
+      await loadRazorpayScript();
+      const rzp = new window.Razorpay({
+        key: res.data.razorpay_key_id,
+        order_id: res.data.order_id,
+        amount: res.data.amount,
+        currency: res.data.currency,
+        name: res.data.name,
+        description: res.data.description,
+        handler: async (resp) => {
+          try {
+            await api.post("/billing/razorpay/verify", {
+              order_id: res.data.ref_id,
+              payment_id: resp.razorpay_payment_id,
+              signature: resp.razorpay_signature,
+            });
+            setPayOpen(false);
+            celebrateUnlock();
+          } catch {
+            toast.error("Payment verification failed. Contact support.");
+          }
+        },
+        modal: { ondismiss: () => setPayBusy(null) },
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not start Razorpay checkout.");
+    } finally {
+      setPayBusy(null);
+    }
+  };
+
+  const payStripe = async () => {
+    setPayBusy("stripe");
+    try {
+      const res = await api.post("/billing/audio/checkout", { slug, origin_url: window.location.origin });
+      if (res.data.mock) {
+        setPayOpen(false);
+        celebrateUnlock();
+        return;
+      }
+      window.location.href = res.data.checkout_url; // Stripe-hosted checkout
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not start checkout.");
+      setPayBusy(null);
+    }
+  };
 
   const sendMilestone = (m) => {
     if (milestonesRef.current.has(m)) return;
@@ -183,6 +338,18 @@ export const AudioNarrator = ({ slug }) => {
   };
 
   const pct = progress.d ? Math.round((progress.t / progress.d) * 100) : 0;
+  // gated = this reader would need the one-time unlock (or Premium) for the full track
+  const gated = !!access?.unlockable && access?.enabled !== false;
+  const freeAudio = !!access?.free_audio;
+  const inr = Math.round(access?.price_inr ?? 45);
+  const usd = (access?.price_usd ?? 0.5).toFixed(2);
+
+  const idleLabel = () => {
+    if (!user) return gated ? `Sign in to listen · unlock full audio for ₹${inr}` : "Sign in to listen to this essay";
+    if (gated) return `20s free preview · unlock full audio for ₹${inr}`;
+    if (freeAudio && !access?.is_premium) return "Listen to this essay · free narration";
+    return "Listen to this essay";
+  };
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 mb-8" data-testid="audio-narrator">
@@ -202,11 +369,11 @@ export const AudioNarrator = ({ slug }) => {
         <div className="flex items-center gap-1.5 text-sm font-medium">
           <Headphones className="h-3.5 w-3.5 text-accent shrink-0" />
           <span className="truncate" data-testid="audio-status-label">
-            {status === "idle" && (!user ? "Sign in to listen · 20s free preview" : "Listen to this essay")}
+            {status === "idle" && idleLabel()}
             {status === "loading" && "Preparing narration, first play takes a moment…"}
             {status === "playing" && `${fmt(progress.t)} / ${fmt(progress.d)}${scope === "clip" ? " · free preview" : ""}`}
             {status === "paused" && `Paused, ${fmt(progress.t)} / ${fmt(progress.d)}`}
-            {status === "done" && (scope === "clip" ? "Preview finished, go Premium for the full narration" : "Finished, play again?")}
+            {status === "done" && (scope === "clip" ? "Preview finished, unlock the full narration for ₹39" : "Finished, play again?")}
           </span>
         </div>
         <div
@@ -221,15 +388,15 @@ export const AudioNarrator = ({ slug }) => {
         </div>
       </div>
 
-      {scope === "clip" && (
+      {gated && (
         <Button
           variant="outline"
           size="sm"
-          className="shrink-0 h-8 text-xs border-accent/60 text-accent hover:bg-accent/10 hover:text-accent hidden sm:inline-flex"
-          onClick={() => navigate("/pricing")}
-          data-testid="audio-upgrade-button"
+          className="shrink-0 h-8 text-xs border-accent/60 text-accent hover:bg-accent/10 hover:text-accent"
+          onClick={startUnlock}
+          data-testid="audio-unlock-button"
         >
-          <Crown className="h-3 w-3 mr-1.5" /> Full narration
+          <Lock className="h-3 w-3 mr-1.5" /> Unlock · ₹{inr}
         </Button>
       )}
 
@@ -259,6 +426,48 @@ export const AudioNarrator = ({ slug }) => {
           <SelectItem value="1.5">1.5×</SelectItem>
         </SelectContent>
       </Select>
+
+      {/* One-time narration unlock: pick Razorpay (INR) or Stripe (USD) */}
+      <Dialog open={payOpen} onOpenChange={(o) => { if (!payBusy) setPayOpen(o); }}>
+        <DialogContent className="sm:max-w-md" data-testid="audio-unlock-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Unlock this narration</DialogTitle>
+            <DialogDescription>
+              Own the full audio narration of this essay forever. One-time purchase, saved to your account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Button
+              className="w-full justify-between bg-accent text-accent-foreground hover:bg-accent/90 h-11"
+              onClick={payRazorpay}
+              disabled={!!payBusy}
+              data-testid="audio-pay-razorpay-button"
+            >
+              <span className="flex items-center"><IndianRupee className="h-4 w-4 mr-2" /> Pay ₹{inr} · UPI, cards, netbanking</span>
+              {payBusy === "razorpay" ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-xs opacity-80">Razorpay</span>}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-between h-11"
+              onClick={payStripe}
+              disabled={!!payBusy}
+              data-testid="audio-pay-stripe-button"
+            >
+              <span className="flex items-center"><CreditCard className="h-4 w-4 mr-2" /> Pay ${usd} · international cards</span>
+              {payBusy === "stripe" ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-xs opacity-70">Stripe</span>}
+            </Button>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <button
+              className="text-xs text-muted-foreground hover:text-accent inline-flex items-center transition-colors"
+              onClick={() => { setPayOpen(false); navigate("/pricing"); }}
+              data-testid="audio-unlock-premium-link"
+            >
+              <Crown className="h-3 w-3 mr-1" /> Prefer everything? Go Premium, every essay and narration included
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

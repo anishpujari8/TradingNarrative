@@ -5,11 +5,12 @@ import asyncio
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 
-from config import RAZORPAY_ENABLED, RAZORPAY_KEY_ID, PLANS, logger
+from config import (RAZORPAY_ENABLED, RAZORPAY_KEY_ID, PLANS, AUDIO_UNLOCK_SKU,
+                    AUDIO_UNLOCK_PRICE_INR, logger)
 from db import db
-from utils import now_utc, iso
-from security import get_current_user
-from schemas import RazorpayCheckoutIn, RazorpayVerifyIn
+from utils import now_utc, iso, published_query, has_free_audio, owns_audio
+from security import get_current_user, is_entitled
+from schemas import RazorpayCheckoutIn, RazorpayVerifyIn, AudioCheckoutIn
 from services import razorpay_service as rzp
 from services.stripe_service import activate_premium_from_transaction
 
@@ -74,6 +75,50 @@ async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_u
             'razorpay_key_id': RAZORPAY_KEY_ID or None,
             'name': 'The Trading Narrative',
             'description': f"Premium — {plan['label']} (INR)"}
+
+
+@router.post('/billing/audio/razorpay/checkout')
+async def razorpay_audio_checkout(body: AudioCheckoutIn, user=Depends(get_current_user)):
+    """One-time Razorpay order (₹45) unlocking a single essay's full narration."""
+    post = await db.posts.find_one({'slug': body.slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Essay not found')
+    if await is_entitled(user):
+        raise HTTPException(status_code=400, detail='Premium members already enjoy full narrations')
+    if has_free_audio(post):
+        raise HTTPException(status_code=400, detail='This narration is already free to listen')
+    if owns_audio(user, body.slug):
+        raise HTTPException(status_code=400, detail='You already own this narration')
+    amount_paise = int(round(AUDIO_UNLOCK_PRICE_INR * 100))
+    mock = False
+    if RAZORPAY_ENABLED:
+        try:
+            order = await asyncio.to_thread(lambda: rzp.razorpay_client().order.create({
+                'amount': amount_paise, 'currency': 'INR', 'payment_capture': 1,
+                'receipt': f'ttn-au-{user["id"][:12]}'[:40],
+                'notes': {'user_id': user['id'], 'sku': AUDIO_UNLOCK_SKU, 'slug': body.slug},
+            }))
+        except Exception as e:
+            logger.error(f'Razorpay audio order creation failed: {e}')
+            raise HTTPException(status_code=502, detail='Could not start Razorpay checkout.')
+        ref_id = order['id']
+    else:
+        # MOCKED order — structure mirrors the real integration 1:1
+        ref_id = f'order_mock_{uuid.uuid4().hex[:14]}'
+        mock = True
+    await db.payment_transactions.insert_one({
+        'session_id': ref_id, 'user_id': user['id'], 'plan': AUDIO_UNLOCK_SKU,
+        'audio_slug': body.slug, 'amount': AUDIO_UNLOCK_PRICE_INR, 'currency': 'inr',
+        'provider': 'razorpay', 'kind': 'order', 'auto_renew': False, 'mock': mock,
+        'status': 'initiated', 'payment_status': 'pending', 'activated': False,
+        'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
+    })
+    return {'ok': True, 'mock': mock, 'kind': 'order',
+            'order_id': ref_id, 'ref_id': ref_id,
+            'amount': amount_paise, 'currency': 'INR',
+            'razorpay_key_id': RAZORPAY_KEY_ID or None,
+            'name': 'The Trading Narrative',
+            'description': f"Audio narration — {post['title'][:60]}"}
 
 
 @router.post('/billing/razorpay/verify')

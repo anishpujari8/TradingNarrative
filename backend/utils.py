@@ -52,6 +52,19 @@ def post_summary(p):
     }
 
 
+def has_free_audio(post) -> bool:
+    """NARRATION POLICY: newsletter editions + shipping industry essays carry free full audio
+    for signed-in readers. Every other essay narration is premium or purchasable per essay."""
+    if post.get('edition') is not None:
+        return True
+    return any('shipping' in (t or '').lower() for t in (post.get('tags') or []))
+
+
+def owns_audio(user, slug: str) -> bool:
+    """True when this signed-in reader bought this essay's narration a la carte."""
+    return bool(user) and slug in (user.get('purchased_audio_slugs') or [])
+
+
 def published_query():
     now = iso(now_utc())
     return {'$or': [

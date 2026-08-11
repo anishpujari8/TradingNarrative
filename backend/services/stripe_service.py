@@ -7,7 +7,7 @@ from typing import Optional
 import stripe as stripe_sdk
 from emergentintegrations.payments.stripe.checkout import StripeCheckout
 
-from config import STRIPE_API_KEY, IS_SHARED_STRIPE_KEY, FRONTEND_URL, PLANS, ADMIN_NOTIFY_EMAIL, logger
+from config import STRIPE_API_KEY, IS_SHARED_STRIPE_KEY, FRONTEND_URL, PLANS, AUDIO_UNLOCK_SKU, ADMIN_NOTIFY_EMAIL, logger
 from db import db
 from utils import now_utc, iso
 from services.emailer import log_email
@@ -24,8 +24,40 @@ def stripe_client(webhook_url: Optional[str] = None) -> StripeCheckout:
     return StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url or f'{FRONTEND_URL}/api/webhook/stripe')
 
 
+async def fulfill_audio_unlock(txn):
+    """Idempotently unlock one essay's narration for the buyer (₹45 / $0.50 micro-purchase)."""
+    if txn.get('activated'):
+        return
+    res = await db.payment_transactions.update_one(
+        {'session_id': txn['session_id'], 'activated': {'$ne': True}},
+        {'$set': {'activated': True, 'updated_at': iso(now_utc())}},
+    )
+    if res.modified_count == 0:
+        return  # another path won the race
+    slug = txn.get('audio_slug')
+    user = await db.users.find_one({'id': txn['user_id']})
+    if not user or not slug:
+        return
+    await db.users.update_one({'id': user['id']}, {'$addToSet': {'purchased_audio_slugs': slug}})
+    post = await db.posts.find_one({'slug': slug})
+    title = post['title'] if post else slug
+    await db.analytics.insert_one({'id': str(uuid.uuid4()), 'event': 'audio_unlock_purchase',
+                                   'path': f'/post/{slug}', 'meta': {'slug': slug, 'title': title},
+                                   'user_id': user['id'], 'created_at': iso(now_utc())})
+    amount = txn.get('amount')
+    currency = (txn.get('currency') or '').upper()
+    await log_email(user['email'], 'Your narration is unlocked · The Trading Narrative',
+                    f'Thanks for your purchase. The full audio narration of "{title}" is now '
+                    f'unlocked on your account, forever.\n\n'
+                    f'Amount: {amount} {currency}\n\nEnjoy the listen.', 'audio_unlock_receipt')
+
+
 async def activate_premium_from_transaction(txn):
     """Idempotently activate premium for the user who paid for this transaction."""
+    if txn.get('plan') == AUDIO_UNLOCK_SKU:
+        # Per-essay audio micro-purchase, not a subscription
+        await fulfill_audio_unlock(txn)
+        return
     if txn.get('activated'):
         return
     res = await db.payment_transactions.update_one(

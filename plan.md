@@ -1,7 +1,7 @@
 # plan.md — The Trading Narrative (FARM)
 
 ## 1) Objectives
-- Ship a modern, subscription-based blog + newsletter platform (“The Trading Narrative”) with an editorial reading experience, a freemium → premium conversion model, and a **premium community destination (Lounge)**.
+- Ship a modern, subscription-based blog + newsletter platform ("The Trading Narrative") with an editorial reading experience, a freemium → premium conversion model, and a **premium community destination (Lounge)**.
 - Support **four pillars/themes**:
   - **Tech & AI** (`tech-business`)
   - **Business & Finance** (`finance`)
@@ -93,14 +93,25 @@
 - Narration sync (Preview → Production) ✅
 - Narration hardening (cache corruption protection) ✅
 - Narration health alert ✅
-- **Audio narration access policy** ✅ *(Phase 38)*
-  - Logged-out visitors: narration requires sign-in (**401**)
-  - Logged-in free users: **20-second preview clip** (byte-clipped from cached MP3; `X-Audio-Scope: clip`; **no extra ElevenLabs credits**)
-  - Premium users: full narration (`X-Audio-Scope: full`)
-  - Warmup now generates **full scope only**
-- **ElevenLabs credit protection** ✅ *(Phase 41)*
-  - Startup warmup caps **NEW narration generations** to **2 per run** (avoids draining credits after large publishes)
-  - Admin “Generate missing narrations” action is high-cap (**100**) for deliberate bulk warming
+
+#### Audio narration access policy (UPDATED + IMPLEMENTED)
+- Anonymous (logged-out): narration requires sign-in (**401**) ✅
+- Premium members: **full narration** everywhere ✅
+- Free signed-in users:
+  - **FREE full audio** for:
+    - **Newsletter editions**: posts with an `edition` field (Edition #1, #2, etc.)
+    - **Shipping industry** essays: posts tagged with `Shipping` (case-insensitive match on tags)
+  - All other essays:
+    - default is **20-second preview clip** (`X-Audio-Scope: clip`) ✅
+    - **one-time per-essay unlock** for **₹45 / $0.50** (Phase 43) ✅
+
+**Pricing note (important):** The originally requested ₹39 / $0.41 was not possible via Stripe due to a hard minimum of **$0.50 USD-equivalent** per charge. Final pricing was user-approved: **₹45 (Razorpay) / $0.50 (Stripe)**.
+
+- Warmup generates **full scope only** ✅
+
+#### ElevenLabs credit protection ✅ *(Phase 41)*
+- Startup warmup caps **NEW narration generations** to **2 per run** (avoids draining credits after large publishes)
+- Admin “Generate missing narrations” action is high-cap (**100**) for deliberate bulk warming
 
 **ElevenLabs operational caveats**
 - Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
@@ -364,34 +375,96 @@ Delivered:
 - Hyphen cleanup: mid-sentence em/en dashes replaced across DB content, seed data, frontend copy, and backend email copy (numeric ranges + attribution preserved). Seo title separator standardized to `·`.
 - Content synced to production (18 updated; sync diff clean).
 
+### Phase 43 — Per-Essay Audio Micro-Paywall (₹45 / $0.50) ✅ COMPLETED
+**Goal:** Allow free readers to buy **one essay’s full narration** without upgrading to Premium.
+
+**Policy (confirmed + implemented):**
+- Anonymous: **sign-in required** for any audio (401) ✅
+- Premium: full narration everywhere ✅
+- Free signed-in:
+  - Full audio FREE for:
+    - newsletter editions (has `edition`)
+    - shipping industry essays (tag match contains `shipping`, case-insensitive)
+  - Otherwise: 20-second preview clip by default, with one-time unlock per essay
+
+**Pricing (final, user-approved):**
+- **₹45** via Razorpay
+- **$0.50** via Stripe
+
+Rationale: Stripe enforces a hard minimum charge of $0.50 USD-equivalent, so ₹39 / $0.41 was not possible.
+
+**Backend delivered:**
+- Config:
+  - `AUDIO_UNLOCK_SKU='audio_unlock'`
+  - `AUDIO_UNLOCK_PRICE_USD=0.50`, `AUDIO_UNLOCK_PRICE_INR=45.00`
+- User schema (additive):
+  - `users.purchased_audio_slugs: [str]` (stored via `$addToSet`)
+- Entitlement helpers:
+  - `utils.has_free_audio(post)` → `edition` present OR any tag contains `shipping`
+  - `utils.owns_audio(user, slug)` → slug in `purchased_audio_slugs`
+- API endpoint:
+  - `GET /api/posts/{slug}/audio/access` returns entitlement + prices
+- Narration endpoint:
+  - `GET /api/posts/{slug}/audio` returns full audio for premium OR free-audio essays OR purchased;
+    otherwise returns a 20-second clip (`X-Audio-Scope: clip`).
+- Checkout flows:
+  - Stripe: `POST /api/billing/audio/checkout` (one-time payment). `success_url` redirects to `/post/{slug}?audio_session_id=...`.
+  - Razorpay: `POST /api/billing/audio/razorpay/checkout` creates a ₹45 order.
+- Fulfillment:
+  - Dispatched inside existing payment activation pipeline:
+    - `activate_premium_from_transaction(txn)` routes `plan=='audio_unlock'` to `fulfill_audio_unlock()`.
+    - Unlock: `$addToSet users.purchased_audio_slugs`, analytics event `audio_unlock_purchase`, receipt email.
+  - Works automatically via existing paths:
+    - Stripe webhook + `/api/payments/status/{session_id}` polling
+    - Razorpay verify + Razorpay webhook
+- Guards:
+  - 404 unknown slug
+  - 400 if premium / free-audio essay / already owned
+
+**Frontend delivered (`AudioNarrator.js`):**
+- Fetches `/posts/{slug}/audio/access` and renders UI accordingly.
+- Gated essays:
+  - Shows `Unlock · ₹45` button.
+  - Anonymous click → toast + redirect to `/auth?next=/post/{slug}`.
+  - Signed-in click → dialog (`audio-unlock-dialog`) with:
+    - Razorpay option (₹45)
+    - Stripe option ($0.50)
+    - “Go Premium” link
+- Stripe return flow:
+  - Handles `?audio_session_id=` by polling `/payments/status/{session_id}` up to 8 times (every 2 seconds).
+  - On paid: clears cached audio blobs and re-fetches full audio.
+- Pricing labels are **dynamic** from the access API, so future price changes require only config updates.
+
+**Narration ops:**
+- Warmup run completed after credit refill: **18/18 published essays have full-scope cached narrations**.
+
+**Testing:**
+- Testing agent report: `/app/test_reports/iteration_33.json`
+  - Backend ~90% (2 expected “failures” due to security: Razorpay signature verification rejecting mock signatures)
+  - Frontend ~85% (Playwright token persistence issue in test environment only)
+  - Zero critical bugs.
+- Manual curl E2E verified purchase → fulfillment → full-audio + idempotency.
+
 ---
 
 ## 3) Next Actions
 
-### A) Production rollout (required)
-- **Redeploy production** to ship Phase 37–42 code changes to https://thetradingnarrative.com:
-  - Metered access + paywall previews
-  - JSON-LD paywall schema + sitemap/robots/RSS + topic hubs
-  - Hyphen cleanup code + updated copy
-  - Lounge hub, streak reminders, pricing, etc.
+### A) Preview review (now)
+- User to review the audio unlock UX in Preview (anonymous + free signed-in + premium).
+- Confirm copy, pricing, and which essays are free-audio (editions + shipping).
 
-### B) Post-publish ops (recommended)
-- Review newly published demo essays:
-  - Categories + tiers
-  - Covers/excerpts
-  - Ensure any “deep dive” content is tagged `lounge` to hard-lock
-  - Confirm “latest-3 premium editions” policy matches editorial intent
+### B) Production rollout (when approved)
+- **Do NOT sync automatically** (per user instruction). When approved:
+  - Redeploy production with Phase 43 code.
+  - Optionally run the Preview → Production sync tool (content), as needed.
+  - No DB migration required (user field is additive).
 
 ### C) Narration ops
-- Option 1 (safe): allow narrations to fill on first play.
-- Option 2 (controlled): use Admin “Generate missing narrations” and stop if credits begin to drop.
+- Continue using:
+  - Startup warmup cap (2 new narrations per run)
+  - Admin warmup (max 100) when intentionally generating missing narrations
 
-### D) Lounge operational playbook (content cadence)
-- 2–3 Market Narrative takes per week
-- Schedule early-access drafts 24h before publish
-- Pin a weekly discussion prompt thread
-
-### E) Upcoming (still blocked)
+### D) Upcoming (still blocked)
 - **PayPal Checkout** (recurring subscriptions) ⛔
   - Need PayPal client ID + secret and final flow decisions
 - **Resend Integration** ⛔
@@ -418,6 +491,15 @@ Delivered:
 - No cloaking / UA sniffing
 - Topic hubs exist and support discovery
 - Sitemap/robots/RSS correct and production-domain aligned
+
+✅ Phase 43 success targets (Preview)
+- Free signed-in readers get **full free audio** for newsletter editions and Shipping-tagged essays.
+- Other essays return **clip** for free users until purchase; then return **full**.
+- Anonymous visitors see the unlock CTA but are prompted to sign in before payment.
+- Stripe and Razorpay both support the one-time purchase.
+- Unlock is stored on the user (`purchased_audio_slugs`) and persists across sessions.
+- Pricing is consistent with Stripe minimum: **₹45 / $0.50**.
+- No production sync performed until user approves.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.
