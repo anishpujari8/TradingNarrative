@@ -71,7 +71,7 @@ async def log_email(to: str, subject: str, body: str, kind: str, html: str = Non
         except Exception as e:
             err = str(e)[:200]
             EMAIL_LAST_ERROR = err
-            status = 'failed — logged only'
+            status = 'failed · logged only'
             logger.warning(f'Gmail SMTP send failed (falling back to log): {err}')
     entry = {
         'id': str(uuid.uuid4()), 'to': to, 'subject': subject, 'body': body,

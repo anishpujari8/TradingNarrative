@@ -101,7 +101,7 @@ export default function AccountPage() {
               ) : (
                 <span className="flex items-center gap-2">
                   {user.early_supporter && (
-                    <Badge className="bg-accent/10 text-accent border border-accent/30 hover:bg-accent/10 gap-1" data-testid="account-early-supporter-badge" title="One of the first 50 readers — the first 5 essays are free for you">
+                    <Badge className="bg-accent/10 text-accent border border-accent/30 hover:bg-accent/10 gap-1" data-testid="account-early-supporter-badge" title="One of the first 50 readers, the first 5 essays are free for you">
                       <Sparkles className="h-3 w-3" /> Early supporter
                     </Badge>
                   )}
@@ -173,7 +173,7 @@ export default function AccountPage() {
                           ? "border-accent/40 bg-accent/10 text-accent"
                           : "border-border bg-secondary/40 text-muted-foreground/60"
                       }`}
-                      title={earned ? `Earned — ${days} consecutive reading days` : `Read ${days} days in a row to earn this badge`}
+                      title={earned ? `Earned, ${days} consecutive reading days` : `Read ${days} days in a row to earn this badge`}
                       data-testid={`streak-badge-${days}`}
                     >
                       <Icon className="h-3.5 w-3.5" /> {label}

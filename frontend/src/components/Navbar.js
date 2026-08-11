@@ -102,7 +102,7 @@ export const Navbar = () => {
             <Badge
               variant="secondary"
               className="hidden sm:inline-flex items-center gap-1 rounded-md font-mono text-[11px] tabular-nums cursor-default"
-              title={`${user.current_streak}-day reading streak — longest: ${user.longest_streak || user.current_streak} days`}
+              title={`${user.current_streak}-day reading streak, longest: ${user.longest_streak || user.current_streak} days`}
               data-testid="nav-streak-counter"
             >
               <Flame className="h-3 w-3 text-accent" /> {user.current_streak}

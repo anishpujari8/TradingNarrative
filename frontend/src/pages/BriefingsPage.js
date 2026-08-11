@@ -16,12 +16,12 @@ export default function BriefingsPage() {
 
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="briefings-page">
-      <Seo title="The Weekly Briefing" description="Every edition of the weekly commodity desk briefing — trading technology, markets, risk and regulation in 5 minutes." path="/briefings" />
+      <Seo title="The Weekly Briefing" description="Every edition of the weekly commodity desk briefing, trading technology, markets, risk and regulation in 5 minutes." path="/briefings" />
       <div className="max-w-2xl">
         <span className="section-label">The series</span>
         <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 leading-tight">The Weekly Briefing</h1>
         <p className="text-muted-foreground leading-relaxed mt-4">
-          Five things that actually change how trading and risk teams work — every week,
+          Five things that actually change how trading and risk teams work, every week,
           written the way a desk reads them. Follow the editions in order or jump to the latest.
         </p>
       </div>
@@ -39,8 +39,8 @@ export default function BriefingsPage() {
                   {(() => {
                     const remaining = 6 - Math.max(...briefings.map((b) => b.edition || 0));
                     return remaining > 0
-                      ? `${remaining} free ${remaining === 1 ? "edition remains" : "editions remain"} — from Edition #7 the briefing is premium-only. Subscribe before the paywall.`
-                      : "This is the last free edition — from Edition #7 the briefing is premium-only. Subscribe before the paywall.";
+                      ? `${remaining} free ${remaining === 1 ? "edition remains" : "editions remain"}, from Edition #7 the briefing is premium-only. Subscribe before the paywall.`
+                      : "This is the last free edition, from Edition #7 the briefing is premium-only. Subscribe before the paywall.";
                   })()}
                 </p>
               </div>

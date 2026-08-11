@@ -78,7 +78,7 @@ async def activate_premium_from_transaction(txn):
     await db.analytics.insert_one({'id': str(uuid.uuid4()), 'event': 'checkout_complete',
                                    'path': '/pricing', 'meta': {'plan': plan_id},
                                    'user_id': user['id'], 'created_at': iso(now_utc())})
-    await log_email(user['email'], 'Welcome to Premium — The Trading Narrative',
+    await log_email(user['email'], 'Welcome to Premium · The Trading Narrative',
                     f"Your {plan['label']} pass is active. Enjoy full access.", 'premium_welcome')
     # Admin alert: new paid subscriber (fires once, behind the idempotent activation gate above)
     amount = txn.get('amount', plan.get('amount'))

@@ -2,10 +2,10 @@ import { Helmet } from "react-helmet-async";
 import { SITE_NAME, SITE_URL } from "@/lib/api";
 
 export const Seo = ({ title, description, image, path = "", type = "website" }) => {
-  const fullTitle = title ? `${title} — ${SITE_NAME}` : `${SITE_NAME} — Sharp narratives on markets, tech & living well`;
+  const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} · Sharp narratives on markets, tech & living well`;
   const desc =
     description ||
-    "A publication on technology & AI, business and financial mechanics, delivery systems, and personal growth — from inside commodity trading floors.";
+    "A publication on technology & AI, business and financial mechanics, delivery systems, and personal growth, from inside commodity trading floors.";
   const url = `${SITE_URL}${path}`;
   const img =
     image ||

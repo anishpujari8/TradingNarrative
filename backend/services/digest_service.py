@@ -144,7 +144,7 @@ async def do_send_digest(subject: Optional[str] = None, auto: bool = False):
     posts = await get_digest_posts()
     if not posts:
         return None
-    subject = subject or f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+    subject = subject or f"The Week in Narratives · {now_utc().strftime('%B %d, %Y')}"
     subs = await db.newsletter_subscribers.find({'status': 'subscribed'}).to_list(10000)
     all_cats = list(CATEGORIES.keys())
     top_highlights = await get_week_top_highlights()
@@ -217,7 +217,7 @@ async def do_send_briefing(auto: bool = False):
     heads_html = ''.join(f'<li style="margin:6px 0;color:#333">{h}</li>' for h in headings)
     html = (f'<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:8px">'
             f'<p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{accent};font-family:sans-serif">'
-            f'The Trading Narrative — Wednesday Briefing</p>'
+            f'The Trading Narrative · Wednesday Briefing</p>'
             f'<h1 style="font-size:26px;line-height:1.25;margin:6px 0 14px">{briefing["title"]}</h1>'
             f'<p style="font-size:15px;line-height:1.65;color:#444">{intro[:320]}{"…" if len(intro) > 320 else ""}</p>'
             f'<p style="font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#888;font-family:sans-serif;margin:20px 0 6px">In this edition</p>'
@@ -283,7 +283,7 @@ async def send_streak_reminders():
         first = (u.get('name') or 'there').split(' ')[0]
         url = f'{FRONTEND_URL}/archive'
         subject = f'Your {n}-day reading streak ends tonight'
-        text = (f"Hi {first},\n\nYou've read on {n} consecutive days — but not yet today. "
+        text = (f"Hi {first},\n\nYou've read on {n} consecutive days, but not yet today. "
                 f"One essay before midnight keeps the streak alive.\n\n"
                 f"Keep the streak: {url}\n\n— The Trading Narrative")
         html = (f'<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:8px">'
@@ -293,7 +293,7 @@ async def send_streak_reminders():
                 f'<p style="font-size:15px;line-height:1.65;color:#444">Hi {first} — you\'ve read on '
                 f'<strong>{n} consecutive days</strong>, but not yet today. One essay before midnight keeps it alive.</p>'
                 f'<p style="margin:24px 0"><a href="{url}" style="background:{accent};color:#fff;text-decoration:none;'
-                f'padding:12px 22px;border-radius:8px;font-family:sans-serif;font-size:14px">Keep the streak — read now</a></p>'
+                f'padding:12px 22px;border-radius:8px;font-family:sans-serif;font-size:14px">Keep the streak · read now</a></p>'
                 f'<p style="font-size:12px;color:#999;font-family:sans-serif">Streaks count one read per day. '
                 f'Miss a day and the counter resets.</p></div>')
         await log_email(u['email'], subject, text, 'streak_reminder', html=html)
@@ -348,7 +348,7 @@ async def briefing_reminder_loop():
                             html=(f"<p>It's Wednesday and <strong>Edition #{next_ed}</strong> of the weekly briefing "
                                   f"hasn't been published yet.</p>"
                                   f"<p><a href='{editor_url}'>Open the editor</a> and hit "
-                                  f"<em>Weekly briefing template</em> — it prefills everything.</p>"))
+                                  f"<em>Weekly briefing template</em>, it prefills everything.</p>"))
                     await db.config.update_one({'key': 'briefing_reminder_last_week'},
                                                {'$set': {'value': week_key, 'sent_at': iso(now)}}, upsert=True)
         except Exception as e:

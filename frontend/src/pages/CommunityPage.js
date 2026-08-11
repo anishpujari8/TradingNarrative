@@ -190,8 +190,8 @@ export default function CommunityPage() {
         : await api.post("/community/announcements", payload);
       toast.success(
         annEditing
-          ? res.data.scheduled ? "Announcement updated — rescheduled." : "Announcement updated."
-          : res.data.scheduled ? "Announcement scheduled — it publishes automatically." : "Announcement posted."
+          ? res.data.scheduled ? "Announcement updated, rescheduled." : "Announcement updated."
+          : res.data.scheduled ? "Announcement scheduled, it publishes automatically." : "Announcement posted."
       );
       setAnnOpen(false);
       setAnnEditing(null);
@@ -259,7 +259,7 @@ export default function CommunityPage() {
   const toggleLock = async (tid) => {
     try {
       const res = await api.post(`/community/threads/${tid}/lock`);
-      toast.success(res.data.locked ? "Discussion locked — readable, but closed to new replies." : "Discussion unlocked.");
+      toast.success(res.data.locked ? "Discussion locked, readable, but closed to new replies." : "Discussion unlocked.");
       if (selected?.thread?.id === tid) {
         setSelected({ ...selected, thread: { ...selected.thread, locked: res.data.locked } });
       }
@@ -302,7 +302,7 @@ export default function CommunityPage() {
           <span className="section-label">Members only</span>
           <h1 className="font-serif text-3xl sm:text-4xl font-semibold mt-3 mb-4">The Lounge</h1>
           <p className="text-muted-foreground leading-relaxed mb-8">
-            A private space for Premium members — the editor's live Market Narrative feed,
+            A private space for Premium members, the editor's live Market Narrative feed,
             early access to upcoming editions before they publish, and discussions with
             fellow readers on desks around the world.
           </p>
@@ -381,7 +381,7 @@ export default function CommunityPage() {
               </Card>
             ))}
             {selected.replies.length === 0 && (
-              <p className="text-sm text-muted-foreground" data-testid="community-no-replies">No replies yet — be the first to weigh in.</p>
+              <p className="text-sm text-muted-foreground" data-testid="community-no-replies">No replies yet, be the first to weigh in.</p>
             )}
           </div>
 
@@ -389,7 +389,7 @@ export default function CommunityPage() {
             <Card className="rounded-xl mt-6 border-dashed">
               <CardContent className="p-4 flex items-center gap-3 text-sm text-muted-foreground" data-testid="community-locked-notice">
                 <Lock className="h-4 w-4 text-accent shrink-0" />
-                This discussion is locked — it stays readable, but new replies are closed.
+                This discussion is locked, it stays readable, but new replies are closed.
               </CardContent>
             </Card>
           ) : (
@@ -507,7 +507,7 @@ export default function CommunityPage() {
             {/* ---- Market Narrative: the editor's live raw takes ---- */}
             <TabsContent value="narrative">
               <p className="text-sm text-muted-foreground mb-4">
-                Quick, raw takes from the desk — the market notes that don't make the weekly briefing.
+                Quick, raw takes from the desk, the market notes that don't make the weekly briefing.
               </p>
               {isAdmin && (
                 <Card className="rounded-xl mb-4 border-accent/30" data-testid="narrative-composer">
@@ -515,7 +515,7 @@ export default function CommunityPage() {
                     <Textarea
                       value={takeForm.body}
                       onChange={(e) => setTakeForm({ ...takeForm, body: e.target.value })}
-                      placeholder="Drop a quick take — what's moving and why it matters…"
+                      placeholder="Drop a quick take, what's moving and why it matters…"
                       rows={2}
                       className="resize-none"
                       data-testid="narrative-composer-input"
@@ -614,7 +614,7 @@ export default function CommunityPage() {
                   <CardContent className="py-14 text-center" data-testid="community-no-threads">
                     <MessagesSquare className="h-9 w-9 text-muted-foreground mx-auto mb-3" />
                     <h3 className="font-serif text-lg font-semibold mb-1">No discussions yet</h3>
-                    <p className="text-sm text-muted-foreground mb-5">Kick things off — what's on your mind this week?</p>
+                    <p className="text-sm text-muted-foreground mb-5">Kick things off, what's on your mind this week?</p>
                     <Button onClick={() => setNewThreadOpen(true)} variant="outline" data-testid="community-empty-start-button">
                       <Plus className="h-4 w-4 mr-2" /> Start the first discussion
                     </Button>
@@ -742,7 +742,7 @@ export default function CommunityPage() {
         <DialogContent data-testid="community-announcement-dialog">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">{annEditing ? "Edit announcement" : "Post an announcement"}</DialogTitle>
-            <DialogDescription>{annEditing ? "Changes apply immediately — clear the schedule to publish now." : "Pinned to the Lounge for all Premium members."}</DialogDescription>
+            <DialogDescription>{annEditing ? "Changes apply immediately, clear the schedule to publish now." : "Pinned to the Lounge for all Premium members."}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -754,7 +754,7 @@ export default function CommunityPage() {
               <Textarea id="ann-body" rows={4} value={annForm.body} onChange={(e) => setAnnForm({ ...annForm, body: e.target.value })} data-testid="community-announcement-body-input" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ann-publish">Schedule for later <span className="text-muted-foreground font-normal">(optional — leave empty to publish now)</span></Label>
+              <Label htmlFor="ann-publish">Schedule for later <span className="text-muted-foreground font-normal">(optional, leave empty to publish now)</span></Label>
               <Input
                 id="ann-publish"
                 type="datetime-local"

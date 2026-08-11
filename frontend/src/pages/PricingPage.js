@@ -85,7 +85,7 @@ export default function PricingPage() {
     const status = err?.response?.status;
     if (status === 401 || status === 403) {
       logout();
-      toast.error("Your session has expired — please sign in again to go Premium.");
+      toast.error("Your session has expired, please sign in again to go Premium.");
       navigate("/auth?next=/pricing");
       return;
     }
@@ -214,7 +214,7 @@ export default function PricingPage() {
 
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="pricing-page">
-      <Seo title="Pricing" description="Free vs Premium — unlock every essay on The Trading Narrative." path="/pricing" />
+      <Seo title="Pricing" description="Free vs Premium, unlock every essay on The Trading Narrative." path="/pricing" />
       <div className="text-center max-w-2xl mx-auto">
         <span className="section-label justify-center">Membership</span>
         <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3">Read everything. Own your edge.</h1>
@@ -258,7 +258,7 @@ export default function PricingPage() {
               <span className="text-4xl font-semibold" data-testid="pricing-free-amount">{isINR ? "₹0" : "$0"}</span>
               <span className="text-muted-foreground text-sm">forever</span>
             </div>
-            <p className="text-xs text-muted-foreground pt-1">Core essays and newsletter — build your edge for free.</p>
+            <p className="text-xs text-muted-foreground pt-1">Core essays and newsletter, build your edge for free.</p>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3 text-sm mt-2">
@@ -308,7 +308,7 @@ export default function PricingPage() {
             </Button>
             {mockMode ? (
               <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-mock-notice">
-                Test mode — Stripe-ready, no card required yet.
+                Test mode, Stripe-ready, no card required yet.
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground font-mono mt-3 text-center" data-testid="pricing-stripe-notice">
@@ -337,7 +337,7 @@ export default function PricingPage() {
               <span className="text-4xl font-semibold" data-testid="pricing-founding-amount">{priceFor(foundingPlan)}</span>
               <span className="text-muted-foreground text-sm">{PRICING[foundingPlan].per}</span>
             </div>
-            <p className="text-xs text-muted-foreground pt-1">Back the publication early — get everything, plus direct access.</p>
+            <p className="text-xs text-muted-foreground pt-1">Back the publication early, get everything, plus direct access.</p>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3 text-sm mt-2">
@@ -402,7 +402,7 @@ export default function PricingPage() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Razorpay checkout (mocked)</DialogTitle>
             <DialogDescription>
-              UPI, cards, and netbanking activate the moment Razorpay keys are added. For now this test checkout grants Premium instantly — no payment collected.
+              UPI, cards, and netbanking activate the moment Razorpay keys are added. For now this test checkout grants Premium instantly, no payment collected.
             </DialogDescription>
           </DialogHeader>
           <div className="bg-muted/40 border border-border rounded-lg p-4 flex justify-between items-center">
@@ -429,7 +429,7 @@ export default function PricingPage() {
             <DialogTitle className="font-serif text-2xl">Confirm your subscription</DialogTitle>
             <DialogDescription>
               {mockMode
-                ? "Test-mode checkout (Stripe-ready). No card will be charged — your Premium access activates instantly."
+                ? "Test-mode checkout (Stripe-ready). No card will be charged, your Premium access activates instantly."
                 : "You'll be redirected to Stripe to complete payment."}
             </DialogDescription>
           </DialogHeader>

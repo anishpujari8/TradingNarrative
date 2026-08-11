@@ -61,12 +61,12 @@ async def magic_request(body: MagicRequestIn):
         'expires_at': iso(now_utc() + timedelta(minutes=15)), 'created_at': iso(now_utc()),
     })
     link = f"{FRONTEND_URL}/auth/magic?token={token}"
-    await log_email(email, 'Your magic sign-in link — The Trading Narrative',
+    await log_email(email, 'Your magic sign-in link · The Trading Narrative',
                     f'Click to sign in: {link} (expires in 15 minutes)', 'magic_link')
     logger.info(f'[MAGIC LINK - MOCKED EMAIL] {email} -> {link}')
     # MOCKED: since no email provider configured, return the link so UI can display it (dev mode)
     return {'ok': True, 'dev_mode': True, 'magic_link': link,
-            'message': 'Email sending is mocked — use the link below to sign in.'}
+            'message': 'Email sending is mocked, use the link below to sign in.'}
 
 
 @router.post('/auth/magic-link/verify')
@@ -182,12 +182,12 @@ async def password_reset_request(body: PasswordResetRequestIn):
         'expires_at': iso(now_utc() + timedelta(minutes=15)), 'created_at': iso(now_utc()),
     })
     link = f'{FRONTEND_URL}/auth/reset?token={token}'
-    await log_email(email, 'Reset your password — The Trading Narrative',
+    await log_email(email, 'Reset your password · The Trading Narrative',
                     f'Reset your password here: {link} (expires in 15 minutes)', 'password_reset')
     logger.info(f'[PASSWORD RESET - MOCKED EMAIL] {email} -> {link}')
     # MOCKED: no email provider configured, return the link so the UI can display it (dev mode)
     return {'ok': True, 'dev_mode': True, 'reset_link': link,
-            'message': 'Email sending is mocked — use the link below to reset your password.'}
+            'message': 'Email sending is mocked, use the link below to reset your password.'}
 
 
 @router.post('/auth/password-reset/confirm')

@@ -129,7 +129,7 @@ export const CommentsSection = ({ post }) => {
             onChange={(e) => setBody(e.target.value)}
             rows={3}
             maxLength={2000}
-            placeholder="Share your take — what resonated, what didn't?"
+            placeholder="Share your take, what resonated, what didn't?"
             className="bg-card"
             data-testid="comment-input"
           />
@@ -166,7 +166,7 @@ export const CommentsSection = ({ post }) => {
         <div className="space-y-4">{[...Array(2)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
       ) : topLevel.length === 0 ? (
         <p className="text-sm text-muted-foreground" data-testid="comments-empty">
-          No comments yet — be the first to share your perspective.
+          No comments yet, be the first to share your perspective.
         </p>
       ) : (
         <div className="space-y-6" data-testid="comments-list">

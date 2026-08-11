@@ -1,19 +1,56 @@
 """Public content routes: categories, posts, comments, notifications, bookmarks,
 recommendations, briefings, sitemap, health."""
+import hashlib
 import re
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from fastapi.responses import Response, HTMLResponse
 
-from config import CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLED, TTS_VOICES, AUDIO_CLIP_BYTES, EARLY_FREE_POSTS, logger
+from config import (CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLED, TTS_VOICES,
+                    AUDIO_CLIP_BYTES, EARLY_FREE_POSTS, METER_FREE_READS, METER_COOKIE,
+                    METER_COOKIE_DAYS, PREVIEW_WORDS, logger)
 from db import db
 from utils import now_utc, iso, clean, post_summary, published_query
 from security import get_optional_user, get_current_user, is_entitled
 from schemas import CommentIn, BookmarkToggleIn, AudioProgressIn
 
 router = APIRouter(prefix='/api')
+
+
+# ---------------------- metered access helpers ----------------------
+
+def _meter_key(request: Request) -> str:
+    """Server-side meter fallback key: hashed IP+UA (survives cookie clearing).
+    No raw IPs are stored — only the hash."""
+    ip = (request.headers.get('x-forwarded-for') or (request.client.host if request.client else '')).split(',')[0].strip()
+    ua = request.headers.get('user-agent', '')
+    return hashlib.sha256(f'{ip}|{ua}'.encode()).hexdigest()
+
+
+def _cookie_slugs(request: Request) -> set:
+    raw = request.cookies.get(METER_COOKIE, '')
+    return {s for s in raw.split('|') if s}
+
+
+def preview_slice(blocks):
+    """Locked-essay preview: first ~PREVIEW_WORDS words or first 2 blocks, whichever is shorter."""
+    out, words = [], 0
+    for b in blocks[:2]:
+        take = b.split()
+        if words + len(take) > PREVIEW_WORDS:
+            out.append(' '.join(take[:max(20, PREVIEW_WORDS - words)]) + '…')
+            break
+        out.append(b)
+        words += len(take)
+    return out
+
+
+async def _latest_edition_slugs(n: int = 3) -> set:
+    docs = await db.posts.find({**published_query(), 'edition': {'$ne': None}}, {'slug': 1}) \
+        .sort('edition', -1).limit(n).to_list(n)
+    return {d['slug'] for d in docs}
 
 
 @router.get('/categories')
@@ -54,7 +91,7 @@ async def list_posts(category: Optional[str] = None, q: Optional[str] = None,
 
 
 @router.get('/posts/{slug}')
-async def get_post(slug: str, user=Depends(get_optional_user)):
+async def get_post(slug: str, request: Request, response: Response, user=Depends(get_optional_user)):
     post = await db.posts.find_one({'slug': slug, **published_query()})
     early_access = False
     if not post and user:
@@ -69,9 +106,19 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     entitled = await is_entitled(user)
     blocks = post.get('content_blocks', [])
     total_blocks = len(blocks)
-    signin_required = user is None
-    is_locked = post.get('tier') == 'premium' and not entitled
+
+    # ---- ACCESS RULES (server-side; identical HTML for crawlers and humans — no cloaking) ----
+    # Hard-locked for non-entitled (never metered): premium tier, 'lounge'-tagged deep dives,
+    # and the 3 most recent editions. Free-tier essays are metered for anonymous visitors.
+    lock_reason = None
+    hard_locked = post.get('tier') == 'premium' or 'lounge' in (post.get('tags') or [])
+    if not hard_locked and post.get('edition') and post.get('tier') != 'free':
+        hard_locked = post['slug'] in await _latest_edition_slugs(3)
+
+    is_locked = hard_locked and not entitled
     early_unlock = False
+    meter = None
+
     if is_locked and user and user.get('early_supporter'):
         # LAUNCH PROMO: early supporters (first 50 readers) can read the first 5 published essays free
         early_docs = await db.posts.find(published_query(), {'slug': 1}) \
@@ -79,14 +126,39 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
         if post['slug'] in {d['slug'] for d in early_docs}:
             is_locked = False
             early_unlock = True
-    if signin_required:
-        # ACCESS MODEL: essays are for signed-in readers only — no content leaves the
-        # server for anonymous visitors (title/excerpt/cover stay for SEO + unfurls)
-        blocks = []
-        is_locked = True
-    elif is_locked:
-        # SERVER-SIDE PAYWALL: only preview paragraphs ever leave the server
-        blocks = blocks[:PREVIEW_BLOCKS]
+
+    if is_locked:
+        lock_reason = 'premium'
+        # SERVER-SIDE PAYWALL previews: signed-in readers get the classic 3-block preview;
+        # anonymous readers get the SEO preview (~250 words / 2 blocks)
+        blocks = blocks[:PREVIEW_BLOCKS] if user else preview_slice(blocks)
+    elif user is None:
+        # METER: anonymous visitors may read METER_FREE_READS complete free-tier essays.
+        # Tracked in a first-party cookie + a hashed IP+UA server record (union of both).
+        key = _meter_key(request)
+        record = await db.meter_reads.find_one({'key': key}) or {}
+        seen = _cookie_slugs(request) | set(record.get('slugs', []))
+        if post['slug'] in seen:
+            granted = True  # re-reads never consume quota
+        elif len(seen) < METER_FREE_READS:
+            granted = True
+            seen = seen | {post['slug']}
+            await db.meter_reads.update_one(
+                {'key': key},
+                {'$addToSet': {'slugs': post['slug']}, '$set': {'updated_at': iso(now_utc())}},
+                upsert=True)
+            response.set_cookie(
+                METER_COOKIE, '|'.join(sorted(seen)), max_age=METER_COOKIE_DAYS * 86400,
+                samesite='lax', secure=True, httponly=False, path='/')
+        else:
+            granted = False
+        used = min(len(seen), METER_FREE_READS)
+        meter = {'limit': METER_FREE_READS, 'used': used,
+                 'remaining': max(0, METER_FREE_READS - used), 'granted': granted}
+        if not granted:
+            is_locked = True
+            lock_reason = 'meter'
+            blocks = preview_slice(blocks)
     # related posts: score by shared tags first, category as fallback signal
     tags = set(post.get('tags', []))
     rel_filter = {'$or': [{'tags': {'$in': list(tags)}}, {'category': post['category']}]} if tags \
@@ -110,7 +182,8 @@ async def get_post(slug: str, user=Depends(get_optional_user)):
     result.update({
         'content_blocks': blocks,
         'is_locked': is_locked,
-        'signin_required': signin_required,
+        'lock_reason': lock_reason,
+        'meter': meter,
         'early_unlock': early_unlock,
         'early_access': early_access,
         'publish_at': post.get('publish_at') if early_access else None,
@@ -313,9 +386,31 @@ async def share_page(slug: str):
     desc = (post.get('excerpt') or '').replace('"', '&quot;')[:300]
     image = post.get('cover_image', '')
     canonical = f'{FRONTEND_URL}/post/{slug}'
+    # Paywall structured data (Google-compliant paywall signalling — no cloaking)
+    import json as _json
+    locked = post.get('tier') == 'premium' or 'lounge' in (post.get('tags') or [])
+    ld = {
+        '@context': 'https://schema.org', '@type': 'NewsArticle',
+        'headline': post['title'],
+        'datePublished': post.get('published_at', ''),
+        'dateModified': post.get('updated_at') or post.get('published_at', ''),
+        'author': {'@type': 'Person', 'name': 'Anish Pujari'},
+        'publisher': {'@type': 'Organization', 'name': 'The Trading Narrative',
+                      'logo': {'@type': 'ImageObject', 'url': f'{FRONTEND_URL}/logo.png'}},
+        'description': post.get('excerpt', ''),
+        'keywords': ', '.join(post.get('tags', [])),
+        'mainEntityOfPage': canonical,
+        'image': image,
+        'isAccessibleForFree': not locked,
+    }
+    if locked:
+        ld['hasPart'] = {'@type': 'WebPageElement', 'isAccessibleForFree': False,
+                         'cssSelector': '.paywalled-content'}
+    ld_script = f'<script type="application/ld+json">{_json.dumps(ld)}</script>'
     html = f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8">
-<title>{title} — The Trading Narrative</title>
+<title>{title} · The Trading Narrative</title>
+{ld_script}
 <meta property="og:site_name" content="The Trading Narrative">
 <meta property="og:type" content="article">
 <meta property="og:title" content="{title}">
@@ -346,7 +441,7 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
         raise HTTPException(status_code=400, detail='Unknown voice')
     # NARRATION ACCESS POLICY: sign-in required; free members hear a 20s preview; premium hears it all
     if not user:
-        raise HTTPException(status_code=401, detail='Sign in to listen to narrations — free accounts get a 20-second preview.')
+        raise HTTPException(status_code=401, detail='Sign in to listen to narrations, free accounts get a 20-second preview.')
     post = await db.posts.find_one({'slug': slug, **published_query()})
     if not post:
         raise HTTPException(status_code=404, detail='Post not found')
@@ -431,13 +526,59 @@ async def audio_voices():
 @router.get('/sitemap.xml')
 async def sitemap():
     posts = await db.posts.find(published_query()).to_list(1000)
-    urls = [FRONTEND_URL, f'{FRONTEND_URL}/archive', f'{FRONTEND_URL}/pricing', f'{FRONTEND_URL}/about']
-    urls += [f'{FRONTEND_URL}/category/{slug}' for slug in CATEGORIES]
-    urls += [f"{FRONTEND_URL}/post/{p['slug']}" for p in posts]
+    today = iso(now_utc())[:10]
+    entries = [(FRONTEND_URL, today), (f'{FRONTEND_URL}/archive', today),
+               (f'{FRONTEND_URL}/pricing', None), (f'{FRONTEND_URL}/about', None),
+               (f'{FRONTEND_URL}/briefings', today)]
+    entries += [(f'{FRONTEND_URL}/topics/{slug}', today) for slug in CATEGORIES]
+    entries += [(f'{FRONTEND_URL}/category/{slug}', None) for slug in CATEGORIES]
+    entries += [(f"{FRONTEND_URL}/post/{p['slug']}",
+                 (p.get('updated_at') or p.get('published_at') or '')[:10] or None) for p in posts]
     body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    body += ''.join(f'  <url><loc>{u}</loc></url>\n' for u in urls)
+    for u, lastmod in entries:
+        body += f'  <url><loc>{u}</loc>' + (f'<lastmod>{lastmod}</lastmod>' if lastmod else '') + '</url>\n'
     body += '</urlset>'
     return Response(content=body, media_type='application/xml')
+
+
+def _xml_escape(s: str) -> str:
+    return (s or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+
+@router.get('/feed.xml')
+async def rss_feed():
+    """RSS 2.0: full text for open (free) essays, preview + link for locked ones."""
+    posts = await db.posts.find(published_query()).sort('published_at', -1).to_list(50)
+    items = []
+    from email.utils import format_datetime
+    from datetime import datetime
+    for p in posts:
+        clean(p)
+        link = f"{FRONTEND_URL}/post/{p['slug']}"
+        try:
+            pub = format_datetime(datetime.fromisoformat(p.get('published_at', '')))
+        except (ValueError, TypeError):
+            pub = ''
+        locked = p.get('tier') == 'premium' or 'lounge' in (p.get('tags') or [])
+        blocks = p.get('content_blocks', [])
+        body_blocks = preview_slice(blocks) if locked else blocks
+        content = ''.join(f'<p>{_xml_escape(b)}</p>' for b in body_blocks if not b.startswith('## '))
+        if locked:
+            content += (f'<p><em>This is a premium essay preview. '
+                        f'<a href="{link}">Read the full essay on The Trading Narrative</a>.</em></p>')
+        items.append(
+            f'<item><title>{_xml_escape(p["title"])}</title>'
+            f'<link>{link}</link><guid isPermaLink="true">{link}</guid>'
+            f'<pubDate>{pub}</pubDate>'
+            f'<description>{_xml_escape(p.get("excerpt", ""))}</description>'
+            f'<content:encoded><![CDATA[{content}]]></content:encoded>'
+            f'</item>')
+    body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">\n'
+            f'<channel><title>The Trading Narrative</title><link>{FRONTEND_URL}</link>'
+            f'<description>Sharp narratives on markets, trading technology, and the systems behind the desk.</description>'
+            + ''.join(items) + '</channel></rss>')
+    return Response(content=body, media_type='application/rss+xml')
 
 
 @router.get('/health')

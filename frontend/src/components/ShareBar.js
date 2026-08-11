@@ -158,7 +158,7 @@ const IgCardDialog = ({ post }) => {
       a.href = url;
       a.download = `${post.slug}-instagram-${format}.png`;
       a.click();
-      toast.success("Image card downloaded — ready for Instagram.");
+      toast.success("Image card downloaded, ready for Instagram.");
       trackEvent("ig_card_download", `/post/${post.slug}`, { format });
     } catch {
       toast.error("Could not export image (cover image blocked). Try again.");
@@ -238,7 +238,7 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
       document.execCommand("copy");
       document.body.removeChild(ta);
     }
-    toast.success("Link copied — it unfurls with a rich preview card on LinkedIn and X.");
+    toast.success("Link copied, it unfurls with a rich preview card on LinkedIn and X.");
     trackEvent("share_copy_link", `/post/${post.slug}`);
   };
 
@@ -276,7 +276,7 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
         trackEvent("share_native", `/post/${post.slug}`);
         return;
       } catch (e) {
-        if (e?.name === "AbortError") return; // user closed the sheet — not an error
+        if (e?.name === "AbortError") return; // user closed the sheet, not an error
       }
     }
     setMenuOpen(true);
@@ -374,7 +374,7 @@ export const ShareBar = ({ post, orientation = "horizontal", idSuffix = "" }) =>
           <DialogContent className="max-w-sm" data-testid={`share-menu-dialog${idSuffix}`}>
             <DialogHeader>
               <DialogTitle className="font-serif text-2xl">Share this essay</DialogTitle>
-              <DialogDescription>Pick a platform — the link unfurls with a rich preview card.</DialogDescription>
+              <DialogDescription>Pick a platform, the link unfurls with a rich preview card.</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-2">
               {MENU_OPTIONS.map((o) => (

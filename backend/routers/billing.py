@@ -56,7 +56,7 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
             'status': 'paid', 'created_at': iso(now_utc()),
         }
         await db.invoices.insert_one(dict(invoice))
-        await log_email(user['email'], 'Welcome to Premium — The Trading Narrative',
+        await log_email(user['email'], 'Welcome to Premium · The Trading Narrative',
                         f"Your {plan['label']} subscription is active.", 'premium_welcome')
         return {'ok': True, 'mock': True, 'subscription': clean(sub), 'invoice': clean(invoice)}
 

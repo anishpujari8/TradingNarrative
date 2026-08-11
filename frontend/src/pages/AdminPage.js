@@ -128,7 +128,7 @@ export default function AdminPage() {
     try {
       const res = await api.post("/admin/email/test");
       if (res.data.status.includes("gmail")) toast.success(`Test email delivered to ${res.data.to}.`);
-      else toast.error(`Send failed — ${res.data.last_error?.slice(0, 90) || "check credentials"}`);
+      else toast.error(`Send failed, ${res.data.last_error?.slice(0, 90) || "check credentials"}`);
       api.get("/admin/email/status").then((r) => setEmailStatus(r.data)).catch(() => {});
       loadAll();
     } catch {
@@ -232,7 +232,7 @@ export default function AdminPage() {
     setDigestPreviewSending(true);
     try {
       const res = await api.post("/admin/newsletter/send-digest-preview", { subject: digest?.subject ? `[PREVIEW] ${digest.subject}` : undefined });
-      toast.success(`Preview delivered to ${res.data.to} — check your inbox before sending to everyone.`);
+      toast.success(`Preview delivered to ${res.data.to}, check your inbox before sending to everyone.`);
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Preview send failed.");
     } finally {
@@ -326,7 +326,7 @@ export default function AdminPage() {
             <StatCard icon={Crown} label="Premium members" value={stats?.premium_subscribers} testId="admin-stat-premium" />
           </div>
           <Card className="rounded-xl">
-            <CardHeader><CardTitle className="font-serif text-xl">Top posts — views & listens</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-serif text-xl">Top posts, views & listens</CardTitle></CardHeader>
             <CardContent className="h-72" data-testid="admin-analytics-top-posts-chart">
               {stats?.top_posts?.length ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -355,7 +355,7 @@ export default function AdminPage() {
         <TabsContent value="traffic">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <p className="text-sm text-muted-foreground">
-              Where readers arrive from — first visit of each browser session, powered by referrers and UTM tags.
+              Where readers arrive from, first visit of each browser session, powered by referrers and UTM tags.
             </p>
             <div className="flex items-center gap-2">
               <Select value={trafficDays} onValueChange={setTrafficDays}>
@@ -569,7 +569,7 @@ export default function AdminPage() {
                       <Skeleton className="h-48" />
                     ) : !funnel.overall || funnel.total_sessions === 0 ? (
                       <p className="text-sm text-muted-foreground py-6" data-testid="admin-funnel-empty">
-                        The funnel fills in as new visitors browse — it links each session from arrival to checkout.
+                        The funnel fills in as new visitors browse, it links each session from arrival to checkout.
                       </p>
                     ) : (
                       <>
@@ -822,7 +822,7 @@ export default function AdminPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground" data-testid="admin-no-issues">No issues sent yet. Newsletter sends are MOCKED — swap in a real provider anytime.</p>
+                  <p className="text-sm text-muted-foreground" data-testid="admin-no-issues">No issues sent yet. Newsletter sends are MOCKED, swap in a real provider anytime.</p>
                 )}
               </CardContent>
             </Card>
@@ -844,11 +844,11 @@ export default function AdminPage() {
                 <CardTitle className="font-serif text-xl">Narration status by essay</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   {narrations?.warming
-                    ? "Generating missing narrations in the background — this panel refreshes automatically."
+                    ? "Generating missing narrations in the background, this panel refreshes automatically."
                     : narrations?.enabled && !narrations?.credits
-                      ? "Credit balance unavailable — enable the 'User → Read' permission on your ElevenLabs API key to see it here."
+                      ? "Credit balance unavailable, enable the 'User → Read' permission on your ElevenLabs API key to see it here."
                       : narrations?.credits?.remaining === 0
-                        ? "ElevenLabs credits are exhausted — top up at elevenlabs.io, then generate the missing narrations."
+                        ? "ElevenLabs credits are exhausted, top up at elevenlabs.io, then generate the missing narrations."
                         : "Cached essays play instantly for readers. Generate any missing ones with one click."}
                 </p>
               </div>
@@ -873,7 +873,7 @@ export default function AdminPage() {
               {!narrations ? (
                 <Skeleton className="h-48" />
               ) : !narrations.enabled ? (
-                <p className="text-sm text-muted-foreground" data-testid="admin-narrations-disabled">Narration is not configured — add an ElevenLabs API key to enable it.</p>
+                <p className="text-sm text-muted-foreground" data-testid="admin-narrations-disabled">Narration is not configured, add an ElevenLabs API key to enable it.</p>
               ) : narrations.essays.length === 0 ? (
                 <p className="text-sm text-muted-foreground" data-testid="admin-narrations-empty">No published essays yet.</p>
               ) : (
@@ -915,7 +915,7 @@ export default function AdminPage() {
                           {e.completion != null ? (
                             <span
                               className="font-mono text-sm"
-                              title={`Of ${e.listens} listens — reached 25%: ${e.milestones?.["25"] ?? 0} · 50%: ${e.milestones?.["50"] ?? 0} · 75%: ${e.milestones?.["75"] ?? 0} · finished: ${e.milestones?.["100"] ?? 0}`}
+                              title={`Of ${e.listens} listens, reached 25%: ${e.milestones?.["25"] ?? 0} · 50%: ${e.milestones?.["50"] ?? 0} · 75%: ${e.milestones?.["75"] ?? 0} · finished: ${e.milestones?.["100"] ?? 0}`}
                               data-testid={`admin-narration-completion-${e.slug}`}
                             >
                               {e.completion}%<span className="text-muted-foreground text-xs ml-1.5">finish</span>
@@ -953,11 +953,11 @@ export default function AdminPage() {
                   </div>
                   <div className="text-xs text-muted-foreground font-mono max-w-xl">
                     {emailStatus?.last_error
-                      ? "Auth failed — Gmail needs an App Password (Google Account → Security → 2-Step Verification → App passwords), not your regular password. Falling back to logged sends."
+                      ? "Auth failed, Gmail needs an App Password (Google Account → Security → 2-Step Verification → App passwords), not your regular password. Falling back to logged sends."
                       : emailStatus?.enabled && emailStatus?.verified
                         ? `Real sending active · replies go to ${emailStatus.reply_to || "the Gmail inbox"}`
                         : emailStatus?.enabled
-                          ? "Configured but not verified yet — press Send test email to confirm delivery"
+                          ? "Configured but not verified yet, press Send test email to confirm delivery"
                           : "Add GMAIL_SMTP_USER + GMAIL_SMTP_PASSWORD to activate real sending"}
                   </div>
                 </div>
@@ -1020,7 +1020,7 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Weekly digest preview</DialogTitle>
             <DialogDescription>
-              {digest ? `${digest.post_count} essays from the past week · Subject: "${digest.subject}"` : ""} {emailStatus?.verified ? "Real sending via Gmail — each subscriber gets only their chosen pillars." : "Sending is MOCKED and logged in the email log."}
+              {digest ? `${digest.post_count} essays from the past week · Subject: "${digest.subject}"` : ""} {emailStatus?.verified ? "Real sending via Gmail, each subscriber gets only their chosen pillars." : "Sending is MOCKED and logged in the email log."}
             </DialogDescription>
           </DialogHeader>
           {digest && (
@@ -1052,7 +1052,7 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Send a newsletter issue</DialogTitle>
             <DialogDescription>
-              Turns a post into a newsletter issue for all subscribers. Sending is MOCKED — every send is logged in the email log.
+              Turns a post into a newsletter issue for all subscribers. Sending is MOCKED, every send is logged in the email log.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

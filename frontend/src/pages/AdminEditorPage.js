@@ -33,17 +33,17 @@ const emptyForm = {
 
 const briefingTemplate = (edition) => ({
   title: "Five Things Commodity Desks Need to Know This Week",
-  excerpt: `Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. Edition #${edition} of The Trading Narrative.`,
+  excerpt: `Your Wednesday briefing on trading technology, markets, risk and regulation, in 5 minutes. Edition #${edition} of The Trading Narrative.`,
   category: "finance",
   // Growth plan: briefings are free through Edition #6 to build the list, premium after
   tier: edition <= 6 ? "free" : "premium",
   tags: "ETRM, Commodities, Markets, Risk, Regulation",
   edition: String(edition),
   content: [
-    "THE BOARD — Brent $__ ▲ | WTI $__ ▲ | Copper $__ ▲ | Wheat $__ | Corn $__ | Soybeans $__",
-    `Welcome to Edition #${edition}. Every week: five things that actually change how trading and risk teams work — written the way a desk reads them, not the way a press release writes them.`,
+    "THE BOARD, Brent $__ ▲ | WTI $__ ▲ | Copper $__ ▲ | Wheat $__ | Corn $__ | Soybeans $__",
+    `Welcome to Edition #${edition}. Every week: five things that actually change how trading and risk teams work, written the way a desk reads them, not the way a press release writes them.`,
     "## 1. [First headline]",
-    "[What happened, and why it changes how the desk works. End with the tell — the detail that proves the point.] (Sources: …)",
+    "[What happened, and why it changes how the desk works. End with the tell, the detail that proves the point.] (Sources: …)",
     "## 2. [Second headline]",
     "[What happened, and why it matters.] (Sources: …)",
     "## 3. [Third headline]",
@@ -53,9 +53,9 @@ const briefingTemplate = (edition) => ({
     "## 5. [Fifth headline]",
     "[What happened, and why it matters.] (Sources: …)",
     "## Three signals to watch",
-    "1. [Signal one — what to watch and why.]",
-    "2. [Signal two — what to watch and why.]",
-    "3. [Signal three — what to watch and why.]",
+    "1. [Signal one, what to watch and why.]",
+    "2. [Signal two, what to watch and why.]",
+    "3. [Signal three, what to watch and why.]",
     "If this saved you a morning of reading, subscribe and share it with one person on your desk. What should the Narrative cover next week? Tell me in the comments.",
     "I'm Anish Pujari, Senior ETRM/CTRM Product Manager & Consultant (Endur, Eka, Triple Point, Azure Databricks). Views my own; prices indicative, not trading advice.",
   ].join("\n\n"),
@@ -111,7 +111,7 @@ export default function AdminEditorPage() {
       if (editions.length) nextEdition = Math.max(...editions) + 1;
     } catch { /* default to 1 */ }
     setForm((f) => ({ ...f, ...briefingTemplate(nextEdition) }));
-    toast.success(`Weekly briefing template loaded — Edition #${nextEdition}. Fill in THE BOARD and the five sections.`);
+    toast.success(`Weekly briefing template loaded, Edition #${nextEdition}. Fill in THE BOARD and the five sections.`);
   };
 
   const save = async (overrideStatus) => {
@@ -196,8 +196,8 @@ export default function AdminEditorPage() {
                 <Select value={form.tier} onValueChange={(v) => set("tier", v)}>
                   <SelectTrigger data-testid="admin-post-tier-select"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="free">Free — everyone can read</SelectItem>
-                    <SelectItem value="premium">Premium — members only</SelectItem>
+                    <SelectItem value="free">Free, everyone can read</SelectItem>
+                    <SelectItem value="premium">Premium, members only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

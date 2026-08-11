@@ -70,7 +70,7 @@ export default function PaymentSuccessPage() {
               </div>
               <h1 className="font-serif text-3xl font-semibold">Welcome to Premium</h1>
               <p className="text-muted-foreground mt-2">
-                Payment confirmed — every essay is now unlocked, ad-free, with early access.
+                Payment confirmed, every essay is now unlocked, ad-free, with early access.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center mt-7">
                 <Link to="/archive">
@@ -89,7 +89,7 @@ export default function PaymentSuccessPage() {
               <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
               <h1 className="font-serif text-2xl font-semibold">Payment still processing</h1>
               <p className="text-muted-foreground text-sm mt-2">
-                Your payment is taking longer than usual. Check your account in a minute — access activates automatically once it clears.
+                Your payment is taking longer than usual. Check your account in a minute, access activates automatically once it clears.
               </p>
               <Link to="/account"><Button variant="outline" className="mt-6">Go to account</Button></Link>
             </div>

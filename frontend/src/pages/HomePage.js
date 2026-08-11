@@ -63,7 +63,7 @@ export default function HomePage() {
     <div data-testid="home-page">
       <Seo path="/" />
 
-      {/* EARLY SUPPORTER PROMO — signup urgency while first-50 spots remain */}
+      {/* EARLY SUPPORTER PROMO, signup urgency while first-50 spots remain */}
       {promo && promo.left > 0 && !user?.early_supporter && !user?.is_premium && (
         <div className="bg-accent text-accent-foreground" data-testid="early-supporter-banner">
           <Link
@@ -73,7 +73,7 @@ export default function HomePage() {
           >
             <Zap className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">
-              Early supporter offer — <strong data-testid="early-supporter-count">{promo.left} of {promo.limit}</strong> spots
+              Early supporter offer, <strong data-testid="early-supporter-count">{promo.left} of {promo.limit}</strong> spots
               left · first 5 essays free for early readers
             </span>
             <span className="hidden sm:inline-flex items-center gap-1 font-medium underline underline-offset-4 shrink-0">
@@ -101,7 +101,7 @@ export default function HomePage() {
             </h1>
             <p className="text-muted-foreground text-base md:text-lg mt-5 max-w-lg">
               Essays on technology & AI, business and financial mechanics, delivery systems,
-              and personal growth — written like a letter from a colleague who does the homework.
+              and personal growth, written like a letter from a colleague who does the homework.
             </p>
             <div className="mt-7 max-w-md">
               <NewsletterForm source="hero" testId="hero-newsletter-form" />
@@ -237,8 +237,7 @@ export default function HomePage() {
               One sharp essay. Every week. Zero noise.
             </h2>
             <p className="text-muted-foreground mt-3 mb-7">
-              Join readers who get the narrative behind markets, tech, and better living —
-              before everyone else is talking about it.
+              Join readers who get the narrative behind markets, tech, and better living,               before everyone else is talking about it.
             </p>
             <div className="max-w-md mx-auto">
               <NewsletterForm source="home-block" testId="home-block-newsletter-form" />

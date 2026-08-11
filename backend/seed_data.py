@@ -18,14 +18,14 @@ SAMPLE_POSTS = [
         "cover_image": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
             "In 1849, the merchants who sold picks and shovels outlasted almost every prospector who swung them. The AI boom is replaying that script with eerie fidelity, and yet most investors are still staring at the shiniest layer of the stack: the models themselves.",
-            "Model companies capture headlines, but headlines are not margins. Training frontier models is a capital furnace — each generation costs an order of magnitude more than the last, while open-source alternatives compress pricing power from below. It is a brutal place to build a moat.",
+            "Model companies capture headlines, but headlines are not margins. Training frontier models is a capital furnace, each generation costs an order of magnitude more than the last, while open-source alternatives compress pricing power from below. It is a brutal place to build a moat.",
             "Move one layer down and the picture changes. Compute, networking, and power are supply-constrained in ways software never is. When demand outruns physics, pricing power concentrates with whoever controls the bottleneck.",
             "Consider the data center buildout. Hyperscalers have committed hundreds of billions in capex, and every dollar flows through a surprisingly short list of suppliers: advanced packaging, high-bandwidth memory, optical interconnects, and the utilities that can actually deliver gigawatts.",
-            "The second durable layer is distribution. Companies that already own the customer relationship — the productivity suites, the CRMs, the developer platforms — can attach AI features at near-zero acquisition cost. They don't need the best model; they need a good-enough model and a billing relationship.",
+            "The second durable layer is distribution. Companies that already own the customer relationship, the productivity suites, the CRMs, the developer platforms, can attach AI features at near-zero acquisition cost. They don't need the best model; they need a good-enough model and a billing relationship.",
             "Then there is the dark horse: data gravity. Enterprises will not ship their proprietary data to whoever has this month's benchmark crown. They will use whatever model runs where their data already lives. This quietly advantages incumbent clouds over standalone labs.",
-            "What should an investor actually do with this? First, stop treating 'AI exposure' as a single trade. The stack has at least five distinct economic layers — silicon, infrastructure, models, tooling, and applications — and their margin structures could not be more different.",
+            "What should an investor actually do with this? First, stop treating 'AI exposure' as a single trade. The stack has at least five distinct economic layers, silicon, infrastructure, models, tooling, and applications, and their margin structures could not be more different.",
             "Second, watch utilization, not announcements. GPU clusters that sit idle are a liability dressed up as a growth story. The companies reporting rising utilization alongside rising capacity are the ones with real demand signal.",
-            "Finally, remember that every gold rush ends the same way: consolidation. The picks-and-shovels vendors get acquired or become utilities; a handful of application winners emerge with real network effects. Position for the boring, durable layers now — the exciting ones will come to you at better prices later.",
+            "Finally, remember that every gold rush ends the same way: consolidation. The picks-and-shovels vendors get acquired or become utilities; a handful of application winners emerge with real network effects. Position for the boring, durable layers now, the exciting ones will come to you at better prices later.",
         ],
     },
     {
@@ -41,9 +41,9 @@ SAMPLE_POSTS = [
             "The uncomfortable math is this: a mediocre product with a great distribution engine will usually beat a great product with mediocre distribution. Dropbox wasn't the best sync technology. Salesforce wasn't the most elegant CRM. They won the channel, not the spec sheet.",
             "Distribution advantages come in roughly four flavors: owned audiences, viral loops, channel partnerships, and sales motions matched to deal size. Most startups pick the wrong one for their price point and burn eighteen months discovering it.",
             "The classic mismatch: a $30/month product sold with an enterprise sales team, or a $100k platform marketed with content and hope. Your customer acquisition cost has to rhyme with your contract value, or the model collapses regardless of product quality.",
-            "Owned audiences are the most underrated asset of this decade. A founder with 50,000 engaged newsletter readers has a launchpad that would cost millions to rent through paid channels — and it appreciates instead of depreciating.",
+            "Owned audiences are the most underrated asset of this decade. A founder with 50,000 engaged newsletter readers has a launchpad that would cost millions to rent through paid channels, and it appreciates instead of depreciating.",
             "Viral loops get romanticized, but true virality is rare and mostly limited to products where the usage itself creates the invitation: payments, docs, messaging. If your product isn't inherently multiplayer, engineering virality is usually a distraction.",
-            "Channel partnerships are slow to start and compounding once running. Getting embedded in someone else's marketplace, agency network, or implementation ecosystem feels unglamorous — which is exactly why it's defensible.",
+            "Channel partnerships are slow to start and compounding once running. Getting embedded in someone else's marketplace, agency network, or implementation ecosystem feels unglamorous, which is exactly why it's defensible.",
             "The takeaway isn't that product doesn't matter. It's that product quality is table stakes, and the game is won in the layer most builders find boring. Study distribution with the same rigor you study your codebase, and you'll be playing a different sport than your competitors.",
         ],
     },
@@ -56,14 +56,14 @@ SAMPLE_POSTS = [
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
-            "In 2008, a million-dollar business meant employees, an office, and payroll anxiety. In 2025, it can mean one person, a laptop, and a stack of subscriptions that costs less than a car payment. The solo operator economy is not a trend piece — it's a structural shift in how value gets created.",
+            "In 2008, a million-dollar business meant employees, an office, and payroll anxiety. In 2025, it can mean one person, a laptop, and a stack of subscriptions that costs less than a car payment. The solo operator economy is not a trend piece, it's a structural shift in how value gets created.",
             "The enabling stack is worth naming precisely: global payment rails (Stripe), zero-marginal-cost distribution (newsletters, YouTube, X), productized knowledge (courses, templates, SaaS), and now AI agents that compress a support team into a system prompt.",
             "The economics are absurd by historical standards. A solo newsletter with 20,000 subscribers and a 2% premium conversion at $10/month generates $48,000 in annual recurring revenue with software costs under $2,000. Scale the audience 5x and you've matched a VP's salary with no boss and no commute.",
-            "But the playbook has a sequence, and most people run it backwards. The order is: pick a niche where you have unfair insight, publish consistently until you have proof of resonance, capture emails relentlessly, then — and only then — build the paid thing your audience is already asking for.",
+            "But the playbook has a sequence, and most people run it backwards. The order is: pick a niche where you have unfair insight, publish consistently until you have proof of resonance, capture emails relentlessly, then, and only then, build the paid thing your audience is already asking for.",
             "Monetization layers stack in a predictable ladder: newsletter sponsorships first (lowest friction), then premium subscriptions (recurring), then digital products (high margin spikes), then services or community (highest price, highest touch). Each layer funds the patience required for the next.",
-            "The failure mode is equally predictable: creators who monetize before they've earned trust, or who scatter across five platforms instead of compounding on one. Attention is a savings account — small consistent deposits, brutal penalties for early withdrawal.",
+            "The failure mode is equally predictable: creators who monetize before they've earned trust, or who scatter across five platforms instead of compounding on one. Attention is a savings account, small consistent deposits, brutal penalties for early withdrawal.",
             "AI has changed the leverage math again. Research, drafting, design, clipping, and customer support can each be 70% automated. The solo operator's real job description has collapsed to two things: taste and judgment. Everything else is delegatable to silicon.",
-            "The risks are real — platform dependency, burnout, key-person fragility — and the mitigations are boring: own your email list, batch your production, build systems before you need them.",
+            "The risks are real, platform dependency, burnout, key-person fragility, and the mitigations are boring: own your email list, batch your production, build systems before you need them.",
             "If you have expertise and the discipline to publish for twelve months without applause, the infrastructure now exists to convert that into a durable, margin-rich business. The barrier was never capital. It was always consistency.",
         ],
     },
@@ -71,19 +71,19 @@ SAMPLE_POSTS = [
     {
         "title": "The Boring Portfolio That Beats Your Broker",
         "tags": ['Index Funds', 'Investing', 'Personal Finance'],
-        "excerpt": "Three funds, one rebalancing rule, and the discipline to do nothing. Why the most effective investment strategy fits on an index card — and why almost nobody follows it.",
+        "excerpt": "Three funds, one rebalancing rule, and the discipline to do nothing. Why the most effective investment strategy fits on an index card, and why almost nobody follows it.",
         "category": "finance",
         "tier": "free",
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
             "The entire financial industry has a trillion-dollar incentive to convince you that investing is complicated. It isn't. The evidence has been in for decades: a simple, low-cost, diversified portfolio beats the vast majority of professional managers over any meaningful time horizon.",
-            "Here is the whole strategy: a total stock market index fund, an international stock fund, and a bond fund, weighted to your risk tolerance. Rebalance once a year. Automate your contributions. That's it. That's the article — except for the part where I explain why you won't do it.",
+            "Here is the whole strategy: a total stock market index fund, an international stock fund, and a bond fund, weighted to your risk tolerance. Rebalance once a year. Automate your contributions. That's it. That's the article, except for the part where I explain why you won't do it.",
             "SPIVA data makes the case brutally: over 15-year periods, roughly 90% of actively managed US equity funds underperform their benchmark. You are not going to pick the 10% in advance. Neither is your advisor. Neither am I.",
             "Costs are the one variable you fully control. The difference between a 0.05% expense ratio and a 1% advisory fee sounds trivial and compounds into catastrophe: on a $500,000 portfolio over 30 years, that gap is worth several hundred thousand dollars.",
-            "The hard part was never the strategy — it's the behavior. Markets fall 30% and your amygdala starts drafting sell orders. The boring portfolio only works if you can watch it bleed and do nothing, which is a psychological skill, not a financial one.",
+            "The hard part was never the strategy, it's the behavior. Markets fall 30% and your amygdala starts drafting sell orders. The boring portfolio only works if you can watch it bleed and do nothing, which is a psychological skill, not a financial one.",
             "This is why automation is the real alpha. Money that moves into investments before you see it cannot be panic-hoarded. A rebalancing calendar reminder removes the decision. Every choice you automate is a mistake you can't make.",
-            "Should you ever deviate? A small 'explore' allocation — 5 to 10% for individual stocks or speculative bets — is fine, and honestly useful. It scratches the itch that would otherwise compromise the core portfolio. Just track its performance honestly against the boring part. The results will keep you humble.",
+            "Should you ever deviate? A small 'explore' allocation, 5 to 10% for individual stocks or speculative bets, is fine, and honestly useful. It scratches the itch that would otherwise compromise the core portfolio. Just track its performance honestly against the boring part. The results will keep you humble.",
             "Wealth is built by uninterrupted compounding, and compounding's only enemy is interruption. Set up the boring machine, then go live your life. The index card wins.",
         ],
     },
@@ -97,34 +97,34 @@ SAMPLE_POSTS = [
         "cover_image": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
             "Equity investors watch earnings. Bond investors watch everything. The rates market is the deepest, most information-dense market on Earth, and it publishes its collective judgment every single day in a curve that most retail investors have never learned to read.",
-            "Start with the basics: the yield curve plots government bond yields across maturities, from 3-month bills to 30-year bonds. Its shape encodes expectations about growth, inflation, and central bank policy — the three variables that price every other asset you own.",
-            "A steep upward slope says the market expects growth and is demanding compensation for future inflation. A flat curve says the cycle is aging. An inverted curve — short rates above long rates — says the market believes policy is restrictive enough to break something.",
+            "Start with the basics: the yield curve plots government bond yields across maturities, from 3-month bills to 30-year bonds. Its shape encodes expectations about growth, inflation, and central bank policy, the three variables that price every other asset you own.",
+            "A steep upward slope says the market expects growth and is demanding compensation for future inflation. A flat curve says the cycle is aging. An inverted curve, short rates above long rates, says the market believes policy is restrictive enough to break something.",
             "The famous recession signal is the 2s10s spread: when 2-year yields exceed 10-year yields, recessions have followed within roughly 6 to 24 months in nearly every post-war instance. But the tourists stop there, and the traders keep reading.",
-            "What matters more than inversion is the un-inversion — the 'bull steepener' — when short rates collapse faster than long rates because the market smells imminent cuts. Historically, the steepening after inversion, not the inversion itself, is the proximate recession alarm.",
-            "Then watch the long end for the fiscal story. When 10- and 30-year yields rise while cut expectations hold steady, the market is repricing term premium — demanding more compensation for holding duration in a world of heavy issuance. That is a statement about government borrowing, not growth.",
+            "What matters more than inversion is the un-inversion, the 'bull steepener', when short rates collapse faster than long rates because the market smells imminent cuts. Historically, the steepening after inversion, not the inversion itself, is the proximate recession alarm.",
+            "Then watch the long end for the fiscal story. When 10- and 30-year yields rise while cut expectations hold steady, the market is repricing term premium, demanding more compensation for holding duration in a world of heavy issuance. That is a statement about government borrowing, not growth.",
             "Practical toolkit: track the 2s10s spread, the 3-month/10-year spread, and 5-year forward inflation expectations. All are free on FRED. Fifteen minutes a week reading these three charts will give you more macro context than an hour of financial television.",
             "How to actually use it: the curve should shape your expectations, not your day trades. Steepening after inversion is a signal to stress-test your portfolio against recession. A rising term premium warns that both stocks AND bonds can fall together, which breaks the 60/40 hedge exactly when you need it.",
-            "The rates market isn't always right — but it's wrong less often than equity sentiment, and it's honest in a way narratives never are. Learn its language and you'll never read financial news the same way again.",
+            "The rates market isn't always right, but it's wrong less often than equity sentiment, and it's honest in a way narratives never are. Learn its language and you'll never read financial news the same way again.",
         ],
     },
     {
         "title": "Your First $100k Is the Hardest: A Tactical Map",
         "tags": ['Wealth Building', 'Personal Finance', 'Compounding'],
-        "excerpt": "Charlie Munger was right — the first $100k is a slog governed by savings rate, not returns. A stage-by-stage breakdown of what actually moves the needle at each net worth level.",
+        "excerpt": "Charlie Munger was right, the first $100k is a slog governed by savings rate, not returns. A stage-by-stage breakdown of what actually moves the needle at each net worth level.",
         "category": "finance",
         "tier": "premium",
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
             "Charlie Munger famously told a young questioner that the first $100,000 is 'a b*tch, but you gotta do it.' The math behind his bluntness is worth understanding, because it changes what you should focus on at every stage of wealth building.",
-            "At a $10,000 net worth, a spectacular 10% annual return earns you $1,000 — less than one good month of extra income or reduced spending. At this stage, your savings rate is 95% of the game and your investment returns are a rounding error. Act accordingly.",
-            "The stage-one playbook is unglamorous: maximize income growth (job switches beat raises — the data says 10-20% versus 3-5%), keep fixed costs ruthlessly low, and automate at least 20% of gross income into index funds. Optimization energy spent on stock picking here is misallocated.",
-            "Between $100k and $500k, the machine changes character. A 10% return on $300,000 is $30,000 — now rivaling your annual savings. This is the crossover zone where asset allocation starts mattering more than your grocery bill, and where tax efficiency becomes a five-figure decision.",
+            "At a $10,000 net worth, a spectacular 10% annual return earns you $1,000, less than one good month of extra income or reduced spending. At this stage, your savings rate is 95% of the game and your investment returns are a rounding error. Act accordingly.",
+            "The stage-one playbook is unglamorous: maximize income growth (job switches beat raises, the data says 10-20% versus 3-5%), keep fixed costs ruthlessly low, and automate at least 20% of gross income into index funds. Optimization energy spent on stock picking here is misallocated.",
+            "Between $100k and $500k, the machine changes character. A 10% return on $300,000 is $30,000, now rivaling your annual savings. This is the crossover zone where asset allocation starts mattering more than your grocery bill, and where tax efficiency becomes a five-figure decision.",
             "Tax-advantaged space is the highest-ROI move in this zone: 401(k) matches are a guaranteed 50-100% return, Roth conversions in low-income years lock in cheap tax rates, and HSAs are the only triple-tax-advantaged account in existence. Most people leave five figures on the table annually.",
             "Past $500k, the game becomes defense. Sequence-of-returns risk, concentration risk (that employer stock you never sold), and lifestyle inflation are now bigger threats than under-optimization. This is where an hour with a fee-only planner beats a hundred hours of Reddit.",
-            "The psychological trap at every stage is comparing your chapter one to someone else's chapter ten. Compounding is invisible for years and then suddenly absurd — the classic bamboo that grows underground for seasons before shooting up thirty feet.",
+            "The psychological trap at every stage is comparing your chapter one to someone else's chapter ten. Compounding is invisible for years and then suddenly absurd, the classic bamboo that grows underground for seasons before shooting up thirty feet.",
             "Run your own numbers: at a $60k savings rate and 7% returns, the first $100k takes about 20 months, the fifth comes in under 12, and by $1M new $100k increments arrive roughly every 8 months. Same effort, accelerating results.",
-            "So respect Munger's sequencing. Grind the first $100k with income and savings rate. Let allocation and tax strategy carry the middle. Let defense preserve the end game. Wealth has stages — play the one you're actually in.",
+            "So respect Munger's sequencing. Grind the first $100k with income and savings rate. Let allocation and tax strategy carry the middle. Let defense preserve the end game. Wealth has stages, play the one you're actually in.",
         ],
     },
     # ---------------- LIFESTYLE ----------------
@@ -137,53 +137,53 @@ SAMPLE_POSTS = [
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
-            "Track your screen time honestly for one week and you will find somewhere between 15 and 25 hours of fragmentary, low-value attention spend. Not leisure — leisure is fine — but the gray zone of half-work: refreshing dashboards, skimming messages, consuming content you won't remember by Friday.",
-            "The cost isn't just the hours. Attention residue — the cognitive drag that lingers after each context switch — means a day of fragmented focus produces a fraction of the output of three protected hours. You are not tired because you worked too much. You are tired because you switched too much.",
+            "Track your screen time honestly for one week and you will find somewhere between 15 and 25 hours of fragmentary, low-value attention spend. Not leisure, leisure is fine, but the gray zone of half-work: refreshing dashboards, skimming messages, consuming content you won't remember by Friday.",
+            "The cost isn't just the hours. Attention residue, the cognitive drag that lingers after each context switch, means a day of fragmented focus produces a fraction of the output of three protected hours. You are not tired because you worked too much. You are tired because you switched too much.",
             "The reset starts with an audit, not an app. For one week, log what you actually do in 30-minute blocks. Most people discover their 'eight-hour workday' contains two to three hours of genuinely productive work floating in a sea of reactive noise.",
-            "Next, build the fortress: one daily block of 90 to 120 minutes, same time every day, phone in another room, notifications off at the OS level, one clearly defined task. This block is non-negotiable and scheduled like a client meeting, because it is one — with your future self.",
+            "Next, build the fortress: one daily block of 90 to 120 minutes, same time every day, phone in another room, notifications off at the OS level, one clearly defined task. This block is non-negotiable and scheduled like a client meeting, because it is one, with your future self.",
             "The phone deserves special hostility. Grayscale mode, no social apps on the home screen, and a charging station outside the bedroom. These sound like small tweaks; they reliably reclaim 60 to 90 minutes a day because they add friction exactly where the design removed it.",
             "Communication needs a protocol, not willpower: batch email and messages into two or three windows a day, and tell your colleagues you're doing it. The anxiety fades within a week. Nobody actually needed you in eleven minutes.",
-            "Rebuild your attention span like a muscle after an injury: start with 25 focused minutes, extend by five each week. Boredom tolerance is the underlying capacity — practice waiting in lines without reaching for the phone. It feels absurd and works profoundly.",
-            "The payoff compounds beyond productivity. Sustained attention is where craftsmanship, deep relationships, and actual thinking live. Reclaiming 20 hours a week isn't a productivity hack — it's repossessing your life from the attention economy, one protected block at a time.",
+            "Rebuild your attention span like a muscle after an injury: start with 25 focused minutes, extend by five each week. Boredom tolerance is the underlying capacity, practice waiting in lines without reaching for the phone. It feels absurd and works profoundly.",
+            "The payoff compounds beyond productivity. Sustained attention is where craftsmanship, deep relationships, and actual thinking live. Reclaiming 20 hours a week isn't a productivity hack, it's repossessing your life from the attention economy, one protected block at a time.",
         ],
     },
     {
         "title": "Habits That Survive Contact With Real Life",
         "tags": ['Habits', 'Systems', 'Self-Improvement'],
-        "excerpt": "Most habit systems are designed for people with perfect calendars and infinite motivation. Here's the engineering approach for the rest of us — built around failure, not around streaks.",
+        "excerpt": "Most habit systems are designed for people with perfect calendars and infinite motivation. Here's the engineering approach for the rest of us, built around failure, not around streaks.",
         "category": "lifestyle",
         "tier": "premium",
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
             "Every January, millions of people build habit systems designed for a person who doesn't exist: someone with stable energy, an empty calendar, and a motivation supply that never dips. By February, the streak apps are deleted and the shame sets in. The problem was never discipline. It was engineering.",
-            "Real habit systems are designed around failure, the way bridges are designed around load. The question isn't 'how do I stay perfect?' — it's 'what happens to this system on my worst week?' If the answer is 'total collapse,' you built a streak, not a habit.",
-            "Rule one: set floors, not ceilings. The commitment is two minutes of exercise, one paragraph of writing, one page of reading. Floors are insultingly easy by design — their job is to preserve identity continuity ('I am someone who trains') on the days when capacity is gone.",
-            "Rule two: the never-miss-twice protocol. Missing once is data; missing twice is the start of a new habit — the habit of not doing the thing. All your discipline should concentrate on the day after a miss, which is the highest-leverage day in the entire system.",
+            "Real habit systems are designed around failure, the way bridges are designed around load. The question isn't 'how do I stay perfect?', it's 'what happens to this system on my worst week?' If the answer is 'total collapse,' you built a streak, not a habit.",
+            "Rule one: set floors, not ceilings. The commitment is two minutes of exercise, one paragraph of writing, one page of reading. Floors are insultingly easy by design, their job is to preserve identity continuity ('I am someone who trains') on the days when capacity is gone.",
+            "Rule two: the never-miss-twice protocol. Missing once is data; missing twice is the start of a new habit, the habit of not doing the thing. All your discipline should concentrate on the day after a miss, which is the highest-leverage day in the entire system.",
             "Rule three: anchor to events, not clock times. 'After my morning coffee' survives travel, sick kids, and schedule chaos in a way '6:00 AM' never will. Event-based anchors bend with reality instead of shattering against it.",
             "Rule four: pre-decide your failure modes. Write actual if-then plans: if I miss the gym, I do ten pushups before bed. If I order takeout, the default is the healthyish option I already chose. Decisions made in advance don't consume willpower during the crisis.",
-            "Rule five: audit the environment before the willpower. The person who keeps a phone in another room, fruit on the counter, and running shoes by the door isn't more disciplined than you — they've just outsourced discipline to geography.",
+            "Rule five: audit the environment before the willpower. The person who keeps a phone in another room, fruit on the counter, and running shoes by the door isn't more disciplined than you, they've just outsourced discipline to geography.",
             "Measure monthly consistency, not daily perfection: 22 workouts out of 30 days is a spectacular month even though it contains eight 'failures.' Perfection is a vanity metric. Frequency compounds; streaks just break.",
-            "Build for the week when the project ships late, the kid gets sick, and the sleep goes sideways. A habit system that survives that week will quietly, boringly, change your life — which is the only kind of change that lasts.",
+            "Build for the week when the project ships late, the kid gets sick, and the sleep goes sideways. A habit system that survives that week will quietly, boringly, change your life, which is the only kind of change that lasts.",
         ],
     },
     {
         "title": "The Case for a Personal Annual Report",
         "tags": ['Reflection', 'Goal Setting', 'Systems'],
-        "excerpt": "Companies review performance quarterly; most humans never do. How a two-hour year-end ritual — metrics, narrative, and one honest page — compounds into a deliberately designed life.",
+        "excerpt": "Companies review performance quarterly; most humans never do. How a two-hour year-end ritual, metrics, narrative, and one honest page, compounds into a deliberately designed life.",
         "category": "lifestyle",
         "tier": "free",
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1517842645767-c639042777db?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
-            "Every public company produces an annual report: what happened, what worked, what failed, and where the resources go next. Most humans — the CEOs of their own considerably more important enterprise — drift year to year on vibes and a gym resolution. The asymmetry is strange when you notice it.",
+            "Every public company produces an annual report: what happened, what worked, what failed, and where the resources go next. Most humans, the CEOs of their own considerably more important enterprise, drift year to year on vibes and a gym resolution. The asymmetry is strange when you notice it.",
             "A personal annual report is a two-hour ritual with three sections: the numbers, the narrative, and the reallocation. It requires a blank document and uncomfortable honesty, and it compounds like nothing else I've adopted in a decade of self-experimentation.",
             "The numbers first. Pull the data you already have: money saved and spent, books finished, trips taken, workouts logged, hours of deep work, time with close friends. Screen time reports and calendar audits don't lie, which is exactly why they sting.",
-            "Then the narrative: write the story of the year in a single page. What were the three best decisions? The three worst? What consumed enormous energy and returned nothing? What returned everything and cost almost nothing? Where did you actually spend your attention — and does it resemble what you claim to value?",
+            "Then the narrative: write the story of the year in a single page. What were the three best decisions? The three worst? What consumed enormous energy and returned nothing? What returned everything and cost almost nothing? Where did you actually spend your attention, and does it resemble what you claim to value?",
             "The narrative section is where the quiet discoveries happen. People find they spent 400 hours on a side project that generated joy and $0, and 900 hours on social media that generated neither. Or that every peak experience of the year involved the same two friends they saw only four times.",
-            "Finally, reallocation — the section everyone skips and the entire point. Pick, at most, three themes for the coming year and attach one measurable behavior to each. Not ten goals. Three themes. 'Health: strength train three times weekly.' The constraint is the feature; a priority list with ten items is a wish list.",
-            "Schedule a mid-year check against the report in July — fifteen minutes to notice drift while there's still runway to correct it. Annual course correction is steering; December-only reflection is archaeology.",
-            "The report's real product isn't the document. It's the identity shift from passenger to operator — the growing conviction that your year is something you design rather than something that happens to you. Two hours. One honest page. Compounding returns.",
+            "Finally, reallocation, the section everyone skips and the entire point. Pick, at most, three themes for the coming year and attach one measurable behavior to each. Not ten goals. Three themes. 'Health: strength train three times weekly.' The constraint is the feature; a priority list with ten items is a wish list.",
+            "Schedule a mid-year check against the report in July, fifteen minutes to notice drift while there's still runway to correct it. Annual course correction is steering; December-only reflection is archaeology.",
+            "The report's real product isn't the document. It's the identity shift from passenger to operator, the growing conviction that your year is something you design rather than something that happens to you. Two hours. One honest page. Compounding returns.",
         ],
     },
     # ---------------- TRAVEL ----------------
@@ -198,31 +198,31 @@ SAMPLE_POSTS = [
         "content_blocks": [
             "There are two kinds of trips: the ones where you see a place and the ones where you briefly live in it. The first fills camera rolls. The second changes how you think. After years of running both experiments, I'm convinced the month-long stay is the most underrated format in travel.",
             "The economics surprise everyone. Monthly apartment rates run 40 to 60% below nightly pricing, a kitchen eliminates the restaurant tax on every meal, and one round-trip flight amortized over thirty days beats four flights over four long weekends by an enormous margin. Slow travel is usually cheaper than staying home in a major city.",
-            "Week one is tourist mode, and that's fine — hit the landmarks, take the photos, get lost on purpose. The magic starts in week two, when the barista remembers your order and you develop opinions about which market stall has the better produce.",
-            "By week three you have routines, and routines are the whole point. A morning run route, a preferred café table, a nodding acquaintance with neighbors — this is the texture of a place that no itinerary can deliver, the difference between observing a city and participating in one.",
+            "Week one is tourist mode, and that's fine, hit the landmarks, take the photos, get lost on purpose. The magic starts in week two, when the barista remembers your order and you develop opinions about which market stall has the better produce.",
+            "By week three you have routines, and routines are the whole point. A morning run route, a preferred café table, a nodding acquaintance with neighbors, this is the texture of a place that no itinerary can deliver, the difference between observing a city and participating in one.",
             "Remote work makes the model almost suspiciously practical. Keep your morning deep-work block, then spend afternoons somewhere genuinely new. Time zones can be a feature: a European stay puts your focused hours before your US colleagues even wake up.",
             "Choosing the base matters more than choosing the city. Prioritize a walkable neighborhood over a famous one, a proper workspace over a pretty view, and proximity to a market over proximity to monuments. You're selecting a life, not a backdrop.",
-            "The packing revelation: a month requires less than a week does, because you'll do laundry and live like a resident. One carry-on, neutral colors, and the confidence that anything forgotten can be bought locally — which is itself a travel experience.",
-            "The deepest change is what long stays do to your sense of possibility. Live well in a foreign city for a month and 'home' becomes a choice rather than a default. That reframe — quiet, permanent, a little destabilizing — is worth more than any landmark.",
+            "The packing revelation: a month requires less than a week does, because you'll do laundry and live like a resident. One carry-on, neutral colors, and the confidence that anything forgotten can be bought locally, which is itself a travel experience.",
+            "The deepest change is what long stays do to your sense of possibility. Live well in a foreign city for a month and 'home' becomes a choice rather than a default. That reframe, quiet, permanent, a little destabilizing, is worth more than any landmark.",
         ],
     },
     {
         "title": "The Shoulder Season Playbook: Same Trip, Half the Price",
         "tags": ['Travel Hacks', 'Budget Travel', 'Timing'],
-        "excerpt": "The eight-week windows on either side of peak season offer 90% of the experience at 50-60% of the cost — with a fraction of the crowds. A destination-by-destination timing guide.",
+        "excerpt": "The eight-week windows on either side of peak season offer 90% of the experience at 50-60% of the cost, with a fraction of the crowds. A destination-by-destination timing guide.",
         "category": "delivery",
         "tier": "premium",
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
             "The travel industry's best-kept non-secret is that 'peak season' mostly measures crowd psychology, not destination quality. The Mediterranean in late September is warmer than in June, emptier than in August, and 40% cheaper than either. The people who know this simply never travel in peak months again.",
-            "Shoulder season — the six-to-eight-week bands flanking high season — is the arbitrage. Weather typically 90% as good, crowds down 50 to 70%, and pricing that reflects hotel occupancy panic rather than demand euphoria.",
+            "Shoulder season, the six-to-eight-week bands flanking high season, is the arbitrage. Weather typically 90% as good, crowds down 50 to 70%, and pricing that reflects hotel occupancy panic rather than demand euphoria.",
             "Southern Europe: late September through October beats June through August on almost every axis. The sea holds its summer warmth into October, harvest season fills the markets, and the tourist infrastructure runs at a relaxed 60% capacity while charging you accordingly.",
-            "Japan: skip cherry blossom crush and autumn-leaf peak. Late May offers green landscapes and mild weather at standard pricing, while February — genuinely cold — delivers empty temples, snow scenery, and hotel rates at half of April's, with plum blossoms as the consolation bloom almost nobody photographs.",
-            "Southeast Asia: the 'rainy season' rebrand is overdue. In Thailand and Vietnam, monsoon usually means a dramatic 90-minute afternoon downpour bracketed by sunshine — not all-day rain — while May and September prices run 40% below the December-February peak.",
+            "Japan: skip cherry blossom crush and autumn-leaf peak. Late May offers green landscapes and mild weather at standard pricing, while February, genuinely cold, delivers empty temples, snow scenery, and hotel rates at half of April's, with plum blossoms as the consolation bloom almost nobody photographs.",
+            "Southeast Asia: the 'rainy season' rebrand is overdue. In Thailand and Vietnam, monsoon usually means a dramatic 90-minute afternoon downpour bracketed by sunshine, not all-day rain, while May and September prices run 40% below the December-February peak.",
             "The Caribbean's sweet spot is late April through early June: hurricane risk still statistically minimal, water at its calmest and clearest, and rates 30 to 50% below winter peak because the northern-hemisphere crowds have simply stopped thinking about beaches.",
             "Booking mechanics matter in shoulder season: book flights on the normal 1-3 month curve, but consider holding accommodation to 2-3 weeks out, when hotels facing soft occupancy start discounting aggressively. In peak season this strategy is suicide; in shoulder season it's leverage.",
-            "Pack for variance — layers, a real rain shell, one warm piece — and build flexibility into your days so the occasional weather interruption becomes a long lunch instead of a crisis. The trade is minor turbulence for major savings.",
+            "Pack for variance, layers, a real rain shell, one warm piece, and build flexibility into your days so the occasional weather interruption becomes a long lunch instead of a crisis. The trade is minor turbulence for major savings.",
             "Run the math on your last peak-season trip repriced into shoulder dates and the conclusion tends to be permanent: same places, better light, half the people, and a travel budget that suddenly funds three trips a year instead of two.",
         ],
     },
@@ -243,7 +243,7 @@ SAMPLE_POSTS = [
             "Routines are the survival mechanism. Same wake time, a real morning block of deep work before the city gets interesting, a hard stop for exploration, and a Sunday reset for planning the week. Novelty is the reward for structure, not the replacement for it.",
             "The mistakes that almost broke me: booking one-week stays (perpetual logistics brain), skipping travel insurance (a $2,300 clinic bill in Bangkok), and underestimating loneliness (fixed by coworking memberships and staying places long enough to be a regular).",
             "Budget honestly: a sustainable nomad month in most of the world runs $2,000 to $3,500 including accommodation, food, coworking, and flights amortized. Cheaper is possible; sustainable-cheaper is rarer than the YouTube thumbnails claim.",
-            "Do it properly and the payoff is not the photos — it's optionality. You learn your work travels, your needs are smaller than you thought, and geography is a preference rather than a constraint. That knowledge outlasts every trip.",
+            "Do it properly and the payoff is not the photos, it's optionality. You learn your work travels, your needs are smaller than you thought, and geography is a preference rather than a constraint. That knowledge outlasts every trip.",
         ],
     },
 ]
@@ -254,7 +254,7 @@ SAMPLE_POSTS = [
 # these that are missing (matched by slug) as PUBLISHED posts on every startup.
 REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
   'title': 'Five Things Commodity Desks Need to Know This Week',
-  'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. '
+  'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation, in 5 minutes. '
              'Edition #1 of The Trading Narrative.',
   'category': 'finance',
   'tier': 'free',
@@ -263,10 +263,10 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
   'featured': True,
   'edition': 1,
   'published_at': '2026-08-06T17:05:57.428378+00:00',
-  'content_blocks': ['THE BOARD — Brent $92.27 ▲ | WTI ~$84.00 ▲ | Copper $6.44 ▲ (+46% y/y) | Wheat $6.63½ '
+  'content_blocks': ['THE BOARD, Brent $92.27 ▲ | WTI ~$84.00 ▲ | Copper $6.44 ▲ (+46% y/y) | Wheat $6.63½ '
                      '▲ | Corn $4.45¾ ▼ | Soybeans $11.77¼ ▼',
                      'Welcome to Edition #1. Every week: five things that actually change how trading and '
-                     'risk teams work — written the way a desk reads them, not the way a press release '
+                     'risk teams work, written the way a desk reads them, not the way a press release '
                      'writes them.',
                      '## 1. Crude posts its biggest monthly gain since March',
                      'This is not a demand story. US strikes on Iranian military targets and the Houthi '
@@ -283,29 +283,29 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'If you model smelter margins, offtakes or embedded optionality: this is no longer a '
                      "blip. It's the market structure. (Sources: Fastmarkets · S&P Global)",
                      '## 3. Every ETRM deal is now an AI conversation with one vendor',
-                     'Fact one: Openlink Endur, Allegro, RightAngle and Aspect all sit under ION — a '
+                     'Fact one: Openlink Endur, Allegro, RightAngle and Aspect all sit under ION, a '
                      '"competitive bid" increasingly means choosing between stablemates. Negotiate '
                      'accordingly.',
                      'Fact two: AI has moved from pilot to purchase criterion. Desks now demand AI-native '
-                     "deal capture, exposure and logistics tooling — programmes that don't answer the AI "
+                     "deal capture, exposure and logistics tooling, programmes that don't answer the AI "
                      "question don't get funded. (Sources: CTRM Center · Phlo Systems)",
                      '## 4. FERC tells NERC: write the rules for data-centre load',
                      'Reliability standards for large computational loads on the Bulk-Power System, filings '
                      'due 31 December 2026. Power traders: load forecasting just became a compliance topic. '
-                     'And for cross-Atlantic desks — a fresh REMIT II vs US CFTC/FERC split-model comparison '
+                     'And for cross-Atlantic desks, a fresh REMIT II vs US CFTC/FERC split-model comparison '
                      'is essential reading. (Sources: FERC · National Law Review)',
                      '## 5. AI governance gets teeth in trading and surveillance',
                      'Supervisors converge on three demands: explainability, bias management, '
                      "human-in-the-loop oversight. AI/model risk now ranks among 2026's top operational "
                      'risks while surveillance expands across email, chat, voice and off-channel devices, '
                      'with GenAI cutting false positives (FINRA).',
-                     'Ags corner: wheat firm at $6.63½, corn correcting, soybeans waiting on one headline — '
+                     'Ags corner: wheat firm at $6.63½, corn correcting, soybeans waiting on one headline, '
                      'a China purchase. (Sources: Thomson Reuters · MCO · FINRA · Brownfield)',
                      '## Three signals to watch',
-                     '1. Crude — the rally rests on Iran/Red Sea escalation. Watch the coalition talks, not '
+                     '1. Crude, the rally rests on Iran/Red Sea escalation. Watch the coalition talks, not '
                      'the inventory data.',
-                     '2. Copper — negative TC/RCs are structural. Watch Q3 concentrate supply deals.',
-                     '3. ETRM — platform replacement is an AI conversation, and increasingly a single-vendor '
+                     '2. Copper, negative TC/RCs are structural. Watch Q3 concentrate supply deals.',
+                     '3. ETRM, platform replacement is an AI conversation, and increasingly a single-vendor '
                      'negotiation.',
                      'If this saved you a morning of reading, subscribe and share it with one person on your '
                      'desk. What should the Narrative cover next week? Tell me in the comments.',
@@ -314,7 +314,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
  {'slug': 'freight-management-and-tracking-visibility-how-digital-platforms-and-ai-are-rewr',
   'title': 'Freight Management and Tracking Visibility: How Digital Platforms and AI Are Rewriting the Rules '
            'of Commodity Logistics',
-  'excerpt': 'Why $15 billion in annual demurrage is a data problem — and how AIS, AI, and integrated CTRM '
+  'excerpt': 'Why $15 billion in annual demurrage is a data problem, and how AIS, AI, and integrated CTRM '
              'are finally solving it.',
   'category': 'tech-business',
   'tier': 'premium',
@@ -325,10 +325,10 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
   'published_at': '2026-08-07T02:22:08.669944+00:00',
   'content_blocks': ['“We had 47 vessels at sea, 12 carrying live crude positions, tracked on a spreadsheet '
                      "refreshed twice a day by a port agent's WhatsApp message. When one vessel diverted, we "
-                     'found out three hours later. The position had already moved against us by $800,000.” — '
+                     'found out three hours later. The position had already moved against us by $800,000.”, '
                      'Head of Operations, Major Commodity Trading House',
                      'This is not a small firm problem. This is happening at firms trading millions of '
-                     'barrels and billions of dollars of physical commodity — right now, in 2025.',
+                     'barrels and billions of dollars of physical commodity, right now, in 2025.',
                      'The technology to solve it exists. It is proven and already deployed by the firms '
                      'winning margin wars in physical commodity trading. This article covers what that '
                      'technology stack looks like and what AI is adding to it.',
@@ -336,8 +336,8 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'Poor freight visibility creates direct financial losses in four specific ways.',
                      'Demurrage surprises. Global demurrage costs exceed $15 billion annually. The majority '
                      'of demurrage disputes arise not because the detention happened but because the trading '
-                     'firm did not know it was accruing in real time. By the time the invoice arrives — '
-                     '60–90 days after the event — facts are disputed, documentation is missing, and '
+                     'firm did not know it was accruing in real time. By the time the invoice arrives, '
+                     '60–90 days after the event, facts are disputed, documentation is missing, and '
                      'settlement drags for months.',
                      'Position miscalculation. Traders hold physical positions against paper hedges. If a '
                      'vessel is delayed by three days and the operations team does not know until Day 2, the '
@@ -346,7 +346,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'Documentary non-compliance. Letters of credit have hard deadlines. A bill of lading '
                      'presented one day late results in a bank refusing payment. A certificate of quality '
                      'with incorrect moisture figures triggers a price adjustment or rejection. Freight '
-                     'visibility is not just where the vessel is — it is whether every document is on track '
+                     'visibility is not just where the vessel is, it is whether every document is on track '
                      'to meet its deadline.',
                      'Regulatory exposure. REMIT, CFTC rules, and a growing number of jurisdictions require '
                      'reporting of physical delivery obligations and their fulfilment. Poor freight tracking '
@@ -354,34 +354,34 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      '## The Digital Freight Visibility Stack',
                      'Modern freight visibility is built in five layers. Most firms have some layers '
                      'partially. Very few have all five integrated.',
-                     'Layer 1 — AIS Vessel Tracking. Every commercial vessel broadcasts its position, speed, '
+                     'Layer 1, AIS Vessel Tracking. Every commercial vessel broadcasts its position, speed, '
                      'and destination via AIS every few seconds. Satellite AIS receivers aggregate this into '
-                     'real-time tracking. Commercial providers — Kpler, Vortexa, MarineTraffic, Spire '
-                     'Maritime, Windward — deliver this data via API. Connected to your CTRM shipment '
+                     'real-time tracking. Commercial providers, Kpler, Vortexa, MarineTraffic, Spire '
+                     'Maritime, Windward, deliver this data via API. Connected to your CTRM shipment '
                      'module, vessel ETA updates automatically rather than arriving by phone call from a '
                      'port agent.',
-                     'Layer 2 — Port and Terminal Data. AIS tells you where the vessel is. Port data tells '
-                     'you what is happening at the terminal — berth availability, congestion (vessels at '
+                     'Layer 2, Port and Terminal Data. AIS tells you where the vessel is. Port data tells '
+                     'you what is happening at the terminal, berth availability, congestion (vessels at '
                      'anchor), actual loading and discharge rates. This data flows into the laytime '
                      'calculator, so the operations team knows before the vessel arrives whether it will '
                      'face a berth queue and can begin commercial conversations proactively.',
-                     'Layer 3 — Real-Time Laytime Calculation. Laytime is the agreed period for loading or '
+                     'Layer 3, Real-Time Laytime Calculation. Laytime is the agreed period for loading or '
                      'discharging. Demurrage begins when it expires. A digital laytime engine ingests the '
                      'notice of readiness timestamp, applies charter party terms, receives real-time '
                      'throughput data from the terminal, and shows at any moment during the operation '
-                     'whether the vessel is on laytime, ahead of schedule, or in demurrage — and by how '
+                     'whether the vessel is on laytime, ahead of schedule, or in demurrage, and by how '
                      'much.',
                      'A vessel loading 50,000 MT of crude at a terminal running behind rate accrues '
                      'demurrage at $35,000 per day. Knowing this in real time changes what the operations '
                      'team does next. Finding out on the invoice 60 days later does not.',
-                     'Layer 4 — Document Management and AI Extraction. A single bulk cargo generates 40–80 '
+                     'Layer 4, Document Management and AI Extraction. A single bulk cargo generates 40–80 '
                      'documents across the voyage lifecycle. AI-enhanced OCR and large language models '
-                     'extract structured data from these documents automatically — reading a statement of '
+                     'extract structured data from these documents automatically, reading a statement of '
                      'facts in any port agent format, pulling the NOR tendering time, loading commencement, '
                      'interruptions and reasons, and feeding them directly into the laytime calculation. The '
                      'same technology compares the bill of lading quantity against the confirmed trade '
                      'record and flags discrepancies before the document reaches the bank.',
-                     'Layer 5 — CTRM Integration and the Closed Loop. The first four layers generate freight '
+                     'Layer 5, CTRM Integration and the Closed Loop. The first four layers generate freight '
                      'data. Layer 5 makes it commercially actionable by feeding it back into the CTRM system '
                      'where the trading positions live.',
                      'Trade booked → Voyage nominated → AIS tracks vessel → ETA auto-updated → Laytime '
@@ -391,7 +391,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'When this loop is closed, a cargo flows from trade booking to settlement with minimal '
                      'manual intervention and continuous P&L visibility.',
                      '## Where AI Changes Everything',
-                     'Five AI applications are in production at commodity trading firms today — not in '
+                     'Five AI applications are in production at commodity trading firms today, not in '
                      'pilot, not theoretical.',
                      'AI ETA Prediction. Vessel-reported ETAs are consistently inaccurate. AI models trained '
                      'on historical AIS tracks, port congestion data, weather routing, canal wait times, and '
@@ -401,18 +401,18 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'Demurrage Prediction. AI models trained on historical demurrage claims, port '
                      'congestion patterns, and charter party terms score every shipment for demurrage '
                      'probability before the voyage begins. In a portfolio of 50 active shipments, the model '
-                     'identifies the 8–10 voyages above 70% probability — allowing the team to intervene '
+                     'identifies the 8–10 voyages above 70% probability, allowing the team to intervene '
                      'specifically rather than monitoring all 50 equally.',
                      'LLM Document Extraction. Traditional OCR extracts text. Large language models '
                      'understand context. An LLM trained on commodity trade documents reads a statement of '
                      'facts from any port agent in any format, extracts the laytime events with their '
                      'timestamps, identifies the relevant charter party clauses, and generates a first-draft '
                      'demurrage claim ready for human review. Time from voyage completion to demurrage claim '
-                     'submission: from 4–6 weeks to 3–5 days. The cash flow impact is direct — claims '
+                     'submission: from 4–6 weeks to 3–5 days. The cash flow impact is direct, claims '
                      'submitted earlier have higher acceptance rates.',
                      'Vessel Risk and Sanctions Intelligence. AI-powered vessel risk scoring analyses '
                      'complete AIS history, port call patterns, beneficial ownership chains, flag state '
-                     'risk, and P&I club membership to produce a risk score for every nominated vessel — '
+                     'risk, and P&I club membership to produce a risk score for every nominated vessel, '
                      'integrated into the CTRM deal booking workflow so the screening happens at voyage '
                      'instruction, not after the fixture is concluded.',
                      'Freight Rate Prediction. AI models analysing Baltic Exchange indices, fleet supply in '
@@ -421,21 +421,21 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'whether to use spot or a forward freight agreement, and how to price the freight '
                      'component of a physical commodity offer.',
                      '## What This Means for Your CTRM Platform',
-                     'Vessel tracking — most firms today: port agent WhatsApp / email. What is required: AIS '
+                     'Vessel tracking, most firms today: port agent WhatsApp / email. What is required: AIS '
                      'feed auto-updating CTRM in real time.',
-                     'Laytime calculation — most firms today: post-voyage, Excel, manual. What is required: '
+                     'Laytime calculation, most firms today: post-voyage, Excel, manual. What is required: '
                      'real-time engine from the NOR timestamp.',
-                     'Demurrage accrual — most firms today: 60–90 day invoice lag. What is required: live '
+                     'Demurrage accrual, most firms today: 60–90 day invoice lag. What is required: live '
                      'accrual on daily P&L.',
-                     'Document management — most firms today: email filing, manual entry. What is required: '
+                     'Document management, most firms today: email filing, manual entry. What is required: '
                      'OCR/LLM extraction, auto-reconciled.',
-                     'Position feedback — most firms today: manual outturn entry. What is required: '
+                     'Position feedback, most firms today: manual outturn entry. What is required: '
                      'auto-adjusted from draft survey data.',
-                     'Sanctions screening — most firms today: pre-fixture email check. What is required: '
+                     'Sanctions screening, most firms today: pre-fixture email check. What is required: '
                      'automated vessel risk score at booking.',
                      'Eka, RightAngle, and Endur/OpenLink Logistics all offer freight management modules '
                      'with varying degrees of AIS integration and laytime automation. Veson IMOS is widely '
-                     'used as a dedicated freight platform alongside CTRM — though the integration challenge '
+                     'used as a dedicated freight platform alongside CTRM, though the integration challenge '
                      'between two systems remains the most common point of failure.',
                      '## Where to Start',
                      'Do not try to implement all five layers at once. The sequence matters.',
@@ -447,7 +447,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'sits.',
                      'Months 6–12: Implement OCR document extraction for statements of facts and bills of '
                      'lading. AI enhancement for ETA prediction and demurrage probability scoring.',
-                     'Months 12–24: Close the full loop — outturn feedback to position, automated settlement '
+                     'Months 12–24: Close the full loop, outturn feedback to position, automated settlement '
                      'instructions, regulatory data auto-population, vessel risk screening at deal booking.',
                      'The most important principle: AI on top of clean, structured freight data delivers '
                      'transformation. AI on top of a spreadsheet delivers a more sophisticated spreadsheet. '
@@ -465,7 +465,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
 REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a',
   'title': 'The Shipping Industry Is Sitting on a $15 Billion Problem. And Nobody Is Talking About It '
            'Honestly.',
-  'excerpt': 'Demurrage is not an operational inconvenience — it is a systemic failure of data. The industry '
+  'excerpt': 'Demurrage is not an operational inconvenience, it is a systemic failure of data. The industry '
              'loses up to $15 billion a year to a problem that lives in inboxes and spreadsheets.',
   'category': 'finance',
   'tier': 'free',
@@ -478,18 +478,18 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      'already know but rarely say out loud:',
                      'Demurrage is not an operational inconvenience. It is a systemic failure of data.',
                      'Every year, the global shipping industry loses somewhere between $10 billion and $15 '
-                     'billion to demurrage — the penalty charged when a vessel waits beyond its agreed '
+                     'billion to demurrage, the penalty charged when a vessel waits beyond its agreed '
                      'loading or discharging window. And the vast majority of that loss is not caused by '
                      'port congestion, weather events, or force majeure.',
                      'It is caused by spreadsheets, email chains, and the absence of a single source of '
                      'truth.',
-                     'That needs to change. And in LNG — where the stakes are highest and the complexity is '
-                     'deepest — it needs to change now.',
-                     '## What Demurrage Actually Is — And Why Most People Get It Wrong',
+                     'That needs to change. And in LNG, where the stakes are highest and the complexity is '
+                     'deepest, it needs to change now.',
+                     '## What Demurrage Actually Is: And Why Most People Get It Wrong',
                      'Demurrage is commonly described as a "delay penalty." That framing is wrong, and the '
                      'wrong framing leads to wrong solutions.',
                      'Demurrage is the financial consequence of a contractual time commitment not being '
-                     'honoured. The charter party defines a laytime — the agreed window for loading or '
+                     'honoured. The charter party defines a laytime, the agreed window for loading or '
                      'discharging. When that window is exceeded, demurrage accrues at a daily rate that can '
                      'reach $50,000 to $150,000 per day for LNG carriers.',
                      'The critical distinction: demurrage is a documentation problem before it is a '
@@ -501,7 +501,7 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      'vessel caused the delay.',
                      'Every one of these questions is answered by documents. And in most commodity trading '
                      "organisations today, those documents live in someone's email inbox.",
-                     '## The LNG Dimension — Why This Problem Is 10x More Complex',
+                     '## The LNG Dimension: Why This Problem Is 10x More Complex',
                      'In crude oil or bulk commodities, demurrage is complex. In LNG, it is a different '
                      'category of challenge entirely.',
                      'LNG cargoes move under long-term Sales and Purchase Agreements with embedded '
@@ -521,8 +521,8 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      'The container shipping revolution of the last decade brought us real-time vessel '
                      'tracking, port congestion dashboards, and digital bill of lading pilots. The narrative '
                      'of logistics digitalisation has been loud.',
-                     'But in commodity trading — in the physical movement of crude, LNG, refined products, '
-                     'bulk, and metals — the operational backbone is still email.',
+                     'But in commodity trading, in the physical movement of crude, LNG, refined products, '
+                     'bulk, and metals, the operational backbone is still email.',
                      'The Statement of Facts comes from the port agent by email. The Notice of Readiness is '
                      'attached to an email. The laytime calculation is done in Excel. The demurrage claim is '
                      'assembled manually by an operations analyst who has to read three PDFs, two emails, '
@@ -532,42 +532,42 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      'the document management problem in physical commodity operations is not being solved '
                      'by the current generation of CTRM platforms. It is being worked around.',
                      'That distinction matters enormously.',
-                     "## What Actually Needs to Change — A Practitioner's View",
+                     "## What Actually Needs to Change: A Practitioner's View",
                      'Three things need to happen, and they need to happen in parallel.',
                      'First: demurrage visibility must move from month-end to real-time. Every active cargo '
                      'should have a live laytime clock visible to the operations desk, the trading desk, and '
                      'the risk team simultaneously. When a vessel reports alongside, the laytime window '
                      'opens. When it completes, it closes. The system calculates accruing demurrage '
                      'automatically, against the relevant charter party clause, flagging exceptions as they '
-                     'happen — not three weeks later.',
+                     'happen, not three weeks later.',
                      'This is technically achievable today. The barrier is not technology. It is data '
                      'discipline and organisational will.',
                      'Second: document ingestion must be automated. Statements of Facts, Notices of '
                      'Readiness, port agent reports, and inspection certificates should flow into the CTRM '
-                     "system automatically — not be attached to emails that sit in someone's inbox. AI "
+                     "system automatically, not be attached to emails that sit in someone's inbox. AI "
                      'document processing can extract structured data from these documents with sufficient '
                      'accuracy to trigger workflow actions and flag discrepancies.',
-                     "The demurrage analyst's job should be reviewing exceptions and negotiating claims — "
+                     "The demurrage analyst's job should be reviewing exceptions and negotiating claims, "
                      'not manually comparing two versions of a Statement of Facts line by line.',
                      'Third: the charter party must become a living document in the system. Every laytime '
                      'clause, every exception period, every NOR acceptance window should be encoded in the '
                      'system at the time the charter party is signed. Not summarised in a note. Not left in '
                      'a PDF. Encoded, so the system can apply it automatically when the cargo moves.',
                      'This is the hardest part. It requires discipline at the point of charter party '
-                     'execution — capturing structured data at the right moment rather than trying to '
+                     'execution, capturing structured data at the right moment rather than trying to '
                      'extract it retrospectively. Most organisations do not do this today. The ones that '
                      'start doing it tomorrow will have a structural advantage over those that wait.',
-                     '## The LNG Net-Zero Intersection — A Closing Thought',
+                     '## The LNG Net-Zero Intersection: A Closing Thought',
                      'LNG occupies a complicated position in the energy transition. It is a cleaner-burning '
-                     'hydrocarbon positioned as a bridge fuel. But the methane emissions from LNG shipping — '
-                     'from boil-off gas, from engine emissions, from fugitive leaks — are under increasing '
+                     'hydrocarbon positioned as a bridge fuel. But the methane emissions from LNG shipping, '
+                     'from boil-off gas, from engine emissions, from fugitive leaks, are under increasing '
                      'scrutiny from regulators, counterparties, and investors.',
                      'Demurrage and the energy transition intersect here in a way that is rarely discussed: '
                      'every unnecessary vessel-day of waiting at a terminal is not just a financial cost. It '
                      'is an emissions cost.',
                      'A laden LNG carrier sitting at anchor burning boil-off gas while waiting for a berth '
                      'is emitting. Quantifying that emission, attributing it to the right cargo, and '
-                     'reporting it accurately is going to become a regulatory requirement — not a '
+                     'reporting it accurately is going to become a regulatory requirement, not a '
                      'nice-to-have.',
                      'The organisations that solve their demurrage data problem will also be better '
                      'positioned to solve their Scope 3 emissions accounting problem. The two are not '
@@ -578,7 +578,7 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      'management failure that is costing your organisation real money, every voyage, across '
                      'every commodity.',
                      'The fix is not a new platform. Most organisations already have the platform. The fix '
-                     'is data discipline — entering structured data at the right moment, in the right '
+                     'is data discipline, entering structured data at the right moment, in the right '
                      'format, so the system can do what it was designed to do.',
                      'And in LNG specifically: the complexity of your cargo structure is not an excuse for '
                      'the absence of real-time visibility. It is the reason real-time visibility is '
@@ -607,40 +607,40 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      'waypoints, one group of riders.',
                      '## The Start: 6:30 AM. Engine On. Mind Clear.',
                      "There's something quietly radical about choosing to start your day before the city "
-                     'wakes up. On the morning of June 6th, our group left Pune at 6:30 AM on our own rides '
-                     '— no cab aggregators, no autopilot, each of us responsible for our own journey while '
+                     'wakes up. On the morning of June 6th, our group left Pune at 6:30 AM on our own rides, '
+                     'no cab aggregators, no autopilot, each of us responsible for our own journey while '
                      'riding as one unit.',
                      "The mission was precise: cover half of the 170 km route by 9:30 AM. That's a project "
-                     "manager's constraint right there — a hard checkpoint, a shared destination, individual "
+                     "manager's constraint right there, a hard checkpoint, a shared destination, individual "
                      'accountability. In a world of endless async work and blurry timelines, there was '
                      'something deeply satisfying about a goal this clear.',
                      '## The Ride: A Machine That Asks You to Commit',
-                     'My ride was a Royal Enfield Classic 350 — metallic green, sturdy, accessorised with '
+                     'My ride was a Royal Enfield Classic 350, metallic green, sturdy, accessorised with '
                      "purpose, and admittedly, a little heavy. This was the first time I'd ridden this "
                      'particular machine, and it asked something of me immediately: adjustment, respect, and '
                      'full attention.',
                      "There's a product metaphor hiding in plain sight. Every new platform, every unfamiliar "
                      "ETRM system, every freshly inherited codebase asks the same thing of us. You don't "
-                     'dominate it from day one — you listen to it, understand its weight and balance, and '
+                     'dominate it from day one, you listen to it, understand its weight and balance, and '
                      'then you ride.',
                      'Metallic green. Strong and sturdy silhouette. Accessories done right. A little heavy '
-                     'for a first-timer — but that weight is also what keeps you grounded at speed. First '
+                     'for a first-timer, but that weight is also what keeps you grounded at speed. First '
                      'time on this bike. It was absolutely worth it.',
                      '## The Leadership Lens: What the Open Road Reveals About Product Leadership',
                      'Group riding is a masterclass in orchestrating without over-controlling. You set the '
-                     'pace. You signal your turns. You check your mirrors constantly — not out of fear, but '
+                     'pace. You signal your turns. You check your mirrors constantly, not out of fear, but '
                      'out of collective responsibility. Nobody accelerates recklessly, because your actions '
                      'have consequences for everyone riding behind you.',
-                     'In my years as a Senior ETRM/CTRM Product Manager — across Endur, RightAngle, Eka, '
-                     "Triple Point — I've come to believe that the best product leads operate like "
+                     'In my years as a Senior ETRM/CTRM Product Manager, across Endur, RightAngle, Eka, '
+                     "Triple Point, I've come to believe that the best product leads operate like "
                      'experienced lead riders. They establish momentum early, communicate lane changes '
                      'clearly, and never mistake speed for progress.',
-                     'The checkpoint logic — cover half by 9:30 AM — is how I think about product sprints. '
+                     'The checkpoint logic, cover half by 9:30 AM, is how I think about product sprints. '
                      'Break the journey. Validate position. Adjust and continue.',
                      '"The road doesn\'t reward the fastest rider. It rewards the one who reads conditions '
                      'early, holds steady, and arrives with the group intact."',
                      '## The Deeper Lesson: Momentum Is a Practice, Not a Destination',
-                     "Babe Ghaat wasn't just a coordinate on a map. It was a moment of arrival — earned mile "
+                     "Babe Ghaat wasn't just a coordinate on a map. It was a moment of arrival, earned mile "
                      'by mile, village by village (Dhanep, Kuran, Malkhed), each waypoint a reminder that '
                      'long journeys are really just a series of smaller, well-executed commitments.',
                      'In commodity trading and risk management, we talk endlessly about volatility, P&L '
@@ -653,13 +653,13 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
                      "If you're a product leader, a consultant, or simply someone navigating a complex "
                      "system at speed, I'd love to hear what rituals help you find your clarity. The road, "
                      'the journal, the morning ride: we all have our version of it.',
-                     "And if you're ever on the Pune–Babe Ghaat route on a Royal Enfield, you already know "
+                     "And if you're ever on the Pune, Babe Ghaat route on a Royal Enfield, you already know "
                      "exactly what I'm talking about."]}]
 
 REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifecycle-design-and-why-agile',
   'title': 'Delivering a Power Trading Desk: System Compliance, Lifecycle Design, and Why Agile/SAFe '
            'Changes the Economics',
-  'excerpt': 'Compliance is not a phase you add at the end — it is a property of every design decision from '
+  'excerpt': 'Compliance is not a phase you add at the end, it is a property of every design decision from '
              'sprint one. What twelve years of ETRM delivery teaches about building the systems behind a '
              'power desk.',
   'category': 'delivery',
@@ -670,12 +670,12 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
   'edition': None,
   'content_blocks': [
     'Most articles about power trading explain the trade lifecycle. Far fewer explain how you actually '
-    'build the systems that run it — and almost none address the thing that quietly determines whether a '
+    'build the systems that run it, and almost none address the thing that quietly determines whether a '
     'power desk implementation succeeds or drags into its third year: compliance is not a phase you add '
     'at the end. It is a property of every design decision you make from sprint one.',
     'I have spent twelve years delivering ETRM and CTRM programmes across Oil & Gas, LNG, Metals, Agro, '
-    'and Power. Power is the hardest of them. Not because the instruments are more complex — metals '
-    'concentrate contracts are arguably worse — but because power is the only commodity where the '
+    'and Power. Power is the hardest of them. Not because the instruments are more complex, metals '
+    'concentrate contracts are arguably worse, but because power is the only commodity where the '
     'physical delivery obligation, the regulatory reporting obligation, and the financial settlement '
     'obligation all run on different clocks, and all three must be satisfied simultaneously, every hour, '
     'without exception.',
@@ -688,18 +688,18 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'simultaneously. Every practitioner knows this sentence. Far fewer trace it through to its delivery '
     'consequences. Here is what non-storability actually does to your implementation scope:',
     'Your system has a hard external deadline every single day. Day-ahead nominations must reach the ISO '
-    'by a fixed clock time — typically noon the day before the operating day. If your scheduling module '
+    'by a fixed clock time, typically noon the day before the operating day. If your scheduling module '
     'is down at 11:45, you do not have a defect; you have a commercial exposure and potentially an ISO '
     'compliance event. Compare this with a crude cargo, where a nomination sent four hours late is an '
     'operational annoyance resolved by a phone call.',
     'Your position is time-granular in a way other commodities are not. An oil position can be '
-    'meaningfully expressed as a monthly volume. A power position cannot. Shape risk — the price '
-    'difference across hours of the day and across seasons — means the position must be held, valued, '
+    'meaningfully expressed as a monthly volume. A power position cannot. Shape risk, the price '
+    'difference across hours of the day and across seasons, means the position must be held, valued, '
     'and risk-managed at hourly or sub-hourly granularity. A data model that treats a power trade like a '
     'monthly forward will fail its first shaped deal, and you will discover this in UAT rather than '
     'design.',
-    'Your settlement inputs arrive from a third party you cannot control. ISO settlement statements — '
-    'with hourly LMPs, metered quantities, uplift and ancillary service charges — arrive on the ISO\'s '
+    'Your settlement inputs arrive from a third party you cannot control. ISO settlement statements, '
+    'with hourly LMPs, metered quantities, uplift and ancillary service charges, arrive on the ISO\'s '
     'timetable, in the ISO\'s format, subject to the ISO\'s resettlement rules. Your invoicing module is '
     'downstream of a data feed that will change format, restate historical periods, and occasionally '
     'arrive late. Design for that, or build a permanent manual reconciliation team by accident.',
@@ -721,14 +721,14 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'and workflow problem before it is a reporting problem.',
     '2. Immutability and audit trail. SOX and FERC both require that you can reconstruct what the system '
     'knew, and when. This means append-only event logging on trade amendments, price curve versions, '
-    'limit changes, and approval decisions — not just a "last modified by" column. Retrofitting audit '
+    'limit changes, and approval decisions, not just a "last modified by" column. Retrofitting audit '
     'trail onto a system that overwrites records is one of the most expensive changes you can make late '
     'in a programme.',
     '3. Segregation of duties, enforced in the system. The person who books the trade cannot be the '
     'person who approves it, who cannot be the person who releases the payment. This has to be enforced '
     'by role-based access control and workflow routing, not by policy documents. Auditors will test it '
     'by attempting the prohibited action.',
-    '4. Timeliness with evidence. Meeting a deadline is necessary but insufficient — you must be able to '
+    '4. Timeliness with evidence. Meeting a deadline is necessary but insufficient, you must be able to '
     'prove you met it. Submission timestamps, acknowledgement receipts from the trade repository or ISO, '
     'and exception handling for rejected submissions all need to be first-class features with their own '
     'screens and reports, not log-file archaeology.',
@@ -741,21 +741,21 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'compliance debt it has not yet priced.',
     '## Part 3: The Lifecycle as Delivery Scope',
     'Here is the seven-stage power trade lifecycle, translated from a domain description into what it '
-    'actually means for a delivery team — the system capability required, the compliance control that '
+    'actually means for a delivery team, the system capability required, the compliance control that '
     'must be embedded, and where implementations most often go wrong.',
-    '## Stage 1 — Trade Origination and Deal Structuring',
+    '## Stage 1: Trade Origination and Deal Structuring',
     'System capability: Counterparty master with credit limits and legal agreement references (ISDA, '
     'EEI, NAESB) linked at the entity level. Deal type templates for physical forwards, financial swaps, '
-    'day-ahead, real-time, capacity, options, and tolling agreements — each with its own field set and '
+    'day-ahead, real-time, capacity, options, and tolling agreements, each with its own field set and '
     'validation rules.',
-    'Compliance control: Counterparty onboarding gate — no trade can be booked against a counterparty '
+    'Compliance control: Counterparty onboarding gate, no trade can be booked against a counterparty '
     'without an executed master agreement reference, a credit limit, and a completed sanctions and KYC '
     'check recorded in the system.',
     'Where it goes wrong: Teams build one generic "power deal" template and try to configure the seven '
     'deal types as variations. Tolling agreements and capacity products break this model almost '
     'immediately because their economics are not volumetric in the same way. Model the deal types as '
     'distinct from the start.',
-    '## Stage 2 — Pricing and Valuation',
+    '## Stage 2: Pricing and Valuation',
     'System capability: Forward curve construction from exchange settlements and broker quotes, with '
     'hourly shaping factors. Support for fixed, index, basis, heat rate, and spark spread pricing '
     'methods. Daily mark-to-market using EOD curves, with unrealised P&L tracked against original deal '
@@ -764,10 +764,10 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'must be immutably retrievable, with a record of who approved it. This is the single most common '
     'finding in trading system audits.',
     'Where it goes wrong: Underestimating locational granularity. In an ISO market, LMP resolves at '
-    'every node — energy component plus congestion component plus loss component. A curve library built '
+    'every node, energy component plus congestion component plus loss component. A curve library built '
     'at hub level cannot value a nodal position, and basis risk becomes invisible to the risk system. '
     'This is not a reporting gap; it is a risk management failure.',
-    '## Stage 3 — Deal Capture and Legal Documentation',
+    '## Stage 3: Deal Capture and Legal Documentation',
     'System capability: Straight-through capture from execution venues where possible, with structured '
     'entry covering trade economics, delivery details (node, path, profile), and counterparty data. '
     'Electronic confirmation via ICE eConfirm, DTCC, or equivalent, with affirmation status tracked and '
@@ -777,7 +777,7 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'Where it goes wrong: Treating confirmation as a back-office batch process rather than a monitored '
     'workflow. A confirmation backlog is a settlement risk and a regulatory exposure, and it grows '
     'silently until month-end.',
-    '## Stage 4 — Risk Management',
+    '## Stage 4: Risk Management',
     'System capability: VaR and Expected Shortfall at 95 and 99 percent confidence. Greeks for the '
     'options book. Position limits by commodity, region, and tenor with live utilisation. Basis VaR for '
     'hub-to-node spreads. Shape analysis at hourly granularity. Credit exposure decomposed into current '
@@ -788,7 +788,7 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'Where it goes wrong: Building market risk and credit risk as separate systems with separate '
     'position sources. When the credit team\'s exposure number cannot be reconciled to the risk team\'s '
     'position, neither is trusted, and both get shadowed in spreadsheets.',
-    '## Stage 5 — Scheduling and Nominations',
+    '## Stage 5: Scheduling and Nominations',
     'System capability: Day-ahead, hour-ahead, and real-time scheduling workflows aligned to ISO clock '
     'deadlines. e-Tag creation and management through OATI or equivalent. Transmission reservation '
     'tracking against OASIS, distinguishing firm from non-firm and point-to-point from network service. '
@@ -797,34 +797,34 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'deadline" but "it is 11:15 and three schedules are unsubmitted." Uninstructed deviation tracking '
     'with root cause tagging, because the ISO will charge for them and Finance will ask why.',
     'Where it goes wrong: This is the stage most commonly under-scoped by teams whose experience is in '
-    'oil or gas. Scheduling is not a downstream administrative function in power — it is a real-time '
+    'oil or gas. Scheduling is not a downstream administrative function in power, it is a real-time '
     'operational system with hard external deadlines, 24/7 coverage requirements, and direct financial '
     'consequence. Budget it accordingly.',
-    '## Stage 6 — Settlements and Invoicing',
+    '## Stage 6: Settlements and Invoicing',
     'System capability: Ingestion of ISO settlement statements, meter data, counterparty invoices, index '
     'publications, and transmission invoices. Invoice calculation supporting fixed, index, and '
     'formula-priced deals. Dispute workflow with the undisputed-portion-pays rule embedded. ISO '
     'settlement reconciliation comparing scheduled to metered to settled quantities.',
-    'Compliance control: Dispute ageing against the contractual cure period — typically thirty days '
-    'under EEI or ISDA — with escalation before the window closes. Missing an ISO dispute window is a '
+    'Compliance control: Dispute ageing against the contractual cure period, typically thirty days '
+    'under EEI or ISDA, with escalation before the window closes. Missing an ISO dispute window is a '
     'permanent loss.',
     'Where it goes wrong: Building the invoice engine before understanding resettlement. ISOs restate '
     'prior periods. If your system cannot reprocess a settled month against a restated statement and '
     'generate the delta without breaking the GL, you will be doing it manually for years.',
-    '## Stage 7 — Payment and Financial Accounting',
+    '## Stage 7: Payment and Financial Accounting',
     'System capability: Bilateral and multilateral netting. Payment instruction generation with SSI '
     'management and dual authorisation. Collateral tracking against CSA thresholds including cash, '
     'letters of credit, and guarantees. GL posting with hedge accounting support under ASC 815 or IFRS '
     '9, and NPNS designation for qualifying physical contracts.',
     'Compliance control: Four-eyes payment release, enforced by the system, with the approver unable to '
-    'be the originator. Hedge documentation retained and linked to the designated hedge relationship — '
+    'be the originator. Hedge documentation retained and linked to the designated hedge relationship, '
     'auditors will ask for the contemporaneous documentation.',
     'Where it goes wrong: NPNS and hedge accounting treated as a Finance concern raised in month nine. '
     'The designation affects data capture at the point of trade entry. It belongs in the Stage 3 data '
     'model.',
     '## Part 4: Why Waterfall Fails a Power Desk Build',
     'I want to be careful here, because "waterfall bad, agile good" is a lazy argument and often wrong. '
-    'Waterfall works perfectly well for a stable, well-understood scope — a metals concentrate module '
+    'Waterfall works perfectly well for a stable, well-understood scope, a metals concentrate module '
     'against a contract template that has not changed in a decade, for example. Power is not that. Three '
     'characteristics make sequential delivery structurally unsuitable.',
     'ISO rules change during your programme. Market rule filings, tariff amendments, and settlement '
@@ -840,24 +840,24 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'surfaced.',
     'The desk cannot wait for a big bang. A power desk being stood up has commercial pressure to start '
     'trading. A delivery model that produces nothing usable for nine months forces the business to '
-    'trade on spreadsheets in the interim — and those spreadsheets become entrenched, creating a '
+    'trade on spreadsheets in the interim, and those spreadsheets become entrenched, creating a '
     'parallel shadow system you then have to decommission.',
     '## Part 5: Agile and SAFe for a Power Desk Setup',
-    'For a single-team enhancement, Scrum is sufficient. For standing up a power desk — which touches '
+    'For a single-team enhancement, Scrum is sufficient. For standing up a power desk, which touches '
     'front office, risk, scheduling, back office, finance, compliance, and multiple external '
-    'integrations simultaneously — you have a multi-team coordination problem, and this is where SAFe '
+    'integrations simultaneously, you have a multi-team coordination problem, and this is where SAFe '
     'earns its keep.',
     '## The Agile Release Train',
     'Structure the programme as a single ART with five to seven teams, aligned to value streams rather '
     'than technical layers:',
-    'Trade Capture and Front Office Team — deal types, pricing, curve management, position views. '
-    'Risk Team — VaR, limits, credit exposure, P&L Explain, stress and scenario capability. '
-    'Scheduling and Operations Team — the highest-risk team on the programme: ISO integration, e-Tag '
+    'Trade Capture and Front Office Team, deal types, pricing, curve management, position views. '
+    'Risk Team, VaR, limits, credit exposure, P&L Explain, stress and scenario capability. '
+    'Scheduling and Operations Team, the highest-risk team on the programme: ISO integration, e-Tag '
     'management, transmission reservations, real-time workflows. '
-    'Settlements and Finance Team — ISO statement ingestion, invoicing, disputes, GL, hedge accounting. '
-    'Integration and Data Team — the ETRM to ISO portal to market data to GL interfaces, plus the '
+    'Settlements and Finance Team, ISO statement ingestion, invoicing, disputes, GL, hedge accounting. '
+    'Integration and Data Team, the ETRM to ISO portal to market data to GL interfaces, plus the '
     'analytics layer.',
-    'Compliance and Controls Team — sometimes a full team, sometimes a role embedded across teams. Owns '
+    'Compliance and Controls Team, sometimes a full team, sometimes a role embedded across teams. Owns '
     'regulatory reporting, audit trail, segregation of duties, and evidence generation. My strong '
     'preference is a dedicated team, because when compliance is everyone\'s part-time responsibility it '
     'becomes nobody\'s.',
@@ -867,7 +867,7 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'A regulatory horizon review at every PI planning. Standing agenda item: what has FERC filed, what '
     'has the ISO announced, what CFTC guidance has been issued, and what does it mean for the next '
     'increment? This converts regulatory change from an emergency into a planned input.',
-    'Compliance acceptance criteria on every feature. Not a separate compliance epic — acceptance '
+    'Compliance acceptance criteria on every feature. Not a separate compliance epic, acceptance '
     'criteria on the features themselves. A trade capture feature is not done unless the audit trail is '
     'written, the segregation-of-duties rule is enforced, and the reportable-event flag is set '
     'correctly.',
@@ -878,22 +878,22 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'Two-week sprints work for most teams on the train. The scheduling and operations team often '
     'benefits from a shorter cycle during ISO integration work, because feedback from connectivity '
     'testing arrives faster than a fortnight.',
-    'Run a system demo every increment with the actual desk — traders, schedulers, back office analysts '
-    '— not with their managers. The person who will type the nomination at 11:40 will find in ten '
+    'Run a system demo every increment with the actual desk, traders, schedulers, back office analysts, '
+    'not with their managers. The person who will type the nomination at 11:40 will find in ten '
     'minutes what a steering committee will not find in ten weeks.',
     'What SAFe buys you specifically here: the honest answer is not "faster delivery." It is earlier '
     'discovery of expensive problems and structural absorption of regulatory change. On a power desk '
     'build those are the two things that determine whether you land within budget.',
-    '## Part 6: Business Scenarios — What This Looks Like in Delivery',
+    '## Part 6: Business Scenarios: What This Looks Like in Delivery',
     'Abstractions are easy. Here are five scenarios drawn from the shape of real programmes, expressed '
     'as they would actually arrive at a delivery team.',
     '## Scenario 1: The Shaped Deal That Breaks the Data Model',
-    'The situation. Sprint six. The desk books a shaped physical forward — 50 MW peak, 20 MW off-peak, '
+    'The situation. Sprint six. The desk books a shaped physical forward, 50 MW peak, 20 MW off-peak, '
     'weekdays only, across a summer month. The position engine returns a single monthly volume. Risk '
     'reports a flat position. The trader says the number is wrong.',
     'What actually happened. The trade model stores volume as a monthly quantity with a profile label '
-    'rather than an hourly volume vector. Every downstream calculation — MTM, VaR, shape risk, '
-    'scheduling quantity — inherits the same flaw.',
+    'rather than an hourly volume vector. Every downstream calculation, MTM, VaR, shape risk, '
+    'scheduling quantity, inherits the same flaw.',
     'The delivery response. This is not a bug fix; it is a data model change touching every team on the '
     'train. In a sequential programme discovered at UAT, it is a catastrophe. Discovered in sprint six '
     'through a system demo with an actual trader, it is a painful but survivable refactor, absorbed '
@@ -924,27 +924,27 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'testable performance budget.',
     'The delivery response. Non-functional requirements for a power desk must be expressed as '
     'clock-time budgets tied to external deadlines, and load-tested at realistic portfolio scale from '
-    'the first increment that touches scheduling. Add a manual fallback procedure and test it — because '
+    'the first increment that touches scheduling. Add a manual fallback procedure and test it, because '
     'on the day the system is slow, the desk still has to nominate.',
     'Scenario extension worth planning for. What happens if the ISO portal itself is unavailable at '
     '11:50? Your runbook, not your system, answers that. Write it during delivery, not after the first '
     'incident.',
     '## Scenario 4: The Reconciliation Nobody Owned',
     'The situation. Post go-live, month two. Finance reports that settled cash does not reconcile to '
-    'invoiced amounts on roughly four percent of hours. Investigation reveals uninstructed deviations — '
-    'actual delivered volume differing from scheduled volume — generating ISO uplift charges that were '
+    'invoiced amounts on roughly four percent of hours. Investigation reveals uninstructed deviations, '
+    'actual delivered volume differing from scheduled volume, generating ISO uplift charges that were '
     'never allocated to a trading book.',
     'Root cause in delivery terms. The scheduling team built schedule-versus-tag reconciliation. The '
     'settlements team built invoice-versus-ISO-statement reconciliation. Nobody built '
     'schedule-versus-metered, because it sat in the seam between two teams\' backlogs.',
-    'The prevention. Explicitly map the full reconciliation chain — scheduled to tagged to metered to '
-    'settled to invoiced to posted — as a single feature with a single owner, at PI planning, before '
+    'The prevention. Explicitly map the full reconciliation chain, scheduled to tagged to metered to '
+    'settled to invoiced to posted, as a single feature with a single owner, at PI planning, before '
     'any team starts building any part of it. Seams between teams are where compliance gaps live.',
     '## Scenario 5: The Audit That Arrives Early',
     'The situation. Internal audit requests, three months post go-live, a complete trace of one '
     'specific trade: execution through confirmation, risk capture, scheduling, delivery, settlement, '
     'payment, and GL posting, with timestamps and approver identity at every control point.',
-    'The good outcome. A report exists. It was built as a feature — "trade lifecycle audit trace" — '
+    'The good outcome. A report exists. It was built as a feature, "trade lifecycle audit trace", '
     'because someone put it in the backlog during design, not because a developer wrote a SQL query at '
     'midnight.',
     'The bad outcome. Three analysts spend two weeks assembling it from six systems, and the resulting '
@@ -978,7 +978,7 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     '6. Limit breach acknowledgement workflow with dispositioning. '
     '7. Nomination deadline pre-emptive alerting, not post-hoc detection. '
     '8. Uninstructed deviation capture with root cause tagging and book allocation. '
-    '9. Full reconciliation chain — scheduled, tagged, metered, settled, invoiced, posted — as one '
+    '9. Full reconciliation chain, scheduled, tagged, metered, settled, invoiced, posted, as one '
     'owned feature. '
     '10. ISO resettlement reprocessing without GL corruption.',
     '11. Dispute ageing against contractual cure periods with pre-expiry escalation. '
@@ -990,7 +990,7 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'is real and unpriced.',
     '## Conclusion',
     'The power trade lifecycle is well documented as a domain process. What is less well documented is '
-    'that delivering the systems behind it is a distinct discipline — one where the hardest problems '
+    'that delivering the systems behind it is a distinct discipline, one where the hardest problems '
     'are not the pricing models but the seams: between teams, between systems, between the ISO\'s clock '
     'and yours, and between what the design document said and what the desk actually does at 11:40 on a '
     'Tuesday.',
@@ -1001,8 +1001,8 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
     'change during your programme, because the genuinely expensive requirements are the ones nobody '
     'could have written down in month one, and because the desk needs something usable long before '
     'month twelve.',
-    'Get those two things right — compliance embedded in design, and a delivery cadence that absorbs '
-    'change rather than resisting it — and the rest of a power desk build becomes an engineering '
+    'Get those two things right, compliance embedded in design, and a delivery cadence that absorbs '
+    'change rather than resisting it, and the rest of a power desk build becomes an engineering '
     'problem rather than an existential one.',
     'Anish Pujari is a Senior ETRM/CTRM Product Manager and Consultant with over 12 years delivering '
     'front-to-back commodity trading platforms across Oil & Gas, Power, LNG, Metals, and Agro. '
@@ -1011,7 +1011,7 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
 
 REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelters-paying-miners',
   'title': "Oil's Sharp Slide, OPEC+ Completes the Rollback, and Smelters Paying Miners",
-  'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation — in 5 minutes. '
+  'excerpt': 'Your Wednesday briefing on trading technology, markets, risk and regulation, in 5 minutes. '
              'Edition #2 of The Trading Narrative.',
   'category': 'finance',
   'tier': 'free',
@@ -1021,19 +1021,19 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
   'edition': 2,
   'published_at': '2026-08-08T17:30:00.000000+00:00',
   'content_blocks': [
-    'Welcome back to The Trading Narrative — sharp narratives on markets, technology, and the systems behind the desk.',
+    'Welcome back to The Trading Narrative, sharp narratives on markets, technology, and the systems behind the desk.',
     "What a week to be running a risk book. Crude gave back a big chunk of July's rally in a matter of days, "
     'OPEC+ quietly closed a chapter that began in 2023, and in copper concentrates the world has turned upside '
-    'down — smelters are now paying miners in some spot deals. Meanwhile, the CFTC is asking whether energy '
+    'down, smelters are now paying miners in some spot deals. Meanwhile, the CFTC is asking whether energy '
     "futures should trade 24/7. If your ETRM's end-of-day batch assumes markets close, that question just got "
     "personal. Let's get into it.",
-    '## 🛢️ Oil & Gas — geopolitical premium deflates fast: Brent tracks toward a roughly 8% weekly loss',
+    '## 🛢️ Oil & Gas: geopolitical premium deflates fast: Brent tracks toward a roughly 8% weekly loss',
     'Brent slid to the $83–84/bbl area early this week, dropping about 5% on Monday alone after President Trump '
     'announced that peace talks with Iran would resume following a cancelled military strike. That unwinds much '
     "of July's 20%+ surge, though residual Strait of Hormuz and Red Sea disruption risk is still putting a floor "
     'under prices.',
-    "On the supply side, OPEC+'s seven core members agreed on August 2 to raise September output by ~188,000 bpd "
-    '— completing the rollback of the 1.65 million bpd voluntary cuts from 2023, with a pause expected '
+    "On the supply side, OPEC+'s seven core members agreed on August 2 to raise September output by ~188,000 bpd, "
+    'completing the rollback of the 1.65 million bpd voluntary cuts from 2023, with a pause expected '
     'thereafter. For trading and risk teams: this is a textbook week for stress-testing event-driven gap risk. '
     'A 5% single-day move on a headline is exactly the scenario where intraday VaR, margin calls, and hedge '
     'rebalancing collide. And with analysts projecting a 2026 surplus, the skew of risk has shifted from supply '
@@ -1043,73 +1043,73 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
     'while LNG feedgas eased to 17.2 Bcf/d on Freeport maintenance. Henry Hub hovered near $2.78/MMBtu.',
     'Sources: Reuters via Trading Economics; Bloomberg; Rigzone; Egypt Oil & Gas; EIA Natural Gas Weekly Update; '
     'Forbes Advisor.',
-    "## ⛏️ Metals — copper's split personality: record-tight concentrates, firm exchange prices",
+    "## ⛏️ Metals: copper's split personality: record-tight concentrates, firm exchange prices",
     'Copper finished last week up about 2% (and roughly 4% on the month), trading around $6.45–6.52/lb on COMEX, '
     'supported by the Fed holding rates steady. But the real story is upstream: spot copper concentrate TC/RCs '
-    'have fallen so far that some deals have turned negative — smelters effectively paying miners for the right '
+    'have fallen so far that some deals have turned negative, smelters effectively paying miners for the right '
     'to process ore. Chinese-led smelting capacity is expanding faster than mine supply, handing miners '
     'extraordinary leverage. Smelter margins are being propped up by gold and sulfuric acid by-product credits '
     'and record refined premiums well into the $300/t range.',
-    'For CTRM teams, negative TC/RCs are more than a market curiosity — plenty of concentrates pricing logic, '
+    'For CTRM teams, negative TC/RCs are more than a market curiosity, plenty of concentrates pricing logic, '
     'contract templates, and P&L attribution models were never built to handle a sign flip on treatment charges. '
     'If your system hard-codes TC/RC as a deduction, now is the time to test it.',
     'Sources: Trading Economics; Fastmarkets; Benchmark Mineral Intelligence; Critical Minerals News.',
-    '## ⚙️ ETRM/CTRM — agentic AI moves from slideware to workflow, and the vendor race is on',
+    '## ⚙️ ETRM/CTRM: agentic AI moves from slideware to workflow, and the vendor race is on',
     "Commodity Technology Advisory's updated AI report (published July 22) finds workflow automation emerging as "
     'the most prominent agentic AI use case across energy and commodities, with vendors at very different stages '
     'of maturity and adoption still hampered by data-quality and governance concerns. Challenger platforms like '
     'CTRM Next are explicitly marketing AI-native, modular architectures at roughly half the cost of legacy '
-    "CTRMs — a direct shot at the installed base of ION's four consolidated franchises (Endur, Allegro, "
+    "CTRMs, a direct shot at the installed base of ION's four consolidated franchises (Endur, Allegro, "
     'RightAngle, Aspect). The product-management takeaway: the AI conversation in ETRM has shifted from "can it '
     'summarize my confirms" to "can an agent run my end-of-day exceptions queue." Buyers should be asking '
-    'vendors for demonstrable agentic workflows in production, not roadmap slides — and asking themselves '
+    'vendors for demonstrable agentic workflows in production, not roadmap slides, and asking themselves '
     'whether their data foundation can support any of it.',
     'Sources: CTRM Center; Commodity Technology Advisory; Phlo Systems.',
-    '## ⚖️ Regulatory — 24/7 energy futures? CFTC extends the comment clock to August 26',
+    '## ⚖️ Regulatory: 24/7 energy futures? CFTC extends the comment clock to August 26',
     'The CFTC extended its public comment deadline to August 26 on two potentially structural changes: extending '
     'standard futures contracts to 24/7 trading and listing energy commodity perpetual contracts. On July 30 it '
     'also published a proposed rulemaking amending Parts 37, 38, and 39 (DCMs, SEFs, DCOs) plus regulations 1.52 '
     'and 1.55, with a 60-day comment window. Across the Atlantic, ACER opened a consultation on energy '
-    'derivative reporting under REMIT — a proposed new annex to the trade reporting framework — closing '
+    'derivative reporting under REMIT, a proposed new annex to the trade reporting framework, closing '
     'September 11.',
     'If 24/7 trading advances, the operational implications for ETRM landscapes are enormous: end-of-day '
     'snapshots, margin cycles, batch valuation runs, and even the concept of a "trade date" all assume a market '
     'close. Risk and IT leads should be scoping this now, not after a final rule.',
     'Sources: CFTC.gov; Gibson Dunn Derivatives Weekly Update (July 31, 2026); CTRM Center; ACER.',
-    '## 🛡️ Compliance IT & Risk — 69% of firms expect AI to create compliance problems within 12 months',
+    '## 🛡️ Compliance IT & Risk: 69% of firms expect AI to create compliance problems within 12 months',
     'A striking stat from RegTech Analyst this week: 69% of surveyed firms believe accelerating AI use will lead '
     'to compliance issues in the next year. At the same time, 58% of US firms report difficulty integrating '
-    'trade surveillance with e-comms monitoring — the perennial gap regulators keep probing. The RegTech market '
+    'trade surveillance with e-comms monitoring, the perennial gap regulators keep probing. The RegTech market '
     'itself is forecast to grow from ~$29.3bn in 2026 to over $112bn by 2033, driven by continuous-compliance '
     'platforms and real-time monitoring. The irony for compliance leaders: AI is simultaneously the biggest '
     'emerging risk and the leading candidate to manage it. The firms getting this right are treating AI '
-    'governance as a control framework — model inventories, human-in-the-loop checkpoints, audit trails — not a '
+    'governance as a control framework, model inventories, human-in-the-loop checkpoints, audit trails, not a '
     'policy PDF. Expect surveillance RFPs to start scoring vendors on explainability as heavily as detection '
     'rates.',
     'Sources: RegTech Analyst; FinTech Global; A-Team Insight; openPR/ResearchAndMarkets.',
-    '## 🌾 Ags — grains firm into the August 12 USDA report; wheat leads on Black Sea risk',
+    '## 🌾 Ags: grains firm into the August 12 USDA report; wheat leads on Black Sea risk',
     'CBOT September wheat settled around 651¢/bu Monday, up from ~639¢ at Friday\'s close, with September corn '
     'near 449¢ (up ~8–9¢) and August soybeans easing slightly to ~1,169¢. Wheat is drawing support from strong '
-    'export demand and renewed Black Sea disruption — Ukrainian strikes have kept Russian shipments out of the '
-    'Azov Sea — while the US harvest is roughly three-quarters complete after rain delays in Texas. Soybeans '
+    'export demand and renewed Black Sea disruption, Ukrainian strikes have kept Russian shipments out of the '
+    'Azov Sea, while the US harvest is roughly three-quarters complete after rain delays in Texas. Soybeans '
     'found support from a 9.3-million-bushel flash sale to unknown destinations for 2026-27 delivery, widely '
     'read as Chinese buying.',
     "All eyes now turn to August 12, when USDA releases its first survey-based 2026 corn yield estimate. With "
     "June's cool, wet Midwest weather flipping to hot and dry in July across the Northern Plains and western "
-    'Corn Belt, yield uncertainty is unusually high — a setup for volatility around the report.',
+    'Corn Belt, yield uncertainty is unusually high, a setup for volatility around the report.',
     'Sources: USDA AMS; Price Futures Group Grains Report (Aug 3); Farm Progress; Pro Farmer.',
     '## 🎯 Three Signals to Watch',
     "1. OPEC+'s pause and the 2027 baseline fight. September's 188k bpd hike completes the voluntary-cut "
     'rollback; the group now heads into a capacity review that sets 2027 baselines, with Iraq and others pushing '
     'for bigger quotas. Watch for cohesion cracks.',
     "2. CFTC's August 26 comment deadline on 24/7 futures and perpetuals. The responses will reveal how "
-    'seriously exchanges and FCMs are taking round-the-clock energy trading — and how unprepared most '
+    'seriously exchanges and FCMs are taking round-the-clock energy trading, and how unprepared most '
     'middle/back-office stacks are.',
     "3. USDA's August 12 crop production report. The first survey-based corn yield of 2026 lands into a market "
     'with unusually wide yield uncertainty. Position accordingly.',
-    "Enjoyed this edition? Subscribe so next Wednesday's briefing lands in your inbox — and find the full "
+    "Enjoyed this edition? Subscribe so next Wednesday's briefing lands in your inbox, and find the full "
     'archive, essays, and premium narratives at thetradingnarrative.com. Which story matters most to your desk '
     'this week? Your take might feature in the next edition.',
     'Written by Anish Pujari, Senior ETRM/CTRM Product Manager, Pune. Views are my own. Nothing here is trading, '
-    'investment, or legal advice — always verify prices and regulatory details against primary sources before '
+    'investment, or legal advice, always verify prices and regulatory details against primary sources before '
     'acting.']}]

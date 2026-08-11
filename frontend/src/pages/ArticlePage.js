@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight, Flame, Trophy, CalendarClock } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { Helmet } from "react-helmet-async";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
@@ -26,54 +27,47 @@ const Paywall = ({ post }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // ACCESS MODEL: logged-out visitors see no essay content — invite them to sign in
-  if (post.signin_required) {
-    const isFree = post.tier !== "premium";
+  // METER exhausted: anonymous reader has used their 3 free essays
+  if (post.lock_reason === "meter") {
     return (
-      <div className="my-4" data-testid="signin-gate-container">
+      <div className="my-4" data-testid="meter-paywall-container">
         <Card className="border-accent/40 shadow-[var(--shadow-float)] rounded-2xl">
           <CardContent className="p-8 sm:p-10 text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
               <Lock className="h-5 w-5 text-accent" />
             </div>
-            <h3 className="font-serif text-2xl sm:text-3xl font-semibold" data-testid="signin-gate-title">
-              Sign in to keep reading
+            <h3 className="font-serif text-2xl sm:text-3xl font-semibold" data-testid="meter-paywall-title">
+              You've read your 3 free essays
             </h3>
-            <p className="text-muted-foreground mt-2 max-w-md mx-auto" data-testid="signin-gate-copy">
-              {isFree
-                ? "This essay is free — create a free account to read Business & Finance essays and every free briefing."
-                : "Create a free account to preview this Premium essay, or go Premium to unlock every pillar."}
+            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+              Sharp narratives on markets and the systems behind the desk, every week.
             </p>
             <ul className="text-sm text-left max-w-xs mx-auto mt-5 space-y-2">
-              {["Business & Finance essays, free", "Weekly briefings (free through Edition #6)", "Reading streaks and 20s audio previews", "Premium unlocks every pillar + the Lounge"].map((f) => (
+              {["The complete essay archive, every pillar", "The 3 latest editions as they publish", "Lounge deep dives, market takes and early drafts"].map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-accent mt-0.5 shrink-0" /> {f}
                 </li>
               ))}
             </ul>
-            <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="mt-7 flex flex-col gap-3 items-center">
               <Button
                 className="bg-accent text-accent-foreground hover:bg-accent/90 h-11 px-8"
-                onClick={() => navigate(`/auth?next=/post/${post.slug}`)}
-                data-testid="signin-gate-signin-button"
+                onClick={() => {
+                  trackEvent("subscribe_cta_click", `/post/${post.slug}`);
+                  navigate("/pricing");
+                }}
+                data-testid="meter-paywall-subscribe-button"
               >
-                Sign in — it's free
+                <Sparkles className="h-4 w-4 mr-2" /> Go Premium, from ₹99/month
               </Button>
-              {!isFree && (
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={() => {
-                    trackEvent("subscribe_cta_click", `/post/${post.slug}`);
-                    navigate("/pricing");
-                  }}
-                  data-testid="signin-gate-premium-button"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" /> Go Premium
-                </Button>
-              )}
+              <button
+                className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+                onClick={() => navigate(`/auth?next=/post/${post.slug}`)}
+                data-testid="meter-paywall-signin-link"
+              >
+                Already a member? Sign in
+              </button>
             </div>
-            <p className="text-xs text-muted-foreground font-mono mt-4">Free account, no card required.</p>
           </CardContent>
         </Card>
       </div>
@@ -91,7 +85,7 @@ const Paywall = ({ post }) => {
             This story continues for Premium members
           </h3>
           <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-            You've read the free preview — {post.total_blocks - post.shown_blocks} more
+            You've read the free preview, {post.total_blocks - post.shown_blocks} more
             paragraphs await. Unlock every essay, ad-free reading, and early access.
           </p>
           <ul className="text-sm text-left max-w-xs mx-auto mt-5 space-y-2">
@@ -118,7 +112,7 @@ const Paywall = ({ post }) => {
               </Button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground font-mono mt-4">From ₹99/month — cancel anytime.</p>
+          <p className="text-xs text-muted-foreground font-mono mt-4">From ₹99/month, cancel anytime.</p>
         </CardContent>
       </Card>
     </div>
@@ -291,7 +285,7 @@ export default function ArticlePage() {
         const s = res.data.current_streak;
         if (res.data.milestone) {
           // milestone celebration: 7 / 30 / 100 consecutive days — badge earned
-          toast.success(`${res.data.milestone}-day streak — badge earned!`, {
+          toast.success(`${res.data.milestone}-day streak, badge earned!`, {
             description: `Incredible consistency. The ${res.data.milestone}-Day Reader badge is now on your account page.`,
             icon: <Trophy className="h-4 w-4 text-accent" />,
             duration: 7000,
@@ -332,9 +326,35 @@ export default function ArticlePage() {
   const visibleBlocks = post.is_locked ? post.content_blocks.slice(0, -1) : post.content_blocks;
   const blurredBlock = post.is_locked ? post.content_blocks[post.content_blocks.length - 1] : null;
 
+  // Paywall structured data (schema.org NewsArticle) — Google-compliant paywall signalling
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: post.title,
+    datePublished: post.published_at,
+    dateModified: post.updated_at || post.published_at,
+    author: { "@type": "Person", name: post.author || "Anish Pujari" },
+    publisher: {
+      "@type": "Organization",
+      name: "The Trading Narrative",
+      logo: { "@type": "ImageObject", url: `${window.location.origin}/logo.png` },
+    },
+    description: post.excerpt,
+    keywords: (post.tags || []).join(", "),
+    mainEntityOfPage: `${window.location.origin}/post/${post.slug}`,
+    image: post.cover_image,
+    isAccessibleForFree: post.tier !== "premium",
+    ...(post.tier === "premium"
+      ? { hasPart: { "@type": "WebPageElement", isAccessibleForFree: false, cssSelector: ".paywalled-content" } }
+      : {}),
+  };
+
   return (
     <article data-testid="article-page">
       <Seo title={post.title} description={post.excerpt} image={post.cover_image} path={`/post/${post.slug}`} type="article" />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
       <ReadingProgress targetRef={bodyRef} readTime={post.read_time} slug={post.slug} />
 
       {selInfo && (
@@ -368,7 +388,7 @@ export default function ArticlePage() {
         <div className="reading-col">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <div className="flex items-center gap-2 flex-wrap">
-              <Link to={`/category/${post.category}`}>
+              <Link to={`/topics/${post.category}`}>
                 <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-wider hover:bg-accent/10 hover:text-accent transition-colors" data-testid="article-category-badge">
                   {post.category_label}
                 </Badge>
@@ -449,11 +469,23 @@ export default function ArticlePage() {
             </Link>
           )}
 
+          {/* METER banner: persistent, never blocks reading */}
+          {post.meter && post.meter.granted && (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-secondary/40 px-4 py-2.5 text-sm" data-testid="meter-banner">
+              <span className="text-muted-foreground" data-testid="meter-banner-count">
+                <strong className="text-foreground font-medium">{post.meter.remaining} of {post.meter.limit}</strong> free essays remaining
+              </span>
+              <Link to="/pricing" className="text-accent font-medium hover:underline underline-offset-4" data-testid="meter-banner-subscribe-link">
+                Subscribe for unlimited access
+              </Link>
+            </div>
+          )}
+
           {post.early_access && (
             <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm" data-testid="early-access-notice">
               <CalendarClock className="h-4 w-4 text-accent shrink-0" />
               <span>
-                <strong className="font-medium">Early access</strong> — a Lounge exclusive. This publishes for everyone on{" "}
+                <strong className="font-medium">Early access</strong>, a Lounge exclusive. This publishes for everyone on{" "}
                 {formatDate(post.publish_at)}.
               </span>
             </div>
@@ -470,8 +502,10 @@ export default function ArticlePage() {
               )
             )}
             {post.is_locked && blurredBlock && (
-              <div className="paywall-fade" data-testid="paywall-blurred-content">
-                <p className="paywall-blur" aria-hidden="true">{blurredBlock}</p>
+              <div className="paywalled-content">
+                <div className="paywall-fade" data-testid="paywall-blurred-content">
+                  <p className="paywall-blur" aria-hidden="true">{blurredBlock}</p>
+                </div>
               </div>
             )}
           </div>

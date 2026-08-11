@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { streamAi } from "@/lib/aiStream";
 
 const MODES = [
-  { key: "draft", label: "Draft from notes", hint: "Give the assistant a brief or rough notes — it writes a full draft in your voice." },
+  { key: "draft", label: "Draft from notes", hint: "Give the assistant a brief or rough notes, it writes a full draft in your voice." },
   { key: "polish", label: "Polish current draft", hint: "Tightens grammar, clarity and flow while keeping your structure and voice." },
   { key: "expand", label: "Expand current draft", hint: "Deepens the argument with examples and mechanics, keeping your structure." },
 ];
@@ -29,7 +29,7 @@ export const AiAssistantDialog = ({ open, onOpenChange, content, onReplace, onAp
       return;
     }
     if (mode !== "draft" && !content?.trim()) {
-      toast.error("Your draft is empty — write something to polish or expand first.");
+      toast.error("Your draft is empty, write something to polish or expand first.");
       return;
     }
     setBusy(true);
@@ -91,7 +91,7 @@ export const AiAssistantDialog = ({ open, onOpenChange, content, onReplace, onAp
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={mode === "draft"
-                ? "e.g. Why demurrage clocks start before the paperwork does — cover laytime, NOR, and the 3 disputes every desk sees…"
+                ? "e.g. Why demurrage clocks start before the paperwork does, cover laytime, NOR, and the 3 disputes every desk sees…"
                 : "e.g. Make the opening punchier, keep it under 800 words…"}
               data-testid="ai-assistant-notes-input"
             />

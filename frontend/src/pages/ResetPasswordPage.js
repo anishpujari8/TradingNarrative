@@ -27,7 +27,7 @@ export default function ResetPasswordPage() {
     try {
       const res = await api.post("/auth/password-reset/confirm", { token, password });
       login(res.data.token, res.data.user);
-      toast.success("Password updated — you're signed in.");
+      toast.success("Password updated, you're signed in.");
       navigate("/");
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Reset failed. The link may have expired.");

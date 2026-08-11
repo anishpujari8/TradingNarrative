@@ -36,7 +36,7 @@ export const CATEGORIES = [
     slug: "delivery",
     label: "Delivery & Systems",
     description:
-      "The unglamorous systems that let large programmes run on time and under budget — governance, delivery, and the mechanics of execution.",
+      "The unglamorous systems that let large programmes run on time and under budget, governance, delivery, and the mechanics of execution.",
   },
 ];
 
@@ -68,7 +68,7 @@ export const trackEvent = (event, path = "", meta = {}) => {
         if (v) meta[k] = v;
       });
     }
-  } catch { /* sessionStorage unavailable — track without attribution */ }
+  } catch { /* sessionStorage unavailable, track without attribution */ }
   api.post("/analytics/track", { event, path, meta, sid: getSessionId() }).catch(() => {});
 };
 

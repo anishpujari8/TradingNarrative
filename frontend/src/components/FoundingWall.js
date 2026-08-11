@@ -22,7 +22,7 @@ export const FoundingWall = () => {
         <h2 className="font-serif text-3xl font-semibold">Founding Members</h2>
       </div>
       <p className="text-muted-foreground mt-2 max-w-2xl">
-        The readers who backed The Trading Narrative early — before it was proven. Every essay,
+        The readers who backed The Trading Narrative early, before it was proven. Every essay,
         briefing, and narration exists in part because of them.
       </p>
 
@@ -30,7 +30,7 @@ export const FoundingWall = () => {
         <div className="mt-6 border border-dashed border-accent/40 bg-accent/5 rounded-2xl p-8 text-center" data-testid="founding-wall-empty">
           <p className="font-serif text-xl">This wall is waiting for its first name.</p>
           <p className="text-sm text-muted-foreground mt-2 mb-5">
-            Become a Founding Member and your name lives here permanently — along with direct
+            Become a Founding Member and your name lives here permanently, along with direct
             access to Anish and the quarterly members call.
           </p>
           <Link to="/pricing">

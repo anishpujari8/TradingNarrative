@@ -48,7 +48,7 @@ export const AskEssayWidget = ({ slug }) => {
     } catch (err) {
       setMessages((ms) => {
         const next = [...ms];
-        next[next.length - 1] = { role: "assistant", text: err.message || "Something went wrong — please try again.", error: true };
+        next[next.length - 1] = { role: "assistant", text: err.message || "Something went wrong, please try again.", error: true };
         return next;
       });
     } finally {
@@ -78,7 +78,7 @@ export const AskEssayWidget = ({ slug }) => {
             onClick={() => navigate(`/auth?next=/post/${slug}`)}
             data-testid="ask-essay-signin-button"
           >
-            Sign in — it's free
+            Sign in, it's free
           </Button>
         </CardContent>
       </Card>
@@ -91,7 +91,7 @@ export const AskEssayWidget = ({ slug }) => {
         <CardTitle className="font-serif text-2xl flex items-center gap-2.5">
           <MessagesSquare className="h-5 w-5 text-accent" /> Ask this essay
         </CardTitle>
-        <p className="text-sm text-muted-foreground">Questions answered from this essay only — no outside guessing.</p>
+        <p className="text-sm text-muted-foreground">Questions answered from this essay only, no outside guessing.</p>
       </CardHeader>
       <CardContent>
         {messages.length > 0 && (

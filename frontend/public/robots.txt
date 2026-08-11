@@ -1,6 +1,12 @@
 User-agent: *
 Allow: /
+Allow: /api/sitemap.xml
+Allow: /api/feed.xml
+Allow: /api/share/
 Disallow: /admin
 Disallow: /account
+Disallow: /api/
+Disallow: /payment/
+Disallow: /auth
 
-Sitemap: https://insight-hub-484.preview.emergentagent.com/api/sitemap.xml
+Sitemap: https://thetradingnarrative.com/api/sitemap.xml

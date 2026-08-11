@@ -60,6 +60,13 @@ ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', 'anishpujari8@gmail.co
 EARLY_SUPPORTER_LIMIT = 50
 EARLY_FREE_POSTS = 5
 
+# Metered anonymous access (SEO-friendly freemium): logged-out visitors may read
+# METER_FREE_READS complete free-tier essays before hitting the paywall preview.
+METER_FREE_READS = 3
+METER_COOKIE = 'fv_slugs'
+METER_COOKIE_DAYS = 90
+PREVIEW_WORDS = 250  # locked-essay preview budget (or first 2 blocks, whichever is shorter)
+
 # ElevenLabs narration (Essay Audio)
 ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', '')
 TTS_ENABLED = bool(ELEVENLABS_API_KEY)

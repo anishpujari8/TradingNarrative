@@ -13,7 +13,7 @@
     - UPI Autopay/Subscriptions when enabled on Razorpay dashboard
     - Fallback to one-time Razorpay Orders when Subscriptions is not enabled
     - Live re-probe so Autopay switches on without restart
-    - **Plan pricing cache hardening** ✅ *(Razorpay Plan cache key includes amount so price changes mint new Razorpay plans)*
+    - **Plan pricing cache hardening** ✅ *(Razorpay plan cache key includes amount so price changes mint new Razorpay plans)*
   - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
     - Target: **Recurring subscription** *(user intent indicated; must confirm definitively + provide credentials)*
 
@@ -140,15 +140,62 @@
   - Tag: `insight`
   - Topic: copper concentrate TC/RC sign flip
 
-### Access model (SIGNED-IN READING)
-- **Anonymous browsing allowed, but no essay content unless signed in** ✅ *(Phase 40)*
-  - Logged-out users can browse: homepage/archive/briefings lists (titles/excerpts/SEO)
-  - Opening any essay requires sign-in (no content blocks returned; `signin_required: true`)
-  - Signed-in free users:
-    - Full access to **Business & Finance** essays + briefings (Editions 1–6 free)
-    - Premium pillars are preview-only (3 blocks) unless entitled
-    - Early supporter perk stays (first 5 published essays fully readable for the first 50 readers)
-  - Premium users: all pillars + Lounge hub
+### Access model (METERED + PAYWALL, SEO-friendly)
+- **Archive index is fully public** ✅
+  - /archive shows every essay (title, date, tags, ~40–60 word summary)
+  - Includes Free/Premium filter tabs + badges ✅ *(already exists)*
+- **Metered anonymous access** ✅ *(Phase 42)*
+  - Anonymous visitors may read **3 full free-tier essays**
+  - Tracking:
+    - first-party cookie: `fv_slugs` (90 days, stores read slugs; derives remaining count)
+    - server fallback: hashed key `sha256(ip + ua)` stored in `meter_reads` so it survives cookie/local resets
+    - Union cookie + server; re-reads don’t consume quota
+  - After quota is exhausted:
+    - free-tier essays render preview-only with `lock_reason = 'meter'`
+    - UI: meter paywall CTA block with price + sign-in link
+- **Hard-locked content (never metered)** ✅ *(Phase 42)*
+  - tag `lounge`
+  - all `tier=premium`
+  - latest-3 premium editions (by edition number)
+  - Lock reason returned as `premium` (implementation keeps one stable reason; structured data still signals paywall)
+- **Preview shape for locked essays** ✅ *(Phase 42)*
+  - Headline + excerpt + hero + publish date + tags
+  - First ~250 words OR first 2 paragraph blocks (whichever is shorter)
+  - Gradient fade into paywall CTA
+  - Preview text is outside `.paywalled-content`
+  - Locked body wrapped in `.paywalled-content`
+- **Meter UI** ✅ *(Phase 42)*
+  - Persistent non-blocking banner: “X of 3 free essays remaining” + subscribe link
+  - Never blocks reading
+- **Signed-in users** ✅
+  - Signed-in free users: full access to free-tier posts + 3-block premium previews + early supporter perk
+  - Premium users bypass all gating
+
+### SEO infrastructure (within React + FastAPI)
+- **No cloaking** ✅ *(Phase 42)*
+  - No user-agent sniffing; Googlebot sees same HTML as anonymous humans.
+- **Structured data** ✅ *(Phase 42)*
+  - JSON-LD `NewsArticle` on essay pages (client via Helmet) and on `/api/share/{slug}` (server HTML)
+  - `isAccessibleForFree: true` for open essays
+  - `isAccessibleForFree: false` + `hasPart.cssSelector = '.paywalled-content'` for locked
+- **Sitemap** ✅ *(Phase 42)*
+  - `/api/sitemap.xml` includes:
+    - home, archive, pricing, about, briefings
+    - topic hubs (`/topics/...`) + category pages
+    - all published essays with `<lastmod>`
+- **Robots** ✅ *(Phase 42)*
+  - `frontend/public/robots.txt` disallows `/api/` while explicitly allowing:
+    - `/api/sitemap.xml`, `/api/feed.xml`, `/api/share/`
+  - Production sitemap URL referenced.
+- **RSS feed** ✅ *(Phase 42)*
+  - `/api/feed.xml`: full text for open/free essays; preview + link for locked
+  - RSS discovery link injected in `public/index.html`
+- **Topic hubs** ✅ *(Phase 42)*
+  - `/topics/{pillar}` pages with 200–400 words of original intro copy
+  - Chronological essay grids + archive links
+  - Essay category badge links to topic hub
+- **Documentation** ✅ *(Phase 42)*
+  - `/app/SEO.md` documents the metering + paywall + structured data rules
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -291,208 +338,58 @@
 ### Phase 38 — Growth Revamp (Pricing + Briefings + Premium Mix + Early Supporters + Audio Gating) ✅ COMPLETED
 **Verified by testing agent iteration_29**: backend 37/37 (100%), frontend 18/19 (95% — one selector skipped, unrelated).
 
-#### A) Edition #2 import ✅
-- Imported `The Trading Narrative #2` into briefings archive as **Edition #2**
-- Canonical slug fixed to match `slugify()` output:
-  - `oil-s-sharp-slide-opec-completes-the-rollback-and-smelters-paying-miners`
-- Stored in DB + appended to `REAL_POSTS` for durability
-- Narration generated and cached
-
-#### B) Briefings free through edition 6 ✅
-- Edition #1 flipped back to **free**
-- One-time migration: `phase38_tier_strategy_v1`
-
-#### C) Wednesday briefing autosend ✅
-- `briefing_autosend_loop` registered (Wed 09:30 IST)
-- Sends high-level briefing summary + CTA link
-- Once per ISO week; toggle `briefing_autosend` default ON
-
-#### D) Pricing overhaul ✅
-- Backend plans:
-  - Monthly ₹99 / $1.04
-  - Annual ₹999 / $10.50
-  - Founding monthly ₹458 / $4.80 (`founding_monthly`)
-  - Founding annual ₹5,499 / $57.69 (`founding`)
-- Frontend PricingPage updated; founding card respects monthly/annual toggle
-- Razorpay plan minting now interval-driven
-- Founding wall includes `founding_monthly`
-
-#### E) Premium mix by category ✅
-- Published essays in `tech-business`, `delivery`, `lifestyle` are premium
-- Finance remains mixed
-- Seed tiers updated for durability
-
-#### F) Early supporter promo ✅
-- First 50 registered users flagged (startup top-up + register + magic-link)
-- Early supporter unlock of first 5 published essays implemented via `early_unlock`
-- `public_user()` exposes flag; Account page badge added
-
-#### G) Audio gating ✅
-- Anonymous: 401 sign-in required
-- Free logged-in: 20s clip (160000 bytes) with `X-Audio-Scope: clip`
-- Premium: full audio
-- Warmup now full-only; admin narration health expects only full
-- Frontend narrator: lock icon + sign-in toast + “free preview” label + upgrade CTA
-
-#### H) Production content ops ✅
-- Production sync executed:
-  - Edition #2 created on production
-  - Tier flips pushed (Ed1 free; categories premium)
-  - Narrations pushed (including Ed2)
-- Slug mismatch issue resolved (no duplicate risk on redeploy)
-
 ### Phase 39 — Engagement Boosters (Countdown + Milestones + Promo Counter) ✅ COMPLETED
 **Verified by testing agent iteration_30**: backend 10/10 (100%), frontend 3/3 (100%).
-
-#### A) Free Edition Countdown banner ✅
-- `/briefings` page shows a “Free through Edition #6” banner (`briefings-free-banner`)
-- Dynamic countdown of remaining free editions until #6
-- “Go Premium early” CTA links to `/pricing`
-
-#### B) Streak Milestone badges ✅
-- Backend:
-  - Streak endpoint returns `milestone` when hitting **7 / 30 / 100**
-  - Persists `streak_badges` based on **longest streak** (badges survive streak resets)
-  - Exposed via `public_user()` and `/auth/me`
-- Frontend:
-  - ArticlePage shows celebration toast on milestone + “See badge” action to `/account`
-  - AccountPage displays 3 badges with earned vs locked states
-
-#### C) Early supporter promo counter + homepage banner ✅
-- Backend:
-  - Public `GET /api/early-supporters` returns `{limit, taken, left}`
-- Frontend:
-  - Homepage accent banner: “Early supporter offer — X of 50 spots left” (`early-supporter-banner`)
-  - Links to `/auth`
-  - Hidden when:
-    - spots are exhausted
-    - user is already an early supporter
-    - user is premium
 
 ### Phase 40 — Access Model + Premium Lounge Hub (Hybrid) ✅ COMPLETED
 **Verified by testing agent iteration_31**: backend 30/30 (100%), frontend flows 100%.
 
-#### A) Anonymous essay gate (no content blocks when logged out) ✅
-- Backend (`posts.get_post`):
-  - When `user is None`, returns `signin_required: true` with **zero** content blocks for all essays
-  - Keeps SEO/unfurl fields intact: title/excerpt/tags/cover
-  - Listings unchanged (homepage/archive/briefings still show titles/excerpts)
-- Backend (AI): `ask-essay` requires sign-in (401 logged-out)
-- Frontend (`ArticlePage`):
-  - Logged-out visitors see a dedicated sign-in gate card (`signin-gate-container`)
-  - Copy varies depending on free vs premium tier (free reads vs premium unlock)
-  - Premium paywall copy refreshed to mention Lounge perks + ₹99 entry pricing
-- Frontend (`AskEssayWidget`):
-  - Logged-out visitors see locked sign-in card (`ask-essay-widget-locked`)
-
-#### B) Market Narrative feed (Premium Lounge) ✅
-- Backend:
-  - New collection: `narrative_takes`
-  - Endpoints:
-    - `GET /api/community/narrative` (premium)
-    - `POST /api/community/narrative` (admin only: body + optional tag)
-    - `DELETE /api/community/narrative/{id}` (admin)
-    - `POST /api/community/narrative/{id}/react` (premium: toggle reaction)
-  - Reactions supported: 📈 / 📉 / 💡
-  - One reaction per member; toggle removes; switching updates
-  - Tags supported: `bullish` / `bearish` / `insight`
-- Frontend:
-  - “Market Narrative” tab in Lounge
-  - Reaction buttons with live counts
-  - Admin composer + tag chips
-
-#### C) Early Access drafts (Premium Lounge) ✅
-- Backend:
-  - `GET /api/community/early-access` lists scheduled posts (`status=scheduled`, `publish_at > now`) for premium
-  - `get_post`: premium + admin can read scheduled posts before publish with:
-    - `early_access: true`
-    - `publish_at` returned
-- Frontend:
-  - “Early access” tab lists upcoming drafts
-  - Article page displays early-access notice banner (`early-access-notice`)
-
-#### D) Lounge hub UI as a hybrid destination ✅
-- Frontend (`CommunityPage`):
-  - Announcements remain left column
-  - Main column is a tabbed hub:
-    - Market Narrative
-    - Discussions
-    - Early access
-  - Locked-gate copy updated to sell the new perks
-
-#### E) Testing + hygiene ✅
-- Automated testing agent: iteration_31
-- Test data cleaned (11 real users preserved)
-
 ### Phase 41 — Catalog Publish + Welcome Take + Streak Reminders ✅ COMPLETED
-**Status: COMPLETED (content + ops), with production reconciled.**
+- All 12 demo essays published + categorized/tiered, synced to production, duplicates reconciled
+- Welcome Market Narrative take seeded
+- Evening streak reminders implemented + verified
+- ElevenLabs warmup generation cap added
 
-#### A) Publish all demo-draft essays ✅
-- User explicitly approved publishing all 12 demo essays.
-- In preview DB, promoted the 12 demo posts from `draft` → `published`.
-- Applied tier policy on publish:
-  - `tech-business` / `delivery` / `lifestyle` → `premium`
-  - `finance` → mixed (some free, some premium)
+### Phase 42 — Metered Access + SEO Infrastructure + Hyphen Cleanup ✅ COMPLETED
+**Verified by testing agent iteration_32**: backend 64/64 (100%), frontend 100%.
 
-#### B) Sync to production + duplicate reconciliation ✅
-- First sync created **suffixed duplicate slugs** because production still held the originals as drafts.
-- Fixed safely by:
-  - Deleting the **12 suffixed duplicates** on production via production admin API
-  - Deleting the **12 old drafts** on production via production admin API
-  - Re-syncing from preview → production
-- Final state:
-  - **18 published posts** in preview and production
-  - **No missing/outdated drift**
-  - **Identical slugs** confirmed
-
-#### C) Welcome Market Narrative take seeded ✅
-- One-time migration: `welcome_narrative_take_v1`
-- Ensures Lounge isn’t empty after redeploy / DB reset
-
-#### D) Streak reminder emails ✅
-- Implemented `send_streak_reminders()` + `streak_reminder_loop`
-- Window: **19:00–22:00 IST**, checks every 15 minutes
-- Guardrails:
-  - Once/reader/day via `last_streak_reminder_date`
-  - Only `current_streak >= 2`, read **yesterday** but not today
-  - Direct-tested: sends once, idempotent, skips users who already read today
-
-#### E) ElevenLabs credit protection ✅
-- Startup narration warmup capped at **2 new generations per run**
-- Admin-triggered warmup allowed up to **100**
-- After publishing 12 new essays, narrations will fill:
-  - 2 per restart automatically, and/or
-  - on first play (listener-triggered)
+Delivered:
+- Metered anonymous access (3 free full essays) using cookie `fv_slugs` (90 days) + `meter_reads` fallback keyed sha256(IP+UA);
+  re-reads don’t consume quota.
+- 4th free essay locks with `lock_reason='meter'` and returns a ~250-word/2-block preview.
+- Premium essays + `lounge`-tagged posts + latest-3 premium editions are always preview-only for non-entitled.
+- Persistent meter banner (“N of 3 free essays remaining”) + subscribe CTA; meter paywall CTA block (value prop, 3 bullets incl. Lounge deep dives, ₹99 price, sign-in link).
+- SEO: JSON-LD NewsArticle paywall signalling client-side and in `/api/share/{slug}`; `.paywalled-content` wrapper; RSS `/api/feed.xml`; sitemap `/api/sitemap.xml` includes topic hubs + lastmod; robots.txt updated; RSS discovery link in `index.html`.
+- Topic hubs `/topics/{tech-business|finance|delivery|lifestyle}` with original 200–400 word intros and essay grids; essay category badge links to hub.
+- Hyphen cleanup: mid-sentence em/en dashes replaced across DB content, seed data, frontend copy, and backend email copy (numeric ranges + attribution preserved). Seo title separator standardized to `·`.
+- Content synced to production (18 updated; sync diff clean).
 
 ---
 
 ## 3) Next Actions
 
 ### A) Production rollout (required)
-- **Redeploy production** to ship the Phase 37–41 code changes to https://thetradingnarrative.com:
-  - Anonymous essay gate
-  - Ask-essay sign-in gate
-  - Lounge hub tabs + Market Narrative + Early access
-  - Streaks + milestone badges
-  - Pricing updates + audio gating + early supporters
-  - Streak reminder loop
-  - ElevenLabs warmup generation cap
+- **Redeploy production** to ship Phase 37–42 code changes to https://thetradingnarrative.com:
+  - Metered access + paywall previews
+  - JSON-LD paywall schema + sitemap/robots/RSS + topic hubs
+  - Hyphen cleanup code + updated copy
+  - Lounge hub, streak reminders, pricing, etc.
 
 ### B) Post-publish ops (recommended)
-- In Admin Studio, quickly review:
-  - Each newly published demo essay category + tier
-  - Cover images + excerpts
-  - Ensure no unintended “featured” flags
+- Review newly published demo essays:
+  - Categories + tiers
+  - Covers/excerpts
+  - Ensure any “deep dive” content is tagged `lounge` to hard-lock
+  - Confirm “latest-3 premium editions” policy matches editorial intent
 
 ### C) Narration ops
 - Option 1 (safe): allow narrations to fill on first play.
 - Option 2 (controlled): use Admin “Generate missing narrations” and stop if credits begin to drop.
 
 ### D) Lounge operational playbook (content cadence)
-- Create a weekly rhythm:
-  - 2–3 Market Narrative takes per week (mid-week + expiry after close)
-  - 24h early draft posting before public publish
-  - One pinned “discussion prompt of the week” thread
+- 2–3 Market Narrative takes per week
+- Schedule early-access drafts 24h before publish
+- Pin a weekly discussion prompt thread
 
 ### E) Upcoming (still blocked)
 - **PayPal Checkout** (recurring subscriptions) ⛔
@@ -513,40 +410,14 @@
 ✅ AI features work (writing assistant + ask-essay).
 ✅ Cross-platform sharing works.
 ✅ Founding wall works.
+✅ Lounge hub provides a premium community destination.
 
-✅ Phase 37 delivered
-- Reading streaks visible and correct
-- Admin alerts on newsletter + paid activations (subject exactly `tradingnarrative email subscriber`)
-
-✅ Phase 38 delivered
-- Edition #2 imported + archived
-- Briefings free through edition 6
-- Wednesday 09:30 IST briefing autosend
-- New pricing + founding monthly plan
-- Category premium strategy applied
-- Early supporters entitlement live
-- Audio gating live (401 anon, 20s clip free, full premium)
-- Production content synced; slug mismatch resolved
-
-✅ Phase 39 delivered
-- Free Edition Countdown banner on briefings
-- Streak milestone badges (7/30/100) with celebration + account display
-- Promo counter endpoint + homepage urgency banner
-
-✅ Phase 40 delivered
-- Logged-out users can browse but cannot read any essay content (sign-in required)
-- Ask-essay AI requires sign-in
-- Premium Lounge hub includes:
-  - Market Narrative feed (admin posts + reactions)
-  - Early access drafts (scheduled posts readable early)
-  - Discussions (threads + replies)
-
-✅ Phase 41 delivered
-- All 12 demo essays published and categorized/tiered
-- Production duplicates resolved; preview/prod slugs identical; diff clean
-- Welcome Market Narrative take seeded
-- Evening streak reminder email system implemented and tested
-- ElevenLabs warmup generation cap added
+✅ Phase 42 success targets met
+- Anonymous visitors can read 3 full free essays (metered) without sign-in
+- Locked previews are visible and marked with paywall structured data
+- No cloaking / UA sniffing
+- Topic hubs exist and support discovery
+- Sitemap/robots/RSS correct and production-domain aligned
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

@@ -1,30 +1,30 @@
 [
   {
-    "content": "Backend: anon gate in get_post (0 blocks, signin_required) + ask-essay sign-in",
+    "content": "Backend: metered access rework in get_post (cookie + hashed IP+UA fallback, hard locks, 250-word previews)",
     "status": "completed"
   },
   {
-    "content": "Backend: Market Narrative endpoints (list/create/delete/react)",
+    "content": "Backend: RSS /api/feed.xml + sitemap lastmod/topics + share JSON-LD",
     "status": "completed"
   },
   {
-    "content": "Backend: Early Access endpoint + get_post scheduled access for premium",
+    "content": "Backend: hyphen cleanup migration (DB) + seed_data.py",
     "status": "completed"
   },
   {
-    "content": "Frontend: ArticlePage sign-in paywall variant + early-access notice",
+    "content": "Frontend: ArticlePage meter banner + paywall CTA variants + .paywalled-content + JSON-LD",
     "status": "completed"
   },
   {
-    "content": "Frontend: Lounge hub tabs (Discussions | Market Narrative | Early Access) + admin composer + reactions",
+    "content": "Frontend: Topic hub pages /topics/:cat + routes + internal links",
     "status": "completed"
   },
   {
-    "content": "Frontend: AskEssayWidget sign-in state; locked-gate copy update",
+    "content": "Frontend: About/site copy hyphen cleanup + robots.txt + SEO.md",
     "status": "completed"
   },
   {
-    "content": "Test (testing agent + screenshots), cleanup, finish",
+    "content": "Verify (curl anon, meter, JSON-LD) + testing agent + finish",
     "status": "completed"
   }
 ]

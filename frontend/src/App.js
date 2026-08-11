@@ -13,6 +13,7 @@ import { trackEvent } from "@/lib/api";
 import HomePage from "@/pages/HomePage";
 import ArticlePage from "@/pages/ArticlePage";
 import CategoryPage from "@/pages/CategoryPage";
+import TopicPage from "@/pages/TopicPage";
 import ArchivePage from "@/pages/ArchivePage";
 import PricingPage from "@/pages/PricingPage";
 import AboutPage from "@/pages/AboutPage";
@@ -55,6 +56,7 @@ function App() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/post/:slug" element={<ArticlePage />} />
                   <Route path="/category/:slug" element={<CategoryPage />} />
+                  <Route path="/topics/:slug" element={<TopicPage />} />
                   <Route path="/archive" element={<ArchivePage />} />
                   <Route path="/pricing" element={<PricingPage />} />
                   <Route path="/about" element={<AboutPage />} />

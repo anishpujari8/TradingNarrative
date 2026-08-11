@@ -8,9 +8,9 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const VOICES = [
-  { key: "male", label: "George — warm male" },
-  { key: "female", label: "Rachel — warm female" },
-  { key: "documentary", label: "Daniel — documentary" },
+  { key: "male", label: "George, warm male" },
+  { key: "female", label: "Rachel, warm female" },
+  { key: "documentary", label: "Daniel, documentary" },
 ];
 
 const fmt = (s) => {
@@ -30,7 +30,7 @@ export const AudioNarrator = ({ slug }) => {
   const audioRef = useRef(null);
   const urlsRef = useRef({}); // voice -> objectURL (per-essay cache in the browser)
   const listenedRef = useRef(false); // one listen counted per essay visit
-  const milestonesRef = useRef(new Set()); // 25/50/75/100 — each reported once per visit
+  const milestonesRef = useRef(new Set()); // 25/50/75/100, each reported once per visit
 
   // reset when navigating between essays
   useEffect(() => {
@@ -91,7 +91,7 @@ export const AudioNarrator = ({ slug }) => {
   const play = async (v = voice) => {
     if (!user) {
       // NARRATION POLICY: sign-in required — free accounts get a 20-second preview
-      toast.info("Sign in to listen — free accounts get a 20-second preview.", {
+      toast.info("Sign in to listen, free accounts get a 20-second preview.", {
         action: { label: "Sign in", onClick: () => navigate(`/auth?next=/post/${slug}`) },
       });
       return;
@@ -119,7 +119,7 @@ export const AudioNarrator = ({ slug }) => {
         try {
           const parsed = JSON.parse(await data.text());
           if (parsed?.detail) detail = parsed.detail;
-        } catch { /* non-JSON error body — keep the default message */ }
+        } catch { /* non-JSON error body, keep the default message */ }
       } else if (data?.detail) {
         detail = data.detail;
       } else if (err?.response?.status === 502) {
@@ -202,11 +202,11 @@ export const AudioNarrator = ({ slug }) => {
         <div className="flex items-center gap-1.5 text-sm font-medium">
           <Headphones className="h-3.5 w-3.5 text-accent shrink-0" />
           <span className="truncate" data-testid="audio-status-label">
-            {status === "idle" && (!user ? "Sign in to listen — 20s free preview" : "Listen to this essay")}
-            {status === "loading" && "Preparing narration — first play takes a moment…"}
+            {status === "idle" && (!user ? "Sign in to listen · 20s free preview" : "Listen to this essay")}
+            {status === "loading" && "Preparing narration, first play takes a moment…"}
             {status === "playing" && `${fmt(progress.t)} / ${fmt(progress.d)}${scope === "clip" ? " · free preview" : ""}`}
-            {status === "paused" && `Paused — ${fmt(progress.t)} / ${fmt(progress.d)}`}
-            {status === "done" && (scope === "clip" ? "Preview finished — go Premium for the full narration" : "Finished — play again?")}
+            {status === "paused" && `Paused, ${fmt(progress.t)} / ${fmt(progress.d)}`}
+            {status === "done" && (scope === "clip" ? "Preview finished, go Premium for the full narration" : "Finished, play again?")}
           </span>
         </div>
         <div

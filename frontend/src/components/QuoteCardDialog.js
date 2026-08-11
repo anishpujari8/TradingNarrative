@@ -118,9 +118,9 @@ export const QuoteCardDialog = ({ highlight, open, onOpenChange }) => {
     try {
       const blob = await toBlob();
       await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })]);
-      toast.success("Copied — paste it anywhere");
+      toast.success("Copied, paste it anywhere");
     } catch {
-      toast.error("Copying images isn't supported here — use Download instead.");
+      toast.error("Copying images isn't supported here, use Download instead.");
     } finally {
       setBusy(false);
     }
@@ -137,11 +137,11 @@ export const QuoteCardDialog = ({ highlight, open, onOpenChange }) => {
       } else if (navigator.share) {
         // device can share text/links but not files — share the essay link instead
         await navigator.share({ title: "The Trading Narrative", url: window.location.href });
-        toast("Link shared — use Download to attach the image itself.");
+        toast("Link shared, use Download to attach the image itself.");
       } else {
         // desktop / in-app browsers: give them the image + guidance, never a dead end
         await download();
-        toast("Image downloaded — attach it in WhatsApp, LinkedIn, or anywhere else.");
+        toast("Image downloaded, attach it in WhatsApp, LinkedIn, or anywhere else.");
       }
     } catch (e) {
       if (e?.name !== "AbortError") {

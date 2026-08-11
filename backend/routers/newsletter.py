@@ -55,7 +55,7 @@ async def newsletter_unsubscribe(email: str = Query(...), token: str = Query(...
               ("This unsubscribe link is invalid or expired. "
                "You can manage email preferences from your account page instead.")
     page = f"""<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
-<title>{heading} — The Trading Narrative</title></head>
+<title>{heading} · The Trading Narrative</title></head>
 <body style='margin:0;background:#faf9f7;font-family:Georgia,serif;color:#1a1a1a'>
 <div style='max-width:480px;margin:12vh auto;padding:40px;background:#fff;border:1px solid #e8e6e1;border-radius:16px;text-align:center'>
 <div style='font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#2a7d6c;font-family:monospace'>The Trading Narrative</div>
@@ -100,7 +100,7 @@ async def digest_preview(admin=Depends(get_admin_user)):
     posts = await get_digest_posts()
     top_highlights = await get_week_top_highlights()
     top_listened = await get_week_top_listened()
-    subject = f"The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+    subject = f"The Week in Narratives · {now_utc().strftime('%B %d, %Y')}"
     return {'subject': subject, 'post_count': len(posts), 'posts': posts,
             'top_highlights': top_highlights, 'top_listened': top_listened,
             'html': build_digest_html(posts, top_highlights=top_highlights, top_listened=top_listened)}
@@ -120,7 +120,7 @@ async def send_digest_preview(body: DigestSendIn, admin=Depends(get_admin_user))
     posts = await get_digest_posts()
     if not posts:
         raise HTTPException(status_code=400, detail='No published posts to include')
-    subject = body.subject or f"[PREVIEW] The Week in Narratives — {now_utc().strftime('%B %d, %Y')}"
+    subject = body.subject or f"[PREVIEW] The Week in Narratives · {now_utc().strftime('%B %d, %Y')}"
     to = GMAIL_SMTP_USER or admin['email']
     titles = ', '.join(p['title'] for p in posts[:5])
     top_highlights = await get_week_top_highlights()

@@ -138,7 +138,7 @@ export const SyncToProductionDialog = () => {
                       data-testid="sync-password-input"
                     />
                     <p className="text-[11px] text-muted-foreground">
-                      Used once to sign in to the live site's admin API — never stored.
+                      Used once to sign in to the live site's admin API, never stored.
                     </p>
                   </div>
                 )}

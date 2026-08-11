@@ -39,7 +39,7 @@ export default function AboutPage() {
               mechanics behind high-stakes client engagements, budgets, negotiation, governance,
               without the jargon, the unglamorous systems that let large programmes run on time
               and under budget instead of quietly falling apart, and the personal growth that
-              comes from managing complexity — stakeholders, teams, ambiguity — rather than just
+              comes from managing complexity, stakeholders, teams, ambiguity, rather than just
               headcount.
             </p>
             <p>

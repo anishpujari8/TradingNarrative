@@ -15,7 +15,7 @@ export const Footer = () => (
           </div>
           <p className="text-sm text-muted-foreground max-w-sm mb-5">
             Sharp narratives on markets, technology, and a life well designed. One thoughtful
-            essay at a time — straight to your inbox.
+            essay at a time, straight to your inbox.
           </p>
           <NewsletterForm source="footer" compact testId="footer-newsletter-form" />
         </div>

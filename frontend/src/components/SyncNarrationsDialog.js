@@ -36,7 +36,7 @@ export const SyncNarrationsDialog = ({ cachedCount = 0 }) => {
         } else if (res.data.skipped > 0) {
           toast("Production already has every cached narration.");
         } else {
-          toast("Nothing was pushed — see details in the dialog.");
+          toast("Nothing was pushed, see details in the dialog.");
         }
       })
       .catch((err) => toast.error(err?.response?.data?.detail || "Narration sync failed. Try again."))
@@ -55,14 +55,14 @@ export const SyncNarrationsDialog = ({ cachedCount = 0 }) => {
           <DialogTitle className="font-serif text-2xl">Send narrations to production</DialogTitle>
           <DialogDescription>
             Copies the audio already generated here to your live site, so those essays play
-            instantly for readers — no new ElevenLabs credits are used.
+            instantly for readers, no new ElevenLabs credits are used.
           </DialogDescription>
         </DialogHeader>
 
         {results ? (
           <div className="rounded-lg border border-border p-3 space-y-1.5 max-h-52 overflow-y-auto" data-testid="narration-sync-results">
             {results.results.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No matching essays on production yet — push the articles first via "Sync to production".</p>
+              <p className="text-sm text-muted-foreground">No matching essays on production yet, push the articles first via "Sync to production".</p>
             ) : (
               results.results.map((r) => (
                 <div key={r.label} className="flex items-center gap-2 text-sm">
@@ -84,7 +84,7 @@ export const SyncNarrationsDialog = ({ cachedCount = 0 }) => {
               data-testid="narration-sync-password-input"
             />
             <p className="text-[11px] text-muted-foreground">
-              Used once to sign in to the live site's admin API — never stored.
+              Used once to sign in to the live site's admin API, never stored.
             </p>
           </div>
         )}

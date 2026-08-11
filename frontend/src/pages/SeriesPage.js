@@ -45,7 +45,7 @@ export default function SeriesPage() {
         </div>
       ) : (
         <>
-          <Seo title={`${series.title} — Series`} description={series.description} path={`/series/${series.slug}`} />
+          <Seo title={`${series.title}, Series`} description={series.description} path={`/series/${series.slug}`} />
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-accent" />
             <span className="section-label">Series</span>
