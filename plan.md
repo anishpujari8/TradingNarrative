@@ -52,6 +52,8 @@
 - **Early supporter promo counter** ✅ *(Phase 39)*
   - Public counter endpoint + homepage urgency banner (“X of 50 spots left”) linking to /auth
   - Hidden for premium members / already early supporters / when spots exhausted
+- **Early bird premium offer (homepage surfaced)** ✅ *(Phase 46 add-on)*
+  - Early bird Premium pricing is now marketed directly on the homepage via a banner linking to `/pricing`
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -143,6 +145,7 @@
   - Audio Sales Dashboard ✅
   - Manual Search Rank Tracker ✅
   - Early Bird Premium offer (first 50) ✅
+  - **Early Bird homepage banner** ✅ *(Phase 46 add-on)*
 
 ### Community (Premium Lounge)
 - Private Community Lounge ✅
@@ -434,94 +437,71 @@ Verification:
 **IMPORTANT:** Phase 45 is in **PREVIEW only** until the user redeploys production.
 
 ### Phase 46 — Growth Suite (Audio Sales + Manual Search Rank + Early Bird) ✅ COMPLETED (PREVIEW)
-**Delivered exactly as planned.**
 
 #### 46.1 Audio Sales Dashboard (Admin) ✅
 Backend
 - `GET /api/admin/audio-sales` (admin-only)
 - Source: `payment_transactions` where `plan='audio_unlock'` and `payment_status='paid'`
-- Output:
-  - Totals: purchase count, revenue split INR/USD
-  - Best sellers: per-essay purchases + revenue
-  - Recent purchases: includes buyer email (when available)
 
 Frontend
-- New Admin tab: **Growth**
-- Cards:
-  - Narration unlock count
-  - INR revenue (Razorpay)
-  - USD revenue (Stripe)
-  - Early bird claims
-- Tables: best-selling narrations + recent narration purchases
+- Admin → **Growth** tab
+- Stat cards + best sellers table + recent purchases table
 
 #### 46.2 Search Rank Tracker (Admin, Manual Entry) ✅
 User choice: **Skip Google Search Console connection** (manual entry).
 
 Backend
-- Collection: `seo_keyword_stats`
+- `seo_keyword_stats` collection
 - Endpoints (admin-only):
   - `GET /api/admin/seo/keywords`
   - `POST /api/admin/seo/keywords`
   - `DELETE /api/admin/seo/keywords/{entry_id}`
-- Keyword normalization: lowercased
-- Validation: `noted_on` must be YYYY-MM-DD (400 on invalid)
+- Keyword normalization: lowercase
+- Validation: `noted_on` must be `YYYY-MM-DD`
 
 Frontend
-- Admin → Growth → Search rank tracker card
-- Quick chips for target keywords:
-  - trading
-  - freight
-  - business and finance
-  - narrative
-  - weekly briefing
-  - newsletter
-- Entry form: impressions, clicks, optional position, date
-- Table shows latest and deltas vs previous entry
-  - Position delta is inverted (lower position is better)
+- Admin → Growth → Search rank tracker
+- Keyword chips + entry form + table with deltas
 
 #### 46.3 Early Bird Offer (first 50 premium subscribers) ✅
 User choices:
-- First **50** premium subscribers
-- Both discounts:
-  - **Monthly**: ₹49 / $0.52 for the first month
-  - **Annual**: ₹499 / $5.25 for the first year
+- Eligibility: **first 50 premium subscribers**
+- Discounts:
+  - Monthly: **₹49 / $0.52** for first month
+  - Annual: **₹499 / $5.25** for first year
 
 Backend
-- Config:
-  - `EARLY_BIRD_SPOTS = 50`
-  - `EARLY_BIRD_PRICES = { monthly: {usd:0.52, inr:49}, annual: {usd:5.25, inr:499} }`
-- Service: `services/promo_service.py`
-  - `early_bird_status()` → `{spots, claimed, remaining, active}`
-  - `early_bird_price(plan_id)` → resolves discounted vs regular amounts
-- Public endpoint:
-  - `GET /api/billing/early-bird`
-- Checkout behavior:
-  - Stripe AUTO_RENEW: uses a one-time (`duration='once'`) coupon so renewals bill full price
-  - Stripe shared/one-time: charges early price directly
-  - Razorpay: early bird always uses **one-time order** at early price (never an Autopay mandate)
-  - Founding plans: never discounted
-- Data model:
-  - `payment_transactions.early_bird=true`
-  - `subscriptions.early_bird=true` on activation (source of claim counting)
+- `GET /api/billing/early-bird` public state (spots/claimed/remaining)
+- Stripe AUTO_RENEW: applies `duration='once'` coupon so renewals bill full price
+- Razorpay: early bird always one-time order at discounted price (never Autopay)
+- Founding plans never discounted
 
 Frontend
-- PricingPage:
-  - Badge: `Early bird · N of 50 spots left`
-  - Discounted price in accent + strikethrough regular price
-  - Note: first month/year, then regular price
-  - Verified in USD/INR × monthly/annual
-- Admin Growth tab shows claim counter
+- PricingPage shows:
+  - Early bird badge (`remaining of 50`)
+  - Discounted price + strikethrough regular
+  - Note: “first month/year, then regular price”
 
-Testing
-- `/app/test_reports/iteration_35.json`
-  - Backend: 95% (one flagged item was expected signature verification rejecting fake sigs in tests; early bird activation was verified)
-  - Frontend: 100%
-- Test hygiene:
-  - Early bird claimed reset to 0
-  - SEO keyword entries cleaned
-  - Accumulated test users purged
+#### 46.4 Early Bird Homepage Banner ✅ *(Phase 46 add-on)*
+Context: show the early-bird premium deal on the homepage so visitors see it before the pricing page.
 
-**IMPORTANT:** Phase 46 is in **PREVIEW only** until the user redeploys production.
+Delivered:
+- `HomePage.js` now fetches `GET /api/billing/early-bird` alongside `/early-supporters`.
+- New banner rendered **above** the existing early-supporter strip:
+  - `data-testid="early-bird-banner"`
+  - Dark strip (`bg-foreground text-background`) with accent `Crown` icon
+  - Copy: “Early bird: go Premium for {₹49 | $0.52} first month or {₹499 | $5.25} first year (strikethrough regular annual) · N of 50 spots left · Lock in the deal”
+  - Links to `/pricing`.
+- Currency-aware via `getPreferredCurrency()` (INR/USD).
+- Prices come from the early-bird API (single source of truth; no hardcoding).
+- Hidden when promo is inactive/exhausted or user is already premium.
+- Early-supporter banner unchanged and still renders below.
+
+Verification:
+- Screenshot verified stacked banners render cleanly with distinct styling.
+- Frontend build passes.
+
+**IMPORTANT:** This homepage banner is in **PREVIEW only** until the user redeploys production.
 
 ---
 
@@ -534,7 +514,7 @@ If you are seeing an issue, confirm whether it is on:
 
 ### B) Production rollouts pending redeploy (Preview → Production)
 - Phase 45 (keyword SEO targeting) requires a redeploy.
-- Phase 46 (growth suite + early bird) requires a redeploy.
+- Phase 46 (growth suite + early bird + homepage banner) requires a redeploy.
 
 ### C) Payment gateways
 - “Test mode” banners cannot be removed with code.
@@ -589,6 +569,7 @@ If you are seeing an issue, confirm whether it is on:
   - Manual keyword rank tracker with history + deltas
   - Early bird claims remaining
 - Pricing page surfaces Early Bird discount correctly and enforces **first 50 premium subscribers** cap.
+- Homepage surfaces the early bird deal via banner above the hero.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

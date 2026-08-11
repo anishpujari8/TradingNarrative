@@ -5,11 +5,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, Clock, ArrowRight, Zap } from "lucide-react";
+import { Lock, Clock, ArrowRight, Zap, Crown } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
-import { api, CATEGORIES, formatDate, SITE_URL, SITE_NAME } from "@/lib/api";
+import { api, CATEGORIES, formatDate, SITE_URL, SITE_NAME, getPreferredCurrency, formatINR } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { ContinueReading } from "@/components/ContinueReading";
 
@@ -26,9 +26,11 @@ export default function HomePage() {
   const [filter, setFilter] = useState("all");
   const [recs, setRecs] = useState(null);
   const [promo, setPromo] = useState(null); // early supporter spots {limit, taken, left}
+  const [earlyBird, setEarlyBird] = useState(null); // premium early bird promo (first 50)
 
   useEffect(() => {
     api.get("/early-supporters").then((res) => setPromo(res.data)).catch(() => {});
+    api.get("/billing/early-bird").then((res) => setEarlyBird(res.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -92,6 +94,36 @@ export default function HomePage() {
           ],
         }}
       />
+
+      {/* EARLY BIRD PREMIUM DEAL, first 50 premium subscribers get a discounted first period */}
+      {earlyBird?.active && !user?.is_premium && (() => {
+        const isINR = getPreferredCurrency() === "inr";
+        const m = earlyBird.plans?.monthly;
+        const a = earlyBird.plans?.annual;
+        if (!m || !a) return null;
+        const monthly = isINR ? formatINR(m.amount_inr) : `$${m.amount.toFixed(2)}`;
+        const annualP = isINR ? formatINR(a.amount_inr) : `$${a.amount.toFixed(2)}`;
+        const annualReg = isINR ? formatINR(a.regular_amount_inr) : `$${a.regular_amount.toFixed(2)}`;
+        return (
+          <div className="bg-foreground text-background" data-testid="early-bird-banner">
+            <Link
+              to="/pricing"
+              className="container-editorial flex items-center justify-center gap-2 py-2.5 text-sm hover:opacity-90 transition-opacity"
+              data-testid="early-bird-banner-link"
+            >
+              <Crown className="h-3.5 w-3.5 shrink-0 text-accent" />
+              <span className="truncate">
+                Early bird: go Premium for <strong>{monthly}</strong> first month or{" "}
+                <strong>{annualP}</strong> first year <span className="opacity-70 line-through">{annualReg}</span> ·{" "}
+                <strong data-testid="early-bird-banner-count">{earlyBird.remaining} of {earlyBird.spots}</strong> spots left
+              </span>
+              <span className="hidden sm:inline-flex items-center gap-1 font-medium underline underline-offset-4 shrink-0">
+                Lock in the deal <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </Link>
+          </div>
+        );
+      })()}
 
       {/* EARLY SUPPORTER PROMO, signup urgency while first-50 spots remain */}
       {promo && promo.left > 0 && !user?.early_supporter && !user?.is_premium && (
