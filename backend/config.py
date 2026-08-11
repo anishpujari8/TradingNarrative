@@ -36,6 +36,14 @@ PLANS = {
                  'amount_inr': 5499.00, 'interval': 'year', 'period_days': 365},
 }
 
+# Early bird launch offer: the first EARLY_BIRD_SPOTS premium subscribers get a
+# discounted FIRST period (monthly: first month, annual: first year), then regular price.
+EARLY_BIRD_SPOTS = 50
+EARLY_BIRD_PRICES = {
+    'monthly': {'amount': 0.52, 'amount_inr': 49.00},
+    'annual': {'amount': 5.25, 'amount_inr': 499.00},
+}
+
 # Per-essay audio narration unlock: one-time micro-purchase for free readers.
 # NARRATION POLICY: newsletter editions + shipping industry essays keep free full audio;
 # every other essay narration can be unlocked a la carte at this price.

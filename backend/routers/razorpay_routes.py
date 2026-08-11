@@ -12,6 +12,7 @@ from utils import now_utc, iso, published_query, has_free_audio, owns_audio, pre
 from security import get_current_user, is_entitled
 from schemas import RazorpayCheckoutIn, RazorpayVerifyIn, AudioCheckoutIn
 from services import razorpay_service as rzp
+from services.promo_service import early_bird_price
 from services.stripe_service import activate_premium_from_transaction
 
 router = APIRouter(prefix='/api')
@@ -25,11 +26,15 @@ async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_u
     if existing:
         raise HTTPException(status_code=400, detail='You already have an active subscription')
     plan = PLANS[body.plan]
-    amount_paise = int(round(plan['amount_inr'] * 100))
+    # EARLY BIRD: first 50 premium subscribers pay a discounted first period.
+    # Early-bird Razorpay checkouts always use a one-time ORDER (not an Autopay mandate)
+    # so the discount applies once and never becomes a perpetual subscription price.
+    early, _eb_usd, eb_inr = await early_bird_price(body.plan)
+    amount_paise = int(round(eb_inr * 100))
     await rzp.maybe_reprobe_razorpay()  # switch to Autopay live once enabled on the dashboard
     kind = 'order'
     mock = False
-    if RAZORPAY_ENABLED and rzp.RAZORPAY_SUBS_ENABLED:
+    if RAZORPAY_ENABLED and rzp.RAZORPAY_SUBS_ENABLED and not early:
         # UPI AUTOPAY: recurring subscription via e-mandate
         try:
             rz_plan_id = await rzp.get_or_create_razorpay_plan(body.plan)
@@ -62,8 +67,9 @@ async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_u
         mock = True
     await db.payment_transactions.insert_one({
         'session_id': ref_id, 'user_id': user['id'], 'plan': body.plan,
-        'amount': plan['amount_inr'], 'currency': 'inr', 'provider': 'razorpay',
+        'amount': eb_inr, 'currency': 'inr', 'provider': 'razorpay',
         'kind': kind, 'auto_renew': kind == 'subscription', 'mock': mock,
+        'early_bird': early,
         'status': 'initiated', 'payment_status': 'pending', 'activated': False,
         'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
     })
@@ -74,7 +80,7 @@ async def razorpay_checkout(body: RazorpayCheckoutIn, user=Depends(get_current_u
             'amount': amount_paise, 'currency': 'INR',
             'razorpay_key_id': RAZORPAY_KEY_ID or None,
             'name': 'The Trading Narrative',
-            'description': f"Premium — {plan['label']} (INR)"}
+            'description': f"Premium — {plan['label']} (INR){' · Early bird' if early else ''}"}
 
 
 @router.post('/billing/audio/razorpay/checkout')

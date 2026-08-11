@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { SyncToProductionDialog } from "@/components/SyncToProductionDialog";
 import { SyncNarrationsDialog } from "@/components/SyncNarrationsDialog";
+import { GrowthPanel } from "@/components/admin/GrowthPanel";
 import { api, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -296,6 +297,7 @@ export default function AdminPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="emails" data-testid="admin-tab-emails">Email log</TabsTrigger>
+          <TabsTrigger value="growth" data-testid="admin-tab-growth">Growth</TabsTrigger>
         </TabsList>
 
         {narrations?.enabled && narrations?.issues?.length > 0 && activeTab !== "narrations" && (
@@ -995,6 +997,11 @@ export default function AdminPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* GROWTH: audio sales + search rank tracker + early bird */}
+        <TabsContent value="growth">
+          <GrowthPanel />
         </TabsContent>
       </Tabs>
 

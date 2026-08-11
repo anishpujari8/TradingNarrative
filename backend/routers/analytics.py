@@ -2,13 +2,13 @@
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Request, Query
+from fastapi import APIRouter, Depends, Request, Query, HTTPException
 from fastapi.responses import Response
 
 from db import db
 from utils import now_utc, iso, classify_traffic_source
 from security import get_optional_user, get_admin_user
-from schemas import TrackIn
+from schemas import TrackIn, SeoKeywordIn
 
 router = APIRouter(prefix='/api')
 
@@ -239,3 +239,97 @@ async def admin_funnel(admin=Depends(get_admin_user), days: int = Query(30, le=3
     post_conversions.sort(key=lambda x: (-x['conversions'], -x['reader_sessions']))
     return {'days': days, 'total_sessions': len(sids), 'funnel': funnel, 'overall': overall,
             'post_conversions': post_conversions[:10]}
+
+
+# ---------------------- Growth: audio narration sales ----------------------
+
+@router.get('/admin/audio-sales')
+async def admin_audio_sales(admin=Depends(get_admin_user)):
+    """Narration micro-purchase performance: totals, best sellers, recent purchases."""
+    txns = await db.payment_transactions.find(
+        {'plan': 'audio_unlock', 'payment_status': 'paid'}
+    ).sort('created_at', -1).to_list(2000)
+    revenue_inr = sum(t.get('amount', 0) for t in txns if (t.get('currency') or '').lower() == 'inr')
+    revenue_usd = sum(t.get('amount', 0) for t in txns if (t.get('currency') or '').lower() == 'usd')
+    # best sellers by essay
+    by_slug = {}
+    for t in txns:
+        slug = t.get('audio_slug') or 'unknown'
+        s = by_slug.setdefault(slug, {'slug': slug, 'purchases': 0, 'revenue_inr': 0.0, 'revenue_usd': 0.0})
+        s['purchases'] += 1
+        if (t.get('currency') or '').lower() == 'inr':
+            s['revenue_inr'] += t.get('amount', 0)
+        else:
+            s['revenue_usd'] += t.get('amount', 0)
+    titles = {}
+    slugs = [s for s in by_slug if s != 'unknown']
+    if slugs:
+        for p in await db.posts.find({'slug': {'$in': slugs}}, {'slug': 1, 'title': 1}).to_list(200):
+            titles[p['slug']] = p['title']
+    best_sellers = sorted(by_slug.values(), key=lambda x: -x['purchases'])
+    for s in best_sellers:
+        s['title'] = titles.get(s['slug'], s['slug'])
+        s['revenue_inr'] = round(s['revenue_inr'], 2)
+        s['revenue_usd'] = round(s['revenue_usd'], 2)
+    # recent purchases with buyer emails
+    user_ids = list({t['user_id'] for t in txns[:20] if t.get('user_id')})
+    emails = {}
+    if user_ids:
+        for u in await db.users.find({'id': {'$in': user_ids}}, {'id': 1, 'email': 1}).to_list(50):
+            emails[u['id']] = u['email']
+    recent = [{
+        'slug': t.get('audio_slug'), 'title': titles.get(t.get('audio_slug'), t.get('audio_slug')),
+        'amount': t.get('amount'), 'currency': (t.get('currency') or '').upper(),
+        'provider': t.get('provider'), 'email': emails.get(t.get('user_id'), ''),
+        'created_at': t.get('created_at'),
+    } for t in txns[:10]]
+    return {'total_purchases': len(txns),
+            'revenue_inr': round(revenue_inr, 2), 'revenue_usd': round(revenue_usd, 2),
+            'best_sellers': best_sellers[:10], 'recent': recent}
+
+
+# ---------------------- Growth: manual search rank tracker ----------------------
+
+@router.get('/admin/seo/keywords')
+async def admin_seo_keywords(admin=Depends(get_admin_user)):
+    """Manually logged Search Console numbers, grouped per keyword with deltas."""
+    entries = await db.seo_keyword_stats.find({}).sort('noted_on', -1).to_list(1000)
+    grouped = {}
+    for e in entries:  # already newest-first
+        kw = e['keyword']
+        grouped.setdefault(kw, []).append({
+            'id': e['id'], 'impressions': e['impressions'], 'clicks': e['clicks'],
+            'position': e.get('position'), 'noted_on': e['noted_on'],
+        })
+    keywords = []
+    for kw, rows in grouped.items():
+        latest, previous = rows[0], (rows[1] if len(rows) > 1 else None)
+        keywords.append({'keyword': kw, 'latest': latest, 'previous': previous,
+                         'entries': rows[:12]})
+    keywords.sort(key=lambda k: -(k['latest']['impressions'] or 0))
+    return {'keywords': keywords}
+
+
+@router.post('/admin/seo/keywords')
+async def admin_seo_keywords_add(body: SeoKeywordIn, admin=Depends(get_admin_user)):
+    noted_on = body.noted_on or now_utc().strftime('%Y-%m-%d')
+    try:
+        datetime.strptime(noted_on, '%Y-%m-%d')
+    except ValueError:
+        raise HTTPException(status_code=400, detail='noted_on must be YYYY-MM-DD')
+    entry = {
+        'id': str(uuid.uuid4()), 'keyword': body.keyword.strip().lower(),
+        'impressions': body.impressions, 'clicks': body.clicks,
+        'position': body.position, 'noted_on': noted_on,
+        'created_at': iso(now_utc()),
+    }
+    await db.seo_keyword_stats.insert_one(dict(entry))
+    return {'ok': True, 'entry': entry}
+
+
+@router.delete('/admin/seo/keywords/{entry_id}')
+async def admin_seo_keywords_delete(entry_id: str, admin=Depends(get_admin_user)):
+    res = await db.seo_keyword_stats.delete_one({'id': entry_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail='Entry not found')
+    return {'ok': True}

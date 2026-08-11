@@ -58,6 +58,7 @@ export default function PricingPage() {
   const [rzpConfirm, setRzpConfirm] = useState(false);
   const [rzpBusy, setRzpBusy] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("annual");
+  const [earlyBird, setEarlyBird] = useState(null); // first-50 launch promo
 
   const changeCurrency = (c) => {
     setCurrency(c);
@@ -71,6 +72,7 @@ export default function PricingPage() {
       setRazorpayEnabled(res.data.razorpay_enabled);
       setRazorpayAutopay(!!res.data.razorpay_autopay);
     }).catch(() => {});
+    api.get("/billing/early-bird").then((res) => setEarlyBird(res.data)).catch(() => {});
   }, []);
 
   const isINR = currency === "inr";
@@ -79,6 +81,10 @@ export default function PricingPage() {
   const priceFor = (planId) => (isINR ? PRICING[planId].inr : PRICING[planId].usd);
   const selected = PRICING[selectedPlan];
   const monthlyEquiv = isINR ? formatINR(83) : "$0.88";
+  // EARLY BIRD: first 50 premium subscribers get a discounted first period
+  const ebActive = !!earlyBird?.active && !user?.is_premium;
+  const ebPlan = earlyBird?.plans?.[premiumPlan];
+  const ebPrice = ebPlan ? (isINR ? formatINR(ebPlan.amount_inr) : `$${ebPlan.amount.toFixed(2)}`) : null;
 
   // Session-expiry aware error handling: a stale token must never dead-end at "Not authenticated"
   const handleCheckoutError = (err, fallback) => {
@@ -277,15 +283,32 @@ export default function PricingPage() {
 
         {/* PREMIUM */}
         <Card className="rounded-2xl border-accent/50 relative shadow-[var(--shadow-float)]" data-testid="pricing-premium-card">
-          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground hover:bg-accent">Most popular</Badge>
+          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground hover:bg-accent whitespace-nowrap" data-testid="pricing-premium-badge">
+            {ebActive ? `Early bird · ${earlyBird.remaining} of ${earlyBird.spots} spots left` : "Most popular"}
+          </Badge>
           <CardHeader className="pb-2">
             <h3 className="font-serif text-2xl font-semibold flex items-center gap-2">
               Premium <Crown className="h-5 w-5 text-accent" />
             </h3>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-semibold" data-testid="pricing-premium-amount">{priceFor(premiumPlan)}</span>
-              <span className="text-muted-foreground text-sm">{PRICING[premiumPlan].per}</span>
+            <div className="flex items-baseline gap-2">
+              {ebActive && ebPrice ? (
+                <>
+                  <span className="text-4xl font-semibold text-accent" data-testid="pricing-premium-amount">{ebPrice}</span>
+                  <span className="text-lg text-muted-foreground line-through" data-testid="pricing-premium-regular-price">{priceFor(premiumPlan)}</span>
+                  <span className="text-muted-foreground text-sm">{PRICING[premiumPlan].per}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-semibold" data-testid="pricing-premium-amount">{priceFor(premiumPlan)}</span>
+                  <span className="text-muted-foreground text-sm">{PRICING[premiumPlan].per}</span>
+                </>
+              )}
             </div>
+            {ebActive && ebPrice && (
+              <p className="text-xs text-accent font-medium" data-testid="pricing-early-bird-note">
+                Early bird price for your first {annual ? "year" : "month"}, then {priceFor(premiumPlan)}{PRICING[premiumPlan].per}.
+              </p>
+            )}
             {annual && <p className="text-xs text-muted-foreground font-mono">That's {monthlyEquiv}/month</p>}
           </CardHeader>
           <CardContent>

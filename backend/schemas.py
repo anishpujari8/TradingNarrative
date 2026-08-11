@@ -123,6 +123,14 @@ class AudioCheckoutIn(BaseModel):
     origin_url: Optional[str] = None
 
 
+class SeoKeywordIn(BaseModel):
+    keyword: str = Field(min_length=1, max_length=80)
+    impressions: int = Field(ge=0)
+    clicks: int = Field(ge=0)
+    position: Optional[float] = Field(default=None, ge=0)
+    noted_on: Optional[str] = None  # YYYY-MM-DD, defaults to today
+
+
 class RazorpayVerifyIn(BaseModel):
     order_id: str
     payment_id: Optional[str] = None

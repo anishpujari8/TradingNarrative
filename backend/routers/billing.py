@@ -14,6 +14,7 @@ from utils import now_utc, iso, clean, published_query, has_free_audio, owns_aud
 from security import get_current_user, is_entitled
 from schemas import CheckoutIn, AudioCheckoutIn
 from services import razorpay_service as rzp
+from services.promo_service import early_bird_status, early_bird_price
 from services.stripe_service import stripe_client, configure_stripe_sdk, activate_premium_from_transaction
 from services.emailer import log_email
 from emergentintegrations.payments.stripe.checkout import CheckoutSessionRequest
@@ -30,6 +31,12 @@ async def billing_config():
             'plans': list(PLANS.values())}
 
 
+@router.get('/billing/early-bird')
+async def billing_early_bird():
+    """Public early bird promo state for the pricing page."""
+    return await early_bird_status()
+
+
 @router.post('/billing/checkout')
 async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
     if body.plan not in PLANS:
@@ -38,13 +45,15 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
     if existing:
         raise HTTPException(status_code=400, detail='You already have an active subscription')
     plan = PLANS[body.plan]
+    # EARLY BIRD: first 50 premium subscribers get a discounted first period
+    early, eb_usd, _eb_inr = await early_bird_price(body.plan)
 
     if MOCK_BILLING:
         # MOCKED fallback path (MOCK_BILLING=true)
         period_days = plan['period_days']
         sub = {
             'id': str(uuid.uuid4()), 'user_id': user['id'], 'plan': body.plan,
-            'status': 'active', 'provider': 'mock',
+            'status': 'active', 'provider': 'mock', 'early_bird': early,
             'current_period_start': iso(now_utc()),
             'current_period_end': iso(now_utc() + timedelta(days=period_days)),
             'created_at': iso(now_utc()), 'canceled_at': None,
@@ -53,7 +62,7 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
         invoice = {
             'id': str(uuid.uuid4()), 'user_id': user['id'], 'subscription_id': sub['id'],
             'number': f"TTN-{now_utc().strftime('%Y%m')}-{random.randint(1000, 9999)}",
-            'amount': plan['amount'], 'currency': plan['currency'], 'plan': body.plan,
+            'amount': eb_usd, 'currency': plan['currency'], 'plan': body.plan,
             'status': 'paid', 'created_at': iso(now_utc()),
         }
         await db.invoices.insert_one(dict(invoice))
@@ -70,7 +79,7 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
         if AUTO_RENEW:
             # TRUE AUTO-RENEWING SUBSCRIPTION (user's own Stripe key)
             sdk = configure_stripe_sdk()
-            session_obj = sdk.checkout.Session.create(
+            session_kwargs = dict(
                 mode='subscription',
                 line_items=[{
                     'price_data': {
@@ -85,11 +94,20 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
                 cancel_url=cancel_url,
                 metadata=metadata,
             )
+            if early:
+                # EARLY BIRD: one-off coupon discounts only the FIRST invoice; renewals bill full price
+                coupon = sdk.Coupon.create(
+                    amount_off=int(round((plan['amount'] - eb_usd) * 100)),
+                    currency=plan['currency'], duration='once',
+                    name='Early bird — first 50 members',
+                )
+                session_kwargs['discounts'] = [{'coupon': coupon.id}]
+            session_obj = sdk.checkout.Session.create(**session_kwargs)
             session_url, session_id = session_obj.url, session_obj.id
         else:
             # One-time timed pass (shared Emergent test key — Stripe-side cancel API unavailable)
             checkout_req = CheckoutSessionRequest(
-                amount=float(plan['amount']),
+                amount=float(eb_usd),
                 currency=plan['currency'],
                 success_url=success_url,
                 cancel_url=cancel_url,
@@ -102,8 +120,8 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
         raise HTTPException(status_code=502, detail='Could not start Stripe checkout. Please try again.')
     await db.payment_transactions.insert_one({
         'session_id': session_id, 'user_id': user['id'], 'plan': body.plan,
-        'amount': plan['amount'], 'currency': plan['currency'],
-        'auto_renew': AUTO_RENEW,
+        'amount': eb_usd, 'currency': plan['currency'],
+        'auto_renew': AUTO_RENEW, 'early_bird': early,
         'status': 'initiated', 'payment_status': 'pending', 'activated': False,
         'created_at': iso(now_utc()), 'updated_at': iso(now_utc()),
     })

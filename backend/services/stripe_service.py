@@ -89,6 +89,7 @@ async def activate_premium_from_transaction(txn):
             'id': str(uuid.uuid4()), 'user_id': user['id'], 'plan': plan_id,
             'status': 'active', 'provider': 'stripe',
             'auto_renew': auto_renew,
+            'early_bird': bool(txn.get('early_bird')),
             'stripe_session_id': txn['session_id'],
             'stripe_subscription_id': stripe_sub_id,
             'razorpay_subscription_id': rzp_sub_id,

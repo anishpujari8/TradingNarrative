@@ -139,6 +139,10 @@
   - Missing-post sync ✅
   - Update-mode sync ✅ (safe allowlist)
 - Sync carries normalized author identity ✅
+- **Growth Suite** ✅ *(Phase 46, PREVIEW)*
+  - Audio Sales Dashboard ✅
+  - Manual Search Rank Tracker ✅
+  - Early Bird Premium offer (first 50) ✅
 
 ### Community (Premium Lounge)
 - Private Community Lounge ✅
@@ -213,6 +217,7 @@
   - WebSite + Organization JSON-LD on homepage
   - Briefings + Archive tuned for “Weekly briefing / newsletter / freight / trading”
   - Topic hubs already keyword-strong
+  - Meta duplication fixed (static tags removed on mount) so each rendered page has exactly one `description`, `keywords`, and `og:title`
 - **Documentation** ✅ *(Phase 42 + 45)*
   - `/app/SEO.md` documents metering + paywall + schema rules + keyword map
 
@@ -428,6 +433,96 @@ Verification:
 
 **IMPORTANT:** Phase 45 is in **PREVIEW only** until the user redeploys production.
 
+### Phase 46 — Growth Suite (Audio Sales + Manual Search Rank + Early Bird) ✅ COMPLETED (PREVIEW)
+**Delivered exactly as planned.**
+
+#### 46.1 Audio Sales Dashboard (Admin) ✅
+Backend
+- `GET /api/admin/audio-sales` (admin-only)
+- Source: `payment_transactions` where `plan='audio_unlock'` and `payment_status='paid'`
+- Output:
+  - Totals: purchase count, revenue split INR/USD
+  - Best sellers: per-essay purchases + revenue
+  - Recent purchases: includes buyer email (when available)
+
+Frontend
+- New Admin tab: **Growth**
+- Cards:
+  - Narration unlock count
+  - INR revenue (Razorpay)
+  - USD revenue (Stripe)
+  - Early bird claims
+- Tables: best-selling narrations + recent narration purchases
+
+#### 46.2 Search Rank Tracker (Admin, Manual Entry) ✅
+User choice: **Skip Google Search Console connection** (manual entry).
+
+Backend
+- Collection: `seo_keyword_stats`
+- Endpoints (admin-only):
+  - `GET /api/admin/seo/keywords`
+  - `POST /api/admin/seo/keywords`
+  - `DELETE /api/admin/seo/keywords/{entry_id}`
+- Keyword normalization: lowercased
+- Validation: `noted_on` must be YYYY-MM-DD (400 on invalid)
+
+Frontend
+- Admin → Growth → Search rank tracker card
+- Quick chips for target keywords:
+  - trading
+  - freight
+  - business and finance
+  - narrative
+  - weekly briefing
+  - newsletter
+- Entry form: impressions, clicks, optional position, date
+- Table shows latest and deltas vs previous entry
+  - Position delta is inverted (lower position is better)
+
+#### 46.3 Early Bird Offer (first 50 premium subscribers) ✅
+User choices:
+- First **50** premium subscribers
+- Both discounts:
+  - **Monthly**: ₹49 / $0.52 for the first month
+  - **Annual**: ₹499 / $5.25 for the first year
+
+Backend
+- Config:
+  - `EARLY_BIRD_SPOTS = 50`
+  - `EARLY_BIRD_PRICES = { monthly: {usd:0.52, inr:49}, annual: {usd:5.25, inr:499} }`
+- Service: `services/promo_service.py`
+  - `early_bird_status()` → `{spots, claimed, remaining, active}`
+  - `early_bird_price(plan_id)` → resolves discounted vs regular amounts
+- Public endpoint:
+  - `GET /api/billing/early-bird`
+- Checkout behavior:
+  - Stripe AUTO_RENEW: uses a one-time (`duration='once'`) coupon so renewals bill full price
+  - Stripe shared/one-time: charges early price directly
+  - Razorpay: early bird always uses **one-time order** at early price (never an Autopay mandate)
+  - Founding plans: never discounted
+- Data model:
+  - `payment_transactions.early_bird=true`
+  - `subscriptions.early_bird=true` on activation (source of claim counting)
+
+Frontend
+- PricingPage:
+  - Badge: `Early bird · N of 50 spots left`
+  - Discounted price in accent + strikethrough regular price
+  - Note: first month/year, then regular price
+  - Verified in USD/INR × monthly/annual
+- Admin Growth tab shows claim counter
+
+Testing
+- `/app/test_reports/iteration_35.json`
+  - Backend: 95% (one flagged item was expected signature verification rejecting fake sigs in tests; early bird activation was verified)
+  - Frontend: 100%
+- Test hygiene:
+  - Early bird claimed reset to 0
+  - SEO keyword entries cleaned
+  - Accumulated test users purged
+
+**IMPORTANT:** Phase 46 is in **PREVIEW only** until the user redeploys production.
+
 ---
 
 ## 3) Next Actions
@@ -438,8 +533,8 @@ If you are seeing an issue, confirm whether it is on:
 - **Production** (https://thetradingnarrative.com)
 
 ### B) Production rollouts pending redeploy (Preview → Production)
-- Phase 44 (premium pillar audio hidden for non-premium) requires a redeploy.
 - Phase 45 (keyword SEO targeting) requires a redeploy.
+- Phase 46 (growth suite + early bird) requires a redeploy.
 
 ### C) Payment gateways
 - “Test mode” banners cannot be removed with code.
@@ -487,6 +582,13 @@ If you are seeing an issue, confirm whether it is on:
 - Homepage emits WebSite + Organization JSON-LD.
 - Briefings and Archive pages are tuned for “weekly briefing / newsletter / freight / trading”.
 - Single meta description + keywords + og:title on rendered pages.
+
+✅ Phase 46 success targets met (Preview)
+- Admin Growth tab shows:
+  - Audio narration unlock sales + revenue
+  - Manual keyword rank tracker with history + deltas
+  - Early bird claims remaining
+- Pricing page surfaces Early Bird discount correctly and enforces **first 50 premium subscribers** cap.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.
