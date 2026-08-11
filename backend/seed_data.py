@@ -1015,7 +1015,7 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
              'Edition #2 of The Trading Narrative.',
   'category': 'finance',
   'tier': 'free',
-  'cover_image': 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&q=80&auto=format&fit=crop',
+  'cover_image': 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1600&q=80&auto=format&fit=crop',
   'tags': ['ETRM', 'Commodities', 'Markets', 'Risk', 'Regulation'],
   'featured': False,
   'edition': 2,
