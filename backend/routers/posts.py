@@ -13,7 +13,8 @@ from config import (CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLE
                     EARLY_FREE_POSTS, METER_FREE_READS, METER_COOKIE,
                     METER_COOKIE_DAYS, PREVIEW_WORDS, logger)
 from db import db
-from utils import now_utc, iso, clean, post_summary, published_query, has_free_audio, owns_audio
+from utils import (now_utc, iso, clean, post_summary, published_query,
+                   has_free_audio, owns_audio, premium_audio_only)
 from security import get_optional_user, get_current_user, is_entitled
 from schemas import CommentIn, BookmarkToggleIn, AudioProgressIn
 
@@ -447,14 +448,18 @@ async def post_audio_access(slug: str, user=Depends(get_optional_user)):
     free_audio = has_free_audio(post)
     purchased = owns_audio(user, slug)
     full = premium or free_audio or purchased
+    # PREMIUM PILLARS (Tech & AI / Personal Growth / Delivery & Systems):
+    # narration is exclusive to Premium members — no player, no a la carte unlock
+    hidden = premium_audio_only(post) and not premium
     return {
         'enabled': TTS_ENABLED,
         'requires_signin': not bool(user),
         'is_premium': premium,
         'free_audio': free_audio,
         'purchased': purchased,
+        'hidden': hidden,
         'scope': 'full' if full else 'clip',
-        'unlockable': not full,
+        'unlockable': not full and not hidden,
         'price_inr': AUDIO_UNLOCK_PRICE_INR,
         'price_usd': AUDIO_UNLOCK_PRICE_USD,
     }
@@ -476,6 +481,9 @@ async def post_audio(slug: str, voice: str = 'male', user=Depends(get_optional_u
         raise HTTPException(status_code=404, detail='Post not found')
     blocks = post.get('content_blocks', [])
     entitled = await is_entitled(user)
+    # PREMIUM PILLARS: narration is exclusive to Premium members (no clip, no unlock)
+    if premium_audio_only(post) and not entitled:
+        raise HTTPException(status_code=403, detail='Narrations for this essay are exclusive to Premium members.')
     full_access = entitled or has_free_audio(post) or owns_audio(user, slug)
     from services.tts_service import get_or_generate_audio
     try:

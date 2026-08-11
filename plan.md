@@ -101,9 +101,12 @@
   - **FREE full audio** for:
     - **Newsletter editions**: posts with an `edition` field (Edition #1, #2, etc.)
     - **Shipping industry** essays: posts tagged with `Shipping` (case-insensitive match on tags)
-  - All other essays:
+  - **Business & Finance** (non-exempt essays):
     - default is **20-second preview clip** (`X-Audio-Scope: clip`) ✅
     - **one-time per-essay unlock** for **₹45 / $0.50** (Phase 43) ✅
+  - **Premium pillars (Tech & AI, Personal Growth, Delivery & Systems)**:
+    - narration is **Premium-only**
+    - **NO audio player at all** for non-premium readers (Phase 44) ✅
 
 **Pricing note (important):** The originally requested ₹39 / $0.41 was not possible via Stripe due to a hard minimum of **$0.50 USD-equivalent** per charge. Final pricing was user-approved: **₹45 (Razorpay) / $0.50 (Stripe)**.
 
@@ -378,20 +381,18 @@ Delivered:
 ### Phase 43 — Per-Essay Audio Micro-Paywall (₹45 / $0.50) ✅ COMPLETED
 **Goal:** Allow free readers to buy **one essay’s full narration** without upgrading to Premium.
 
-**Policy (confirmed + implemented):**
+**Policy (implemented):**
 - Anonymous: **sign-in required** for any audio (401) ✅
 - Premium: full narration everywhere ✅
 - Free signed-in:
   - Full audio FREE for:
     - newsletter editions (has `edition`)
     - shipping industry essays (tag match contains `shipping`, case-insensitive)
-  - Otherwise: 20-second preview clip by default, with one-time unlock per essay
+  - Otherwise (Business & Finance): 20-second preview clip by default, with one-time unlock per essay
 
 **Pricing (final, user-approved):**
 - **₹45** via Razorpay
 - **$0.50** via Stripe
-
-Rationale: Stripe enforces a hard minimum charge of $0.50 USD-equivalent, so ₹39 / $0.41 was not possible.
 
 **Backend delivered:**
 - Config:
@@ -409,12 +410,9 @@ Rationale: Stripe enforces a hard minimum charge of $0.50 USD-equivalent, so ₹
   - Stripe: `POST /api/billing/audio/checkout` (one-time payment). `success_url` redirects to `/post/{slug}?audio_session_id=...`.
   - Razorpay: `POST /api/billing/audio/razorpay/checkout` creates a ₹45 order.
 - Fulfillment:
-  - Dispatched inside existing payment activation pipeline:
-    - `activate_premium_from_transaction(txn)` routes `plan=='audio_unlock'` to `fulfill_audio_unlock()`.
-    - Unlock: `$addToSet users.purchased_audio_slugs`, analytics event `audio_unlock_purchase`, receipt email.
-  - Works automatically via existing paths:
-    - Stripe webhook + `/api/payments/status/{session_id}` polling
-    - Razorpay verify + Razorpay webhook
+  - `activate_premium_from_transaction(txn)` routes `plan=='audio_unlock'` to `fulfill_audio_unlock()`.
+  - Unlock: `$addToSet users.purchased_audio_slugs`, analytics event `audio_unlock_purchase`, receipt email.
+  - Works automatically via Stripe webhook + `/api/payments/status/{session_id}` and Razorpay verify/webhook.
 - Guards:
   - 404 unknown slug
   - 400 if premium / free-audio essay / already owned
@@ -424,58 +422,82 @@ Rationale: Stripe enforces a hard minimum charge of $0.50 USD-equivalent, so ₹
 - Gated essays:
   - Shows `Unlock · ₹45` button.
   - Anonymous click → toast + redirect to `/auth?next=/post/{slug}`.
-  - Signed-in click → dialog (`audio-unlock-dialog`) with:
-    - Razorpay option (₹45)
-    - Stripe option ($0.50)
-    - “Go Premium” link
+  - Signed-in click → dialog (`audio-unlock-dialog`) with Razorpay + Stripe options + “Go Premium” link.
 - Stripe return flow:
-  - Handles `?audio_session_id=` by polling `/payments/status/{session_id}` up to 8 times (every 2 seconds).
+  - Handles `?audio_session_id=` by polling `/payments/status/{session_id}` up to 8 times.
   - On paid: clears cached audio blobs and re-fetches full audio.
-- Pricing labels are **dynamic** from the access API, so future price changes require only config updates.
 
 **My Audio Library (Account page) ✅ SHIPPED**
 - Backend:
   - `GET /api/audio/library` (auth required)
   - 401 for anonymous
-  - Returns purchased narrations **newest-first** (based on `users.purchased_audio_slugs`) using `post_summary` shape.
+  - Returns purchased narrations **newest-first** using `post_summary` shape.
 - Frontend:
-  - `AccountPage.js` renders a **My audio library** card (`data-testid=account-audio-library-card`) **below Subscription**.
-  - Each item shows cover thumbnail + title + category/read-time meta + “Listen” link to `/post/{slug}`.
-  - Empty state (no purchases): “No purchased narrations yet. Unlock any essay's full audio for ₹45 from its player, it stays yours forever.”
-  - Card is hidden for Premium users **when they have no purchases**.
+  - `AccountPage.js` renders a **My audio library** card below Subscription.
+  - Each item shows cover + title + meta + “Listen” link.
+  - Empty state copy for users with no purchases.
+  - Hidden for Premium users when they have no purchases.
 - Verified:
-  - Testing agent report: `/app/test_reports/iteration_34.json` (backend 100%, frontend 100%, includes Account-page regression checks and confirms owned essays show no unlock button).
+  - Testing agent report: `/app/test_reports/iteration_34.json` (backend 100%, frontend 100%).
 
 **Narration ops:**
 - Warmup run completed after credit refill: **18/18 published essays have full-scope cached narrations**.
 
 **Testing:**
-- Testing agent reports:
-  - `/app/test_reports/iteration_33.json` (micro-paywall)
-  - `/app/test_reports/iteration_34.json` (My Audio Library)
+- `/app/test_reports/iteration_33.json` (micro-paywall)
+- `/app/test_reports/iteration_34.json` (My Audio Library)
+
+### Phase 44 — Premium Pillar Audio Exclusivity + Test Mode Decision ✅ COMPLETED (PREVIEW)
+
+#### 44.1 Payment gateway “Test mode” strip (decision recorded)
+- **Root cause:** Stripe/Razorpay display “Test mode” banners when using TEST keys (`sk_test_...`, `rzp_test_...`). This is rendered by the gateways and cannot be removed by code.
+- **User decision:** **KEEP TEST KEYS FOR NOW**.
+  - Result: the “Test mode” strip will continue to appear until LIVE keys are provided.
+- To remove test-mode banners later:
+  - Provide **Stripe live key** `sk_live_...` (Stripe Dashboard → Developers → API keys)
+  - Provide **Razorpay live keys** `rzp_live_...` + secret (Razorpay Dashboard → Settings → API Keys)
+  - Update `/app/backend/.env` and restart backend.
+- Important behavior note:
+  - `config.py` sets `IS_SHARED_STRIPE_KEY` based on `sk_test_emergent`.
+  - `AUTO_RENEW = not IS_SHARED_STRIPE_KEY`; when switching to a live key, Stripe checkout automatically switches to true recurring subscriptions.
+
+#### 44.2 Premium pillar audio exclusivity (user choice: no player for non-premium)
+- Goal: Ensure pillars **Tech & AI**, **Personal Growth**, **Delivery & Systems** are Premium-only for both essay reading and narration.
+- Reading was already gated: all posts in these categories are `tier='premium'` (verified in DB).
+- Audio policy change (implemented in PREVIEW):
+  - For `category in {'tech-business','lifestyle','delivery'}`:
+    - `/api/posts/{slug}/audio/access` returns `hidden=true` when reader is not premium (anonymous included)
+    - `/api/posts/{slug}/audio` returns **403** for non-premium (no 20s preview)
+    - Audio unlock checkout endpoints return **400** (“exclusive to Premium members”)
+  - Frontend: `AudioNarrator.js` returns `null` when `access.hidden` (and while `access` is still loading) → **no audio player shown**.
+- Resulting monetization rules:
+  - ₹45 / $0.50 per-essay unlock applies **only** to **Business & Finance** essays
+  - Exceptions remain: newsletter editions + shipping industry essays have free full audio.
+- Verified:
+  - Curl matrix: anon/free → hidden + 403 + 400 on premium pillars; finance essays unchanged; premium user gets full pillar audio
+  - Frontend screenshots: player absent on a pillar essay, present on a finance essay
+  - Frontend compiles clean.
+
+**IMPORTANT:** Phase 44 is implemented in **PREVIEW only**. Production (thetradingnarrative.com) requires a redeploy to receive it.
 
 ---
 
 ## 3) Next Actions
 
-### A) Production rollout (approved and ready)
-**Deployment readiness:** ✅ PASS (deployment_agent static check)
-- No hardcoded secrets/URLs; env-based config
-- `/api` prefixes consistent
-- Backend port 8001, frontend compiles clean
+### A) Production rollout (status updated)
+- You have deployed production.
+- If you are seeing the “Test mode” strip in production, that confirms the production environment is still using TEST keys.
 
-**User actions to go live on https://thetradingnarrative.com:**
-1. **Click Deploy** on the Emergent platform to ship the new code to production.
-2. After deploy, run **Admin → Sync → Narrations Sync** to push the **18 cached Preview narrations** to the Production DB (no new ElevenLabs credits needed).
+**To roll out Phase 44 (premium pillar audio exclusivity) to production:**
+1. Apply the Phase 44 code changes in Preview (done)
+2. **Redeploy** production again so the new code ships to https://thetradingnarrative.com
 
-Notes:
-- No DB migration required (`purchased_audio_slugs` is additive).
-- Do not need to re-generate audio in production if narrations sync is executed.
+**To remove “Test mode” strip later:**
+- Switch to **LIVE** keys for Stripe and/or Razorpay (see Phase 44.1); banners cannot be removed by code.
 
 ### B) Narration ops
-- Continue using:
-  - Startup warmup cap (2 new narrations per run)
-  - Admin warmup (max 100) when intentionally generating missing narrations
+- Use Admin → Narrations warmup as needed.
+- To move preview narrations to production without using ElevenLabs credits, use Admin → Sync → Narrations.
 
 ### C) Upcoming (still blocked)
 - **PayPal Checkout** (recurring subscriptions) ⛔
@@ -488,7 +510,7 @@ Notes:
 ## 4) Success Criteria
 ✅ Premium posts never return full content to non-premium users from the API.
 ✅ Stripe checkout works.
-✅ Razorpay checkout works; plan cache mints new plans on price changes.
+✅ Razorpay checkout works.
 ✅ Email sending is LIVE with unsubscribe + digest systems.
 ✅ Highlights system complete.
 ✅ Admin analytics complete.
@@ -505,14 +527,16 @@ Notes:
 - Topic hubs exist and support discovery
 - Sitemap/robots/RSS correct and production-domain aligned
 
-✅ Phase 43 success targets (Preview/Release)
-- Free signed-in readers get **full free audio** for newsletter editions and Shipping-tagged essays.
-- Other essays return **clip** for free users until purchase; then return **full**.
-- Anonymous visitors see the unlock CTA but are prompted to sign in before payment.
-- Stripe and Razorpay both support the one-time purchase.
+✅ Phase 43 success targets met
+- Business & Finance: newsletter editions + shipping essays have free full audio; other finance essays offer 20s preview + unlock.
 - Unlock is stored on the user (`purchased_audio_slugs`) and persists across sessions.
-- Pricing is consistent with Stripe minimum: **₹45 / $0.50**.
+- Pricing consistent with Stripe minimum: **₹45 / $0.50**.
 - **My Audio Library** lists purchased narrations on the Account page.
+
+✅ Phase 44 success targets (PREVIEW)
+- Premium pillars (Tech & AI, Personal Growth, Delivery & Systems) are Premium-only for narration.
+- Non-premium readers see **no audio player** on those pillar essays and cannot buy a la carte unlock.
+- “Test mode” strip behavior documented and decision recorded: keep test keys; strip remains until live keys are used.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

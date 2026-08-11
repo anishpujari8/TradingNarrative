@@ -60,6 +60,16 @@ def has_free_audio(post) -> bool:
     return any('shipping' in (t or '').lower() for t in (post.get('tags') or []))
 
 
+# Pillars whose essays (read + narration) are exclusive to Premium members.
+# Free/anonymous readers see no audio player at all and cannot buy the unlock.
+PREMIUM_AUDIO_CATEGORIES = {'tech-business', 'lifestyle', 'delivery'}
+
+
+def premium_audio_only(post) -> bool:
+    """True when this essay's narration is reserved for Premium members (no a la carte)."""
+    return post.get('category') in PREMIUM_AUDIO_CATEGORIES
+
+
 def owns_audio(user, slug: str) -> bool:
     """True when this signed-in reader bought this essay's narration a la carte."""
     return bool(user) and slug in (user.get('purchased_audio_slugs') or [])

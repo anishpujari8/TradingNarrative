@@ -10,7 +10,7 @@ from config import (MOCK_BILLING, AUTO_RENEW, IS_SHARED_STRIPE_KEY, FRONTEND_URL
                     RAZORPAY_ENABLED, RAZORPAY_KEY_ID, PLANS, AUDIO_UNLOCK_SKU,
                     AUDIO_UNLOCK_PRICE_USD, logger)
 from db import db
-from utils import now_utc, iso, clean, published_query, has_free_audio, owns_audio
+from utils import now_utc, iso, clean, published_query, has_free_audio, owns_audio, premium_audio_only
 from security import get_current_user, is_entitled
 from schemas import CheckoutIn, AudioCheckoutIn
 from services import razorpay_service as rzp
@@ -117,6 +117,8 @@ async def _validate_audio_purchase(user, slug: str):
         raise HTTPException(status_code=404, detail='Essay not found')
     if await is_entitled(user):
         raise HTTPException(status_code=400, detail='Premium members already enjoy full narrations')
+    if premium_audio_only(post):
+        raise HTTPException(status_code=400, detail='This narration is exclusive to Premium members')
     if has_free_audio(post):
         raise HTTPException(status_code=400, detail='This narration is already free to listen')
     if owns_audio(user, slug):

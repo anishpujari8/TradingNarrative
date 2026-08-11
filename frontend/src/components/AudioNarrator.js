@@ -73,7 +73,7 @@ export const AudioNarrator = ({ slug }) => {
       const res = await api.get(`/posts/${encodeURIComponent(slug)}/audio/access`);
       setAccess(res.data);
     } catch {
-      setAccess(null);
+      setAccess({ hidden: false }); // transient error: keep the player usable
     }
   }, [slug]);
 
@@ -350,6 +350,10 @@ export const AudioNarrator = ({ slug }) => {
     if (freeAudio && !access?.is_premium) return "Listen to this essay · free narration";
     return "Listen to this essay";
   };
+
+  // PREMIUM PILLARS: narration is exclusive to Premium members — render no player at all
+  // (also stay hidden while entitlement is still loading to avoid a flash)
+  if (!access || access.hidden) return null;
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 mb-8" data-testid="audio-narrator">
