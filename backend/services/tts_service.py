@@ -152,9 +152,11 @@ async def warm_post_audio(post, voice: str = DEFAULT_WARM_VOICE):
     return result
 
 
-async def warm_all_narrations(initial_delay: int = 15):
+async def warm_all_narrations(initial_delay: int = 15, max_generate: int = 2):
     """Warm the narration cache for every published essay so readers never wait on
-    first play. Cached entries are skipped (no extra credits). Startup task + admin-triggered."""
+    first play. Cached entries are skipped (no extra credits). Startup task + admin-triggered.
+    max_generate caps NEW generations per run to protect ElevenLabs credits when many
+    essays publish at once — the rest fill in on later runs or on first play."""
     if not TTS_ENABLED or WARMUP_STATE['running']:
         return
     WARMUP_STATE['running'] = True
@@ -165,6 +167,10 @@ async def warm_all_narrations(initial_delay: int = 15):
         logger.info(f'TTS warmup: checking narrations for {len(posts)} published essays')
         counts = {'generated': 0, 'cached': 0, 'failed': 0}
         for post in posts:
+            if counts['generated'] >= max_generate:
+                logger.info(f"TTS warmup paused: generation cap ({max_generate}/run) reached — "
+                            f"remaining essays warm on the next run or on first play.")
+                break
             result = await warm_post_audio(post)
             if result == 'quota':
                 logger.warning(f"TTS warmup stopped: ElevenLabs credits exhausted "

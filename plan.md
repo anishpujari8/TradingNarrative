@@ -69,6 +69,11 @@
 - **Free Edition Countdown banner** ✅ *(Phase 39)*
   - `/briefings` shows “Free through Edition #6” banner
   - Dynamic countdown: remaining free editions until #6 + “Go Premium early” CTA
+- **Streak reminder emails** ✅ *(Phase 41)*
+  - Evening email when a reader’s streak is about to break (19:00–22:00 IST)
+  - Only for users with `current_streak >= 2` who read **yesterday** but not yet today
+  - Once/reader/day guardrail via `last_streak_reminder_date`
+  - Toggle: `streak_reminder` (default ON)
 
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
@@ -93,6 +98,9 @@
   - Logged-in free users: **20-second preview clip** (byte-clipped from cached MP3; `X-Audio-Scope: clip`; **no extra ElevenLabs credits**)
   - Premium users: full narration (`X-Audio-Scope: full`)
   - Warmup now generates **full scope only**
+- **ElevenLabs credit protection** ✅ *(Phase 41)*
+  - Startup warmup caps **NEW narration generations** to **2 per run** (avoids draining credits after large publishes)
+  - Admin “Generate missing narrations” action is high-cap (**100**) for deliberate bulk warming
 
 **ElevenLabs operational caveats**
 - Credits visibility requires ElevenLabs API key permission `user_read` (current key lacks it).
@@ -126,6 +134,11 @@
   - **Market Narrative feed** (editor “raw takes”, reactions)
   - **Early access drafts** (premium-only scheduled posts readable before publish)
   - **Member discussions** (threads + replies)
+- **Welcome Market Narrative take** ✅ *(Phase 41)*
+  - Seeded once via `welcome_narrative_take_v1`
+  - Author: admin (Anish)
+  - Tag: `insight`
+  - Topic: copper concentrate TC/RC sign flip
 
 ### Access model (SIGNED-IN READING)
 - **Anonymous browsing allowed, but no essay content unless signed in** ✅ *(Phase 40)*
@@ -146,8 +159,12 @@
   - Edition #2 ✅ *(Phase 38 import)*
 - Hardcoded default content ✅ *(real articles are hardcoded and self-heal on DB reset)*
 - Spinning logo ✅
-- Demo cleanup ✅
+- Demo cleanup ✅ *(but can be overridden by admin publishing)*
 - Founding Member Wall ✅
+- **Catalog publish (demo essays)** ✅ *(Phase 41)*
+  - All 12 demo-draft essays published (user explicitly approved)
+  - Tier policy applied on publish: `tech-business`/`delivery`/`lifestyle` → premium; `finance` mixed
+  - Fully reconciled and synced to production (duplicate-suffix issue resolved; slugs now identical)
 
 ### Stability
 - Modular backend (routers/services) ✅
@@ -407,25 +424,77 @@
 - Automated testing agent: iteration_31
 - Test data cleaned (11 real users preserved)
 
+### Phase 41 — Catalog Publish + Welcome Take + Streak Reminders ✅ COMPLETED
+**Status: COMPLETED (content + ops), with production reconciled.**
+
+#### A) Publish all demo-draft essays ✅
+- User explicitly approved publishing all 12 demo essays.
+- In preview DB, promoted the 12 demo posts from `draft` → `published`.
+- Applied tier policy on publish:
+  - `tech-business` / `delivery` / `lifestyle` → `premium`
+  - `finance` → mixed (some free, some premium)
+
+#### B) Sync to production + duplicate reconciliation ✅
+- First sync created **suffixed duplicate slugs** because production still held the originals as drafts.
+- Fixed safely by:
+  - Deleting the **12 suffixed duplicates** on production via production admin API
+  - Deleting the **12 old drafts** on production via production admin API
+  - Re-syncing from preview → production
+- Final state:
+  - **18 published posts** in preview and production
+  - **No missing/outdated drift**
+  - **Identical slugs** confirmed
+
+#### C) Welcome Market Narrative take seeded ✅
+- One-time migration: `welcome_narrative_take_v1`
+- Ensures Lounge isn’t empty after redeploy / DB reset
+
+#### D) Streak reminder emails ✅
+- Implemented `send_streak_reminders()` + `streak_reminder_loop`
+- Window: **19:00–22:00 IST**, checks every 15 minutes
+- Guardrails:
+  - Once/reader/day via `last_streak_reminder_date`
+  - Only `current_streak >= 2`, read **yesterday** but not today
+  - Direct-tested: sends once, idempotent, skips users who already read today
+
+#### E) ElevenLabs credit protection ✅
+- Startup narration warmup capped at **2 new generations per run**
+- Admin-triggered warmup allowed up to **100**
+- After publishing 12 new essays, narrations will fill:
+  - 2 per restart automatically, and/or
+  - on first play (listener-triggered)
+
 ---
 
 ## 3) Next Actions
 
 ### A) Production rollout (required)
-- **Redeploy production** to ship the Phase 37–40 code changes to https://thetradingnarrative.com:
+- **Redeploy production** to ship the Phase 37–41 code changes to https://thetradingnarrative.com:
   - Anonymous essay gate
   - Ask-essay sign-in gate
   - Lounge hub tabs + Market Narrative + Early access
   - Streaks + milestone badges
   - Pricing updates + audio gating + early supporters
+  - Streak reminder loop
+  - ElevenLabs warmup generation cap
 
-### B) Lounge operational playbook (content cadence)
+### B) Post-publish ops (recommended)
+- In Admin Studio, quickly review:
+  - Each newly published demo essay category + tier
+  - Cover images + excerpts
+  - Ensure no unintended “featured” flags
+
+### C) Narration ops
+- Option 1 (safe): allow narrations to fill on first play.
+- Option 2 (controlled): use Admin “Generate missing narrations” and stop if credits begin to drop.
+
+### D) Lounge operational playbook (content cadence)
 - Create a weekly rhythm:
   - 2–3 Market Narrative takes per week (mid-week + expiry after close)
   - 24h early draft posting before public publish
   - One pinned “discussion prompt of the week” thread
 
-### C) Upcoming (still blocked)
+### E) Upcoming (still blocked)
 - **PayPal Checkout** (recurring subscriptions) ⛔
   - Need PayPal client ID + secret and final flow decisions
 - **Resend Integration** ⛔
@@ -471,6 +540,13 @@
   - Market Narrative feed (admin posts + reactions)
   - Early access drafts (scheduled posts readable early)
   - Discussions (threads + replies)
+
+✅ Phase 41 delivered
+- All 12 demo essays published and categorized/tiered
+- Production duplicates resolved; preview/prod slugs identical; diff clean
+- Welcome Market Narrative take seeded
+- Evening streak reminder email system implemented and tested
+- ElevenLabs warmup generation cap added
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

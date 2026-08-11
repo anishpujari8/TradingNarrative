@@ -242,7 +242,7 @@ async def admin_warm_narrations(admin=Depends(get_admin_user)):
     from services.tts_service import warm_all_narrations, WARMUP_STATE
     if WARMUP_STATE['running']:
         return {'ok': True, 'started': False, 'message': 'A warmup run is already in progress.'}
-    asyncio.create_task(warm_all_narrations(initial_delay=0))
+    asyncio.create_task(warm_all_narrations(initial_delay=0, max_generate=100))  # admin-triggered: warm everything
     return {'ok': True, 'started': True,
             'message': 'Warmup started — missing narrations are being generated in the background.'}
 

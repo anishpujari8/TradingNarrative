@@ -17,7 +17,7 @@ from utils import now_utc, iso, slugify, read_time
 from security import hash_password
 from seed_data import SAMPLE_POSTS, REAL_POSTS, AUTHOR
 from services.razorpay_service import probe_razorpay_subscriptions
-from services.digest_service import digest_autosend_loop, briefing_reminder_loop, briefing_autosend_loop
+from services.digest_service import digest_autosend_loop, briefing_reminder_loop, briefing_autosend_loop, streak_reminder_loop
 from services.tts_service import warm_all_narrations
 
 from routers import auth, posts, billing, razorpay_routes, newsletter, analytics, community, admin, highlights, sync, ai
@@ -127,6 +127,31 @@ async def seed_database():
                                         'essays_premiumed': r2.modified_count})
         logger.info(f'Phase 38 tiers: {r1.modified_count} briefings -> free, {r2.modified_count} essays -> premium')
 
+    # LOUNGE: seed the Market Narrative feed with the editor's welcome take (one-time,
+    # runs on production at redeploy too since narrative_takes live per-database)
+    if not await db.migrations.find_one({'key': 'welcome_narrative_take_v1'}):
+        admin_user = await db.users.find_one({'role': 'admin'})
+        if admin_user:
+            import uuid as _uuid
+            await db.narrative_takes.insert_one({
+                'id': str(_uuid.uuid4()),
+                'body': ("Welcome to the Market Narrative — the Lounge-only feed where I drop the quick, "
+                         "raw takes that don't make the Wednesday briefing.\n\n"
+                         "First one: watch copper concentrate TC/RCs. Spot treatment charges have gone "
+                         "negative — smelters are effectively paying miners for ore. If your CTRM "
+                         "hard-codes TC/RC as a deduction, test the sign flip before your next "
+                         "concentrates deal prices.\n\n"
+                         "More as markets move — react below so I know what's landing."),
+                'tag': 'insight',
+                'author': {'id': admin_user['id'],
+                           'name': admin_user.get('name') or 'Anish Pujari',
+                           'role': 'admin'},
+                'reactions': {},
+                'created_at': iso(now_utc()),
+            })
+            await db.migrations.insert_one({'key': 'welcome_narrative_take_v1', 'applied_at': iso(now_utc())})
+            logger.info('Market Narrative: welcome take seeded')
+
 
 @app.on_event('startup')
 async def startup():
@@ -135,6 +160,7 @@ async def startup():
     asyncio.create_task(digest_autosend_loop())
     asyncio.create_task(briefing_reminder_loop())
     asyncio.create_task(briefing_autosend_loop())
+    asyncio.create_task(streak_reminder_loop())
     asyncio.create_task(warm_all_narrations())
 
 

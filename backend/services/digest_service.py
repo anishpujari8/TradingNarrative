@@ -266,6 +266,59 @@ async def briefing_autosend_loop():
         await asyncio.sleep(600)  # check every 10 minutes so the 9:30 IST window is hit promptly
 
 
+async def send_streak_reminders():
+    """Email readers whose streak ends tonight: they read yesterday (their streak is alive)
+    but haven't read today. One reminder per reader per day. Returns number sent."""
+    IST = timedelta(hours=5, minutes=30)
+    ist_now = now_utc() + IST
+    today = ist_now.date().isoformat()
+    yesterday = (ist_now.date() - timedelta(days=1)).isoformat()
+    users = await db.users.find({'current_streak': {'$gte': 2}, 'last_read_date': yesterday}).to_list(5000)
+    accent = '#1c8570'
+    sent = 0
+    for u in users:
+        if u.get('last_streak_reminder_date') == today or not u.get('email'):
+            continue
+        n = int(u.get('current_streak') or 0)
+        first = (u.get('name') or 'there').split(' ')[0]
+        url = f'{FRONTEND_URL}/archive'
+        subject = f'Your {n}-day reading streak ends tonight'
+        text = (f"Hi {first},\n\nYou've read on {n} consecutive days — but not yet today. "
+                f"One essay before midnight keeps the streak alive.\n\n"
+                f"Keep the streak: {url}\n\n— The Trading Narrative")
+        html = (f'<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:8px">'
+                f'<p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{accent};font-family:sans-serif">'
+                f'The Trading Narrative</p>'
+                f'<h1 style="font-size:24px;line-height:1.3;margin:6px 0 12px">Your {n}-day streak ends tonight</h1>'
+                f'<p style="font-size:15px;line-height:1.65;color:#444">Hi {first} — you\'ve read on '
+                f'<strong>{n} consecutive days</strong>, but not yet today. One essay before midnight keeps it alive.</p>'
+                f'<p style="margin:24px 0"><a href="{url}" style="background:{accent};color:#fff;text-decoration:none;'
+                f'padding:12px 22px;border-radius:8px;font-family:sans-serif;font-size:14px">Keep the streak — read now</a></p>'
+                f'<p style="font-size:12px;color:#999;font-family:sans-serif">Streaks count one read per day. '
+                f'Miss a day and the counter resets.</p></div>')
+        await log_email(u['email'], subject, text, 'streak_reminder', html=html)
+        await db.users.update_one({'id': u['id']}, {'$set': {'last_streak_reminder_date': today}})
+        sent += 1
+    return sent
+
+
+async def streak_reminder_loop():
+    """Background loop: gentle evening nudge (19:00–22:00 IST) when a streak is about to break.
+    Toggle: config key 'streak_reminder' (default ON)."""
+    while True:
+        try:
+            cfg = await db.config.find_one({'key': 'streak_reminder'})
+            enabled = cfg.get('value') if cfg else True
+            ist_now = now_utc() + timedelta(hours=5, minutes=30)
+            if enabled and 19 <= ist_now.hour < 22:
+                n = await send_streak_reminders()
+                if n:
+                    logger.info(f'Streak reminders sent: {n}')
+        except Exception as e:
+            logger.warning(f'Streak reminder loop error: {e}')
+        await asyncio.sleep(900)  # every 15 minutes
+
+
 async def briefing_reminder_loop():
     """Background loop: every Wednesday morning (UTC), if this week's briefing
     hasn't been published yet, email the author a nudge — at most once per week."""
