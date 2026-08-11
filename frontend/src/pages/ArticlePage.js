@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lock, Clock, Check, Sparkles, Highlighter, Share2, Layers, ArrowRight, Flame, Trophy, CalendarClock } from "lucide-react";
-import { Seo } from "@/components/Seo";
+import { Seo, metaDescription } from "@/components/Seo";
 import { Helmet } from "react-helmet-async";
 import { ShareBar } from "@/components/ShareBar";
 import { PostCard } from "@/components/PostCard";
@@ -351,7 +351,14 @@ export default function ArticlePage() {
 
   return (
     <article data-testid="article-page">
-      <Seo title={post.title} description={post.excerpt} image={post.cover_image} path={`/post/${post.slug}`} type="article" />
+      <Seo
+        title={post.title}
+        description={metaDescription(post)}
+        keywords={post.tags?.length ? `${post.tags.join(", ")}, commodity trading, trading technology` : undefined}
+        image={post.cover_image}
+        path={`/post/${post.slug}`}
+        type="article"
+      />
       <Helmet>
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>

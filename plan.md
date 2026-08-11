@@ -53,7 +53,7 @@
   - Public counter endpoint + homepage urgency banner (“X of 50 spots left”) linking to /auth
   - Hidden for premium members / already early supporters / when spots exhausted
 - **Early bird premium offer (homepage surfaced)** ✅ *(Phase 46 add-on)*
-  - Early bird Premium pricing is now marketed directly on the homepage via a banner linking to `/pricing`
+  - Early bird Premium pricing is marketed directly on the homepage via a banner linking to `/pricing`
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -105,10 +105,10 @@
     - **Shipping industry** essays: posts tagged with `Shipping` (case-insensitive match on tags)
   - **Business & Finance** (non-exempt essays):
     - default is **20-second preview clip** (`X-Audio-Scope: clip`) ✅
-    - **one-time per-essay unlock** for **₹45 / $0.50** (Phase 43) ✅
+    - **one-time per-essay unlock** for **₹45 / $0.50** ✅
   - **Premium pillars (Tech & AI, Personal Growth, Delivery & Systems)**:
     - narration is **Premium-only**
-    - **NO audio player at all** for non-premium readers (Phase 44) ✅
+    - **NO audio player at all** for non-premium readers ✅
 
 **Pricing note (important):** The originally requested ₹39 / $0.41 was not possible via Stripe due to a hard minimum of **$0.50 USD-equivalent** per charge. Final pricing was user-approved: **₹45 (Razorpay) / $0.50 (Stripe)**.
 
@@ -218,11 +218,15 @@
 - **Keyword targeting** ✅ *(Phase 45, PREVIEW)*
   - Keyword-rich defaults for title/description/keywords
   - WebSite + Organization JSON-LD on homepage
-  - Briefings + Archive tuned for “Weekly briefing / newsletter / freight / trading”
+  - Briefings + Archive tuned for “weekly briefing / newsletter / freight / trading”
   - Topic hubs already keyword-strong
-  - Meta duplication fixed (static tags removed on mount) so each rendered page has exactly one `description`, `keywords`, and `og:title`
-- **Documentation** ✅ *(Phase 42 + 45)*
-  - `/app/SEO.md` documents metering + paywall + schema rules + keyword map
+  - Meta duplication fixed (static tags removed on mount) so rendered pages have exactly one `description`, `keywords`, and `og:title`
+- **Site title + dynamic essay meta descriptions** ✅ *(Phase 47, PREVIEW)*
+  - Site title set to **exact string**: `The Trading Narrative | Commodity Trading & Tech Insights`
+  - Default keywords emphasize: commodity trading, energy markets, trading technology, ETRM, market risk
+  - Essay pages generate a dynamic meta description derived from the actual article content
+- **Documentation** ✅ *(Phase 42 + 45 + 47)*
+  - `/app/SEO.md` documents metering + paywall + schema rules + keyword map + Phase 47 title/description policy
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -432,7 +436,7 @@ Delivered:
 
 Verification:
 - Headless Chromium verified single meta description + keywords + og:title on home/briefings/archive/topic pages.
-- Essay pages still emit `NewsArticle` JSON-LD; `/api/share/{slug}` unchanged.
+- Essay pages still emit `NewsArticle` JSON-LD; `/api/share/{slug}` provides crawler HTML.
 
 **IMPORTANT:** Phase 45 is in **PREVIEW only** until the user redeploys production.
 
@@ -486,7 +490,7 @@ Frontend
 Context: show the early-bird premium deal on the homepage so visitors see it before the pricing page.
 
 Delivered:
-- `HomePage.js` now fetches `GET /api/billing/early-bird` alongside `/early-supporters`.
+- `HomePage.js` fetches `GET /api/billing/early-bird` alongside `/early-supporters`.
 - New banner rendered **above** the existing early-supporter strip:
   - `data-testid="early-bird-banner"`
   - Dark strip (`bg-foreground text-background`) with accent `Crown` icon
@@ -501,7 +505,47 @@ Verification:
 - Screenshot verified stacked banners render cleanly with distinct styling.
 - Frontend build passes.
 
-**IMPORTANT:** This homepage banner is in **PREVIEW only** until the user redeploys production.
+**IMPORTANT:** Phase 46 is in **PREVIEW only** until the user redeploys production.
+
+### Phase 47 — Site Title + Dynamic Essay Meta Descriptions ✅ COMPLETED (PREVIEW)
+User request:
+- Exact site title: **"The Trading Narrative | Commodity Trading & Tech Insights"**
+- Keywords: **commodity trading, energy markets, trading technology, ETRM, market risk**
+- Each essay page must generate a **dynamic meta description** based on article content
+
+Delivered:
+- `frontend/public/index.html`
+  - Exact title set.
+  - Updated static (crawler fallback) meta description + keywords + og tags, still marked `data-rh="true"` per Helmet ownership convention.
+- `frontend/src/components/Seo.js`
+  - Defaults updated:
+    - `DEFAULT_TAGLINE = "Commodity Trading & Tech Insights"`
+    - `DEFAULT_DESC/DEFAULT_KEYWORDS` rewritten around the five requested terms, while retaining related terms (freight, weekly briefing, newsletter, CTRM).
+  - Exported helper `metaDescription(post)`:
+    - excerpt first; else opening paragraphs from `content_blocks`
+    - skips headings (`#`) and image markers (`![`) because `content_blocks` are plain strings
+    - normalizes whitespace
+    - trims to ~160 chars on a word boundary with an ellipsis
+  - Default full title uses the pipe separator: `SITE_NAME | DEFAULT_TAGLINE`.
+- `frontend/src/pages/ArticlePage.js`
+  - Uses `description={metaDescription(post)}` instead of the raw excerpt.
+  - Generates per-essay keywords from `post.tags` (and appends: `commodity trading, trading technology`).
+- `backend/utils.py`
+  - Added mirror helper `meta_description(post)` for backend-generated meta.
+- `backend/routers/posts.py`
+  - `/api/share/{slug}` crawler HTML now uses `meta_description(post)` for `meta[name=description]`.
+  - Share-page JSON-LD `description` now uses `meta_description(post)`.
+- `frontend/src/pages/HomePage.js`
+  - WebSite/Organization JSON-LD updated to the new keyword set (`energy markets`, `market risk`).
+- `SEO.md`
+  - Added Phase 47 policy section documenting the site title + dynamic descriptions.
+
+Verified:
+- Headless Chromium: homepage title exact match; keywords include the five requested terms; essay pages show one description tag and content-derived text; keywords include tags.
+- curl: raw homepage HTML title correct; `/api/share/{slug}` uses dynamic description.
+- esbuild clean; backend helper checked for excerpt + no-excerpt derivation paths.
+
+**IMPORTANT:** Phase 47 is in **PREVIEW only** until the user redeploys production.
 
 ---
 
@@ -513,8 +557,10 @@ If you are seeing an issue, confirm whether it is on:
 - **Production** (https://thetradingnarrative.com)
 
 ### B) Production rollouts pending redeploy (Preview → Production)
+- Phase 44 (pillar audio exclusivity) requires a redeploy.
 - Phase 45 (keyword SEO targeting) requires a redeploy.
 - Phase 46 (growth suite + early bird + homepage banner) requires a redeploy.
+- Phase 47 (site title + dynamic essay meta descriptions) requires a redeploy.
 
 ### C) Payment gateways
 - “Test mode” banners cannot be removed with code.
@@ -570,6 +616,12 @@ If you are seeing an issue, confirm whether it is on:
   - Early bird claims remaining
 - Pricing page surfaces Early Bird discount correctly and enforces **first 50 premium subscribers** cap.
 - Homepage surfaces the early bird deal via banner above the hero.
+
+✅ Phase 47 success targets met (Preview)
+- Homepage site title is exactly: **The Trading Narrative | Commodity Trading & Tech Insights**
+- Default meta keywords include: commodity trading, energy markets, trading technology, ETRM, market risk
+- Each essay page generates a **dynamic meta description** derived from real essay content (excerpt or opening paragraphs)
+- `/api/share/{slug}` crawler HTML mirrors the same dynamic description
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

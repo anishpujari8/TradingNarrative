@@ -2,15 +2,35 @@ import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { SITE_NAME, SITE_URL } from "@/lib/api";
 
-// Site-wide default meta, tuned for the head terms readers search for:
-// trading, freight, business and finance, narrative, weekly briefing, newsletter.
-const DEFAULT_TAGLINE = "Trading, Freight & Business and Finance Newsletter";
+// Site-wide default meta. Head terms: commodity trading, energy markets, trading
+// technology, ETRM, market risk (+ freight / weekly briefing / newsletter).
+const DEFAULT_TAGLINE = "Commodity Trading & Tech Insights";
 const DEFAULT_DESC =
-  "The Trading Narrative — sharp essays and a weekly briefing newsletter on commodity trading, " +
-  "freight and shipping markets, business and finance mechanics, trading technology and AI.";
+  "The Trading Narrative — commodity trading and tech insights: energy markets, trading technology, " +
+  "ETRM systems, market risk, freight and shipping, plus a weekly briefing newsletter.";
 const DEFAULT_KEYWORDS =
-  "trading narrative, trading, freight, business and finance, weekly briefing, newsletter, " +
-  "commodity trading, shipping industry, markets, ETRM, CTRM";
+  "commodity trading, energy markets, trading technology, ETRM, market risk, trading narrative, " +
+  "freight, shipping industry, weekly briefing, newsletter, business and finance, CTRM";
+
+// Dynamic per-essay meta description: excerpt first, else the opening paragraphs,
+// normalized and trimmed to ~160 chars at a word boundary.
+export const metaDescription = (post, limit = 160) => {
+  let text = (post?.excerpt || "").trim();
+  if (!text) {
+    const parts = [];
+    for (const b of post?.content_blocks || []) {
+      const s = (b || "").trim();
+      if (!s || s.startsWith("#") || s.startsWith("![")) continue; // skip headings / images
+      parts.push(s);
+      if (parts.join(" ").length >= limit * 2) break;
+    }
+    text = parts.join(" ");
+  }
+  text = text.replace(/\s+/g, " ").trim();
+  if (text.length <= limit) return text;
+  const cut = text.slice(0, limit).split(" ").slice(0, -1).join(" ").replace(/[ ,;:.]+$/, "");
+  return `${cut}…`;
+};
 
 export const Seo = ({ title, description, image, path = "", type = "website", keywords, jsonLd }) => {
   // The static meta tags in index.html are marked data-rh="true" as crawler fallbacks.
@@ -20,7 +40,7 @@ export const Seo = ({ title, description, image, path = "", type = "website", ke
     document.querySelectorAll("head meta[data-rh]").forEach((el) => el.remove());
   }, []);
 
-  const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} · ${DEFAULT_TAGLINE}`;
+  const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} | ${DEFAULT_TAGLINE}`;
   const desc = description || DEFAULT_DESC;
   const url = `${SITE_URL}${path}`;
   const img =

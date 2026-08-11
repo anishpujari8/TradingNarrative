@@ -75,6 +75,27 @@ def owns_audio(user, slug: str) -> bool:
     return bool(user) and slug in (user.get('purchased_audio_slugs') or [])
 
 
+def meta_description(post, limit: int = 160) -> str:
+    """SEO meta description derived from the essay itself: the excerpt when present,
+    otherwise the opening paragraphs, normalized and trimmed at a word boundary."""
+    text = (post.get('excerpt') or '').strip()
+    if not text:
+        parts = []
+        for b in post.get('content_blocks', []):
+            b = (b or '').strip()
+            if not b or b.startswith('#') or b.startswith('!['):
+                continue  # skip headings / image markers
+            parts.append(b)
+            if sum(len(p) for p in parts) >= limit * 2:
+                break
+        text = ' '.join(parts)
+    text = ' '.join(text.split())
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(' ', 1)[0].rstrip(' ,;:.')
+    return f'{cut}…'
+
+
 def published_query():
     now = iso(now_utc())
     return {'$or': [

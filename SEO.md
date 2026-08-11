@@ -107,3 +107,17 @@ Implementation notes:
 - No-JS crawlers still see the static keyword-rich fallbacks in the raw HTML.
 - If you add new static meta tags to index.html that React should replace, mark
   them `data-rh="true"`; leave permanent ones (og:site_name, theme-color) unmarked.
+
+## Site title + dynamic essay descriptions (Phase 47)
+
+- Site title (exact, user-specified): "The Trading Narrative | Commodity Trading & Tech Insights"
+  - Set in `public/index.html` (crawler fallback) and as the Seo.js default full title.
+- Default keyword set: commodity trading, energy markets, trading technology, ETRM,
+  market risk (+ freight, shipping industry, weekly briefing, newsletter, CTRM).
+- Dynamic per-essay meta descriptions:
+  - Frontend: `metaDescription(post)` in `components/Seo.js` - uses the excerpt when
+    present, otherwise the opening paragraphs; normalized whitespace; trimmed to
+    ~160 chars at a word boundary with an ellipsis.
+  - Backend mirror: `meta_description(post)` in `utils.py`, used by the crawler-facing
+    `/api/share/{slug}` HTML (meta description + JSON-LD description).
+  - Essay pages also emit per-essay `keywords` derived from the post's tags.

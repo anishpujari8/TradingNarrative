@@ -14,7 +14,7 @@ from config import (CATEGORIES, PREVIEW_BLOCKS, FRONTEND_URL, SERIES, TTS_ENABLE
                     METER_COOKIE_DAYS, PREVIEW_WORDS, logger)
 from db import db
 from utils import (now_utc, iso, clean, post_summary, published_query,
-                   has_free_audio, owns_audio, premium_audio_only)
+                   has_free_audio, owns_audio, premium_audio_only, meta_description)
 from security import get_optional_user, get_current_user, is_entitled
 from schemas import CommentIn, BookmarkToggleIn, AudioProgressIn
 
@@ -385,7 +385,8 @@ async def share_page(slug: str):
     if not post:
         raise HTTPException(status_code=404, detail='Post not found')
     title = post['title'].replace('"', '&quot;')
-    desc = (post.get('excerpt') or '').replace('"', '&quot;')[:300]
+    # Dynamic per-essay meta description derived from the article content
+    desc = meta_description(post).replace('"', '&quot;')[:300]
     image = post.get('cover_image', '')
     canonical = f'{FRONTEND_URL}/post/{slug}'
     # Paywall structured data (Google-compliant paywall signalling — no cloaking)
@@ -399,7 +400,7 @@ async def share_page(slug: str):
         'author': {'@type': 'Person', 'name': 'Anish Pujari'},
         'publisher': {'@type': 'Organization', 'name': 'The Trading Narrative',
                       'logo': {'@type': 'ImageObject', 'url': f'{FRONTEND_URL}/logo.png'}},
-        'description': post.get('excerpt', ''),
+        'description': meta_description(post),
         'keywords': ', '.join(post.get('tags', [])),
         'mainEntityOfPage': canonical,
         'image': image,

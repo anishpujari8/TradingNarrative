@@ -75,7 +75,7 @@ export default function HomePage() {
               alternateName: ["Trading Narrative", "The Trading Narrative Newsletter"],
               url: SITE_URL,
               description:
-                "Sharp essays and a weekly briefing newsletter on commodity trading, freight and shipping markets, business and finance mechanics, and trading technology.",
+                "Commodity trading and tech insights: energy markets, trading technology, ETRM systems, market risk, freight and shipping markets, plus a weekly briefing newsletter.",
               publisher: { "@id": `${SITE_URL}/#organization` },
               inLanguage: "en",
             },
@@ -87,8 +87,8 @@ export default function HomePage() {
               logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
               founder: { "@type": "Person", name: "Anish Pujari" },
               knowsAbout: [
-                "commodity trading", "freight markets", "shipping industry",
-                "business and finance", "trading technology", "ETRM", "CTRM",
+                "commodity trading", "energy markets", "trading technology", "ETRM", "CTRM",
+                "market risk", "freight markets", "shipping industry", "business and finance",
               ],
             },
           ],
