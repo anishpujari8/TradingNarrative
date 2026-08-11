@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Crown, CalendarClock, Receipt, Sparkles, MailCheck, Loader2, Flame, Medal, Trophy } from "lucide-react";
+import { Crown, CalendarClock, Receipt, Sparkles, MailCheck, Loader2, Flame, Medal, Trophy, Headphones, Play } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -32,11 +32,13 @@ export default function AccountPage() {
   const [invoices, setInvoices] = useState(null);
   const [prefs, setPrefs] = useState(null);
   const [prefsSaving, setPrefsSaving] = useState(false);
+  const [audioLib, setAudioLib] = useState(null); // purchased narrations
 
   const loadBilling = useCallback(() => {
     api.get("/billing/subscription").then((res) => setSub(res.data.subscription)).catch(() => setSub(null));
     api.get("/billing/invoices").then((res) => setInvoices(res.data.invoices)).catch(() => setInvoices([]));
     api.get("/newsletter/my-preferences").then((res) => setPrefs(res.data)).catch(() => {});
+    api.get("/audio/library").then((res) => setAudioLib(res.data.items)).catch(() => setAudioLib([]));
   }, []);
 
   useEffect(() => {
@@ -233,6 +235,49 @@ export default function AccountPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* My Audio Library: a la carte narration purchases, replayable anytime */}
+        {(!user.is_premium || (audioLib && audioLib.length > 0)) && (
+          <Card className="rounded-2xl mb-6" data-testid="account-audio-library-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-serif text-xl flex items-center gap-2">
+                <Headphones className="h-5 w-5 text-accent" /> My audio library
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {audioLib === null ? (
+                <Skeleton className="h-16" />
+              ) : audioLib.length === 0 ? (
+                <p className="text-sm text-muted-foreground" data-testid="account-audio-library-empty">
+                  No purchased narrations yet. Unlock any essay's full audio for ₹45 from its player, it stays yours forever.
+                </p>
+              ) : (
+                <div className="space-y-2" data-testid="account-audio-library-list">
+                  {audioLib.map((p) => (
+                    <Link
+                      key={p.slug}
+                      to={`/post/${p.slug}`}
+                      className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2.5 hover:border-accent/50 transition-colors group"
+                      data-testid={`audio-library-item-${p.slug}`}
+                    >
+                      {p.cover_image && (
+                        <img src={p.cover_image} alt="" className="h-10 w-14 rounded-md object-cover shrink-0" loading="lazy" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate group-hover:text-accent transition-colors">{p.title}</div>
+                        <div className="text-xs text-muted-foreground">{p.category_label} · {p.read_time} min listen</div>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 text-xs text-accent shrink-0">
+                        <Play className="h-3.5 w-3.5" /> Listen
+                      </span>
+                    </Link>
+                  ))}
+                  <p className="text-xs text-muted-foreground pt-1">Owned forever, open any essay to replay its full narration.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Email preferences */}
         <Card className="rounded-2xl mb-6" data-testid="account-email-prefs-card">

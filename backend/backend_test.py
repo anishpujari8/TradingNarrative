@@ -327,6 +327,108 @@ class EngagementFeaturesTester:
         
         return True
 
+    def test_audio_library(self):
+        """Test audio library endpoint"""
+        print("\n" + "="*60)
+        print("TEST SUITE: Audio Library")
+        print("="*60)
+        
+        # Test 1: GET /api/audio/library without auth -> 401
+        print("\n--- Scenario 1: Access without authentication ---")
+        success, response = self.run_test(
+            "GET /api/audio/library without auth (should return 401)",
+            "GET",
+            "audio/library",
+            401,
+            headers={'Content-Type': 'application/json'}  # No auth header
+        )
+        
+        if success:
+            print(f"   ✓ Correctly returns 401 for unauthenticated request")
+            self.tests_passed += 1
+        
+        # Test 2: GET /api/audio/library with fresh user -> empty list
+        print("\n--- Scenario 2: Fresh user with no purchases ---")
+        success, response = self.run_test(
+            "GET /api/audio/library with fresh user (should return empty items)",
+            "GET",
+            "audio/library",
+            200
+        )
+        
+        if success:
+            if 'items' in response and response['items'] == []:
+                print(f"   ✓ Returns empty items array for fresh user")
+                self.tests_passed += 1
+            else:
+                print(f"   ✗ Expected empty items array, got: {response}")
+        
+        # Test 3: Add purchased_audio_slugs to user and verify library returns them
+        print("\n--- Scenario 3: User with purchased narrations ---")
+        if self.db is None or not self.user_id:
+            print("❌ Cannot test - MongoDB not connected or no user")
+            return False
+        
+        # Add two purchased audio slugs (newest first order expected)
+        test_slugs = [
+            'the-boring-portfolio-that-beats-your-broker',
+            'your-first-100k-is-the-hardest-a-tactical-map'
+        ]
+        
+        try:
+            result = self.db.users.update_one(
+                {'id': self.user_id},
+                {'$set': {'purchased_audio_slugs': test_slugs}}
+            )
+            print(f"   ✓ Added purchased_audio_slugs to user: {test_slugs}")
+            print(f"   ✓ MongoDB update matched: {result.matched_count}, modified: {result.modified_count}")
+        except Exception as e:
+            print(f"   ✗ Failed to update user: {e}")
+            return False
+        
+        success, response = self.run_test(
+            "GET /api/audio/library after adding purchases (should return 2 items newest-first)",
+            "GET",
+            "audio/library",
+            200
+        )
+        
+        if success:
+            if 'items' in response:
+                items = response['items']
+                if len(items) == 2:
+                    print(f"   ✓ Returns 2 items")
+                    self.tests_passed += 1
+                    
+                    # Check newest-first order (reversed from stored order)
+                    if items[0]['slug'] == 'your-first-100k-is-the-hardest-a-tactical-map':
+                        print(f"   ✓ First item is newest (your-first-100k...)")
+                        self.tests_passed += 1
+                    else:
+                        print(f"   ✗ First item should be 'your-first-100k...', got: {items[0].get('slug')}")
+                    
+                    if items[1]['slug'] == 'the-boring-portfolio-that-beats-your-broker':
+                        print(f"   ✓ Second item is older (the-boring-portfolio...)")
+                        self.tests_passed += 1
+                    else:
+                        print(f"   ✗ Second item should be 'the-boring-portfolio...', got: {items[1].get('slug')}")
+                    
+                    # Verify required fields in each item
+                    required_fields = ['title', 'slug', 'category_label', 'cover_image', 'read_time']
+                    for i, item in enumerate(items):
+                        missing = [f for f in required_fields if f not in item]
+                        if not missing:
+                            print(f"   ✓ Item {i+1} has all required fields: {required_fields}")
+                            self.tests_passed += 1
+                        else:
+                            print(f"   ✗ Item {i+1} missing fields: {missing}")
+                else:
+                    print(f"   ✗ Expected 2 items, got {len(items)}")
+            else:
+                print(f"   ✗ Response missing 'items' field: {response}")
+        
+        return True
+
     def test_regression_endpoints(self):
         """Test that existing endpoints still work"""
         print("\n" + "="*60)
@@ -392,6 +494,9 @@ def main():
     tester = EngagementFeaturesTester()
     
     try:
+        # Test audio library endpoint
+        tester.test_audio_library()
+        
         # Test early supporters endpoint (public)
         tester.test_early_supporters_endpoint()
         
@@ -399,6 +504,9 @@ def main():
         if not tester.register_test_user():
             print("\n❌ Cannot continue - user registration failed")
             return 1
+        
+        # Test audio library with authenticated user
+        tester.test_audio_library()
         
         # Test streak milestones
         tester.test_streak_milestones()

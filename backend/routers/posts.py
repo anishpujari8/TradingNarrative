@@ -551,6 +551,19 @@ async def audio_voices():
             'voices': [{'key': k, 'label': v['label']} for k, v in TTS_VOICES.items()]}
 
 
+@router.get('/audio/library')
+async def audio_library(user=Depends(get_current_user)):
+    """My Audio Library: narrations this reader bought a la carte, replayable anytime."""
+    slugs = user.get('purchased_audio_slugs') or []
+    if not slugs:
+        return {'items': []}
+    posts = await db.posts.find({'slug': {'$in': slugs}, **published_query()}).to_list(200)
+    by_slug = {p['slug']: p for p in posts}
+    # newest purchase first ($addToSet appends, so reverse the stored order)
+    items = [post_summary(by_slug[s]) for s in reversed(slugs) if s in by_slug]
+    return {'items': items}
+
+
 # ---------------------- SEO ----------------------
 
 @router.get('/sitemap.xml')
