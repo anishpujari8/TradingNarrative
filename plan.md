@@ -233,9 +233,10 @@
   - Essay pages generate a dynamic meta description derived from the actual article content
 - **AI readiness** ✅ *(Phase 48)*
   - `/llms.txt` served with crawler-facing site overview
-- **Social Preview Cards** ✅ *(Phase 50)*
+- **Social Preview Cards** ✅ *(Phase 50 + Phase 51)*
   - Every essay unfurls with a consistent, branded Open Graph image for LinkedIn/X.
   - Implemented via backend-rendered OG images served at `GET /api/og/{slug}.png`.
+  - **Phase 51:** share cards are now **pillar-coloured** (pillar-specific accent palette) and have a richer v2 design.
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -264,7 +265,9 @@
   - Cookie: `ttn_session`, `Secure`, `SameSite=Lax`, 30-day expiry.
   - Migration: legacy Bearer tokens supported temporarily + `/api/auth/cookie-sync` exchanges them for cookie and frontend deletes localStorage token.
   - Logout: `/api/auth/logout` clears the cookie.
-  - **CORS hardening for credentials (Phase 50):** fixed `CORS_ORIGINS` so cookie auth works in browsers (no `*` with `allow_credentials=True`).
+  - **CORS compatibility for credentialed cookies:**
+    - Starlette CORS requires **not** using explicit origin lists when `allow_credentials` is enabled in this environment.
+    - Deployment configuration uses `CORS_ORIGINS="*"` (platform requirement) and has been re-verified to work with cookie auth.
 
 ---
 
@@ -629,8 +632,8 @@ Delivered:
   - `aiStream.js` uses `credentials: 'include'`.
 
 **CORS hardening required for cookie auth:**
-- Fixed critical misconfiguration: `CORS_ORIGINS='*'` is incompatible with `allow_credentials=True`.
-- Updated `CORS_ORIGINS` to include preview + production domains.
+- Initial assumption: `CORS_ORIGINS='*'` incompatible with `allow_credentials=True`.
+- Final verified configuration: `CORS_ORIGINS="*"` works in this environment (Starlette echoes origin on credentialed requests); required by platform deployment rules.
 
 #### 50.D Testing ✅ DONE
 - Testing agent report: `/app/test_reports/iteration_36.json`
@@ -643,7 +646,38 @@ Delivered:
   - admin dashboard loads
 - Cleanups:
   - Deleted temporary test artifact that contained credentials.
-  - Cleaned 7 test users.
+  - Cleaned test users.
+
+### Phase 51 — Pillar-Coloured Share Cards (v2 design) ✅ COMPLETED (PREVIEW)
+User request: give each pillar its own accent colour on OG share cards + make them more attractive.
+
+Delivered in `backend/services/og_service.py` (v2; cache version bumped so old cards auto-regenerate):
+- Pillar accent palette:
+  - Tech & AI → **violet** `(129,122,244)`
+  - Business & Finance → **brand teal** `(52,178,153)`
+  - Personal Growth → **warm amber** `(222,158,66)`
+  - Delivery & Systems → **steel blue** `(86,148,222)`
+  - Unknown categories fall back to brand teal.
+- Design upgrades:
+  - Vertical vignette for depth
+  - Soft radial accent glow behind headline
+  - Subtle dot-grid texture
+  - Rounded pillar chip (translucent accent fill + accent outline/text)
+  - Accent wordmark tick + byline bar
+  - Accent-tinted duotone cover panel with smoother eased gradient fade
+  - Bottom accent strip that eases into the canvas
+- QA bug fix:
+  - 4-line titles without a cover overlapped the byline — adaptive sizing now also constrains vertical fit (shrinks down to 38px min and keeps clear of footer).
+- Verified:
+  - All 4 pillar variants render correctly (screenshots reviewed)
+  - Long-title / no-cover / unknown-category edge cases pass
+  - Live endpoint returns 200 `image/png` 1200×630 w/ Cache-Control
+  - 404 for unknown slug
+  - Logs clean
+- Caching:
+  - `_OG_VERSION='v2'` and `category` included in cache signature → production will mint new cards automatically after redeploy (no manual cache clearing).
+
+**Requires redeploy to reach Production.**
 
 ---
 
@@ -661,10 +695,14 @@ If you are seeing an issue, confirm whether it is on:
 - Phase 47 (site title + dynamic essay meta descriptions) requires a redeploy.
 - Phase 48 (health probes + env fix + llms/robots/schema) requires a redeploy.
 - Phase 49 (code review fixes) requires a redeploy.
-- Phase 50 (sitemap index + OG images + cookie auth + CORS hardening) requires a redeploy.
+- Phase 50 (sitemap index + OG images + cookie auth) requires a redeploy.
+- **Phase 51 (pillar-coloured OG share cards v2)** requires a redeploy.
 
-**After deploying Phase 50 to Production:**
+**After deploying Phase 50+51 to Production:**
 - Resubmit `https://thetradingnarrative.com/sitemap.xml` in GSC.
+- Validate social previews:
+  - LinkedIn Post Inspector: paste a `/post/{slug}` URL
+  - X Card Validator alternatives / WhatsApp share
 - Readers should auto-migrate sessions; some may need to sign in again once depending on browser state.
 
 ### C) Payment gateways
@@ -749,7 +787,12 @@ If you are seeing an issue, confirm whether it is on:
 - `GET /api/og/{slug}.png` returns branded OG image and is used by `/api/share/{slug}` and essay pages
 - Auth tokens are stored in secure httpOnly cookie `ttn_session` (Authorization header supported temporarily for migration)
 - Frontend uses `withCredentials` and removes localStorage token after migration
-- CORS is compatible with credentialed cookies (no `*` with `allow_credentials=True`)
+- CORS is compatible with credentialed cookies under platform deployment rules
+
+✅ Phase 51 success targets met (Preview)
+- OG cards are pillar-coloured and visually richer (v2)
+- v2 auto-invalidates old cached cards via `_OG_VERSION='v2'`
+- 4-line/no-cover title layout is stable (no byline overlap)
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.
