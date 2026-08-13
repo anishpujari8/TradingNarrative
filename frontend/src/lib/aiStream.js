@@ -6,9 +6,12 @@ import { API } from "@/lib/api";
  * Throws Error(message) on HTTP errors or in-stream error events.
  */
 export async function streamAi(path, body, { onDelta, signal } = {}) {
+  // Auth rides in the httpOnly session cookie; the legacy header covers
+  // pre-cookie sessions until AuthContext migrates them.
   const token = localStorage.getItem("ttn_token");
   const res = await fetch(`${API}${path}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

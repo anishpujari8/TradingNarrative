@@ -23,7 +23,7 @@ export default function MagicVerifyPage() {
     api
       .post("/auth/magic-link/verify", { token })
       .then((res) => {
-        login(res.data.token, res.data.user);
+        login(res.data.user);
         toast.success(`Signed in as ${res.data.user.email}`);
         navigate("/");
       })

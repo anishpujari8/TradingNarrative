@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Static sitemap index: /sitemap.xml is served by the frontend (only /api/* reaches
+     the backend), so this valid XML index points crawlers to the dynamic sitemap that
+     regenerates from the database on every request. -->
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://thetradingnarrative.com/api/sitemap.xml</loc>
+  </sitemap>
+</sitemapindex>

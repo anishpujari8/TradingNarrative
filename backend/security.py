@@ -1,10 +1,15 @@
-"""Auth primitives: password hashing, JWT, user dependencies, entitlement."""
+"""Auth primitives: password hashing, JWT, user dependencies, entitlement.
+
+Session transport: the JWT lives in an httpOnly `ttn_session` cookie (XSS-safe —
+scripts can never read it). The Authorization: Bearer header is still accepted as
+a fallback so pre-cookie sessions keep working and can migrate via /auth/cookie-sync.
+"""
 from datetime import timedelta
 from typing import Optional
 
 import bcrypt
 import jwt
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Cookie, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from config import JWT_SECRET, JWT_ALGO, JWT_EXPIRY_DAYS
@@ -12,6 +17,24 @@ from db import db
 from utils import now_utc
 
 security = HTTPBearer(auto_error=False)
+
+SESSION_COOKIE = 'ttn_session'
+
+
+def set_session_cookie(response: Response, token: str) -> None:
+    """Attach the signed session JWT as a secure httpOnly cookie."""
+    response.set_cookie(
+        key=SESSION_COOKIE, value=token,
+        httponly=True,           # invisible to JavaScript (XSS protection)
+        secure=True,             # HTTPS only (browsers exempt localhost for dev)
+        samesite='lax',          # CSRF posture: not sent on cross-site POSTs
+        max_age=JWT_EXPIRY_DAYS * 24 * 3600,
+        path='/',
+    )
+
+
+def clear_session_cookie(response: Response) -> None:
+    response.delete_cookie(key=SESSION_COOKIE, path='/')
 
 
 def hash_password(pw: str) -> str:
@@ -39,16 +62,20 @@ async def user_from_token(token: str):
     return user
 
 
-async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    if not credentials:
+async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+                            ttn_session: Optional[str] = Cookie(default=None)):
+    token = credentials.credentials if credentials else ttn_session
+    if not token:
         return None
-    return await user_from_token(credentials.credentials)
+    return await user_from_token(token)
 
 
-async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    if not credentials:
+async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+                           ttn_session: Optional[str] = Cookie(default=None)):
+    token = credentials.credentials if credentials else ttn_session
+    if not token:
         raise HTTPException(status_code=401, detail='Not authenticated')
-    user = await user_from_token(credentials.credentials)
+    user = await user_from_token(token)
     if not user:
         raise HTTPException(status_code=401, detail='Invalid or expired token')
     return user

@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
     setBusy(true);
     try {
       const res = await api.post("/auth/password-reset/confirm", { token, password });
-      login(res.data.token, res.data.user);
+      login(res.data.user);
       toast.success("Password updated, you're signed in.");
       navigate("/");
     } catch (err) {

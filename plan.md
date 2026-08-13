@@ -204,9 +204,10 @@
     - Topic hubs emit `CollectionPage`
     - Pricing emits `Product` with INR/USD `Offer` items
     - About emits `AboutPage` + `Person`
-- **Sitemap** ✅ *(Phase 42, verified again in Phase 48)*
+- **Sitemap** ✅ *(Phase 42, verified again in Phase 48; Phase 50 hardened)*
   - `/api/sitemap.xml` regenerates from MongoDB on each request (new essays/editions appear immediately)
   - Includes: homepage, archive, pricing, about, briefings, topic hubs, category pages, all published essays with `<lastmod>`
+  - **GSC compatibility (Phase 50):** `/sitemap.xml` is now a valid XML sitemap **index** pointing to `/api/sitemap.xml` to avoid SPA/ingress HTML routing issues.
 - **Robots** ✅ *(Phase 42 + Phase 48 additions)*
   - `frontend/public/robots.txt` disallows `/api/` while explicitly allowing:
     - `/api/sitemap.xml`, `/api/feed.xml`, `/api/share/`
@@ -230,8 +231,11 @@
   - Site title set to **exact string**: `The Trading Narrative | Commodity Trading & Tech Insights`
   - Default keywords emphasize: commodity trading, energy markets, trading technology, ETRM, market risk
   - Essay pages generate a dynamic meta description derived from the actual article content
-- **Documentation** ✅ *(Phase 42 + 45 + 47 + 48)*
-  - `/app/SEO.md` documents metering + paywall + schema rules + keyword map + Phase 47 title/description policy + Phase 48 AI readiness
+- **AI readiness** ✅ *(Phase 48)*
+  - `/llms.txt` served with crawler-facing site overview
+- **Social Preview Cards** ✅ *(Phase 50)*
+  - Every essay unfurls with a consistent, branded Open Graph image for LinkedIn/X.
+  - Implemented via backend-rendered OG images served at `GET /api/og/{slug}.png`.
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -253,6 +257,14 @@
 - Modular backend (routers/services) ✅
 - Regression testing discipline ✅
 - DB hygiene ✅ *(purged accumulated test users + orphaned billing records)*
+
+### Security hardening
+- **Cookie auth upgrade (httpOnly session cookies)** ✅ *(Phase 50)*
+  - Moved sign-in JWT storage from localStorage to secure **httpOnly** cookies for XSS resistance.
+  - Cookie: `ttn_session`, `Secure`, `SameSite=Lax`, 30-day expiry.
+  - Migration: legacy Bearer tokens supported temporarily + `/api/auth/cookie-sync` exchanges them for cookie and frontend deletes localStorage token.
+  - Logout: `/api/auth/logout` clears the cookie.
+  - **CORS hardening for credentials (Phase 50):** fixed `CORS_ORIGINS` so cookie auth works in browsers (no `*` with `allow_credentials=True`).
 
 ---
 
@@ -532,7 +544,7 @@ Delivered:
 #### 48.4 AI assistant readiness ✅
 - `frontend/public/llms.txt`: llmstxt.org-style site overview with production URLs.
 - `frontend/public/robots.txt`: now includes explicit AI crawler user-agents plus a pointer to `/llms.txt`.
-  - NOTE: preview domain may inject platform robots.txt; localhost/production serve the app file.
+  - NOTE: preview domain may inject platform robots.txt; localhost/production serve the app’s file.
 - Structured data additions (verified rendered via headless Chromium):
   - Home: WebSite + Organization
   - Essays: NewsArticle + BreadcrumbList (`@graph`), paywall signalling preserved
@@ -548,56 +560,90 @@ Context: applied code-review recommendations that are safe/low-regression, focus
 
 **APPLIED**
 1. **Hardcoded secrets in test files**
-   - Deleted all 11 obsolete test-agent artifact scripts from `/app/backend`:
-     - `backend_test.py`, `comprehensive_backend_test.py`, `test_phase42.py`, `test_new_essay_import.py`, `test_founding_and_share.py`,
-       `test_audio_narration.py`, `test_core.py`, `test_highlight_notes.py`, `test_highlights_and_related.py`,
-       `test_narration_health.py`, `test_phase38.py`
-   - Verified: no production modules import any deleted test files.
-
+   - Deleted all 11 obsolete test-agent artifact scripts from `/app/backend`.
 2. **“Possibly undefined variables (17 instances)”**
-   - Ran `pyflakes` on all production backend code; no undefined variables found.
-   - Findings were in deleted test files.
-   - Cleaned unused imports:
-     - `backend/utils.py`: removed unused `timedelta` import
-     - `backend/services/tts_service.py`: removed unused `PREVIEW_BLOCKS` import
-     - `backend/db.py`: retained `import config` (intentional .env loading side-effect, annotated with `# noqa: F401`)
-
+   - Verified production backend via pyflakes; issues were in deleted test files.
+   - Cleaned a few unused imports.
 3. **Insecure random usage**
-   - Replaced `random.randint` with `secrets.randbelow` in:
-     - `services/stripe_service.py` invoice numbers
-     - `routers/billing.py` mock invoice numbers
-
+   - Replaced `random` with `secrets` for invoice-ish numbers.
 4. **Empty catch blocks (frontend)**
-   - Added `console.debug(...)` logging where catches previously swallowed errors silently, while preserving graceful-degradation behavior (localStorage parse/selection clear guards).
-
+   - Added lightweight debug logging.
 5. **Array index as key (frontend)**
-   - Fixed `GrowthPanel` recent purchases row keys (now compound `created_at + slug`).
-   - Other index keys are intentionally used for:
-     - Skeleton loaders (static)
-     - Article content blocks where the index is the semantic identifier (highlight system keyed by block position)
-
+   - Fixed GrowthPanel table row keys.
 6. **Expensive JSX computation**
-   - `AdminPage` newsletter post picker now uses memoized `publishedPosts` via `useMemo` (avoids refilter on every render).
-   - PricingPage `FEATURES.filter(...)` is a tiny static array (skipped; negligible)
+   - Memoized AdminPage newsletter post picker.
 
 **DEFERRED (WITH RATIONALE)**
-7. **“Missing hook dependencies (53)”**
-   - Spot-checked major pages (ArticlePage, HomePage, CommunityPage, PaymentSuccessPage): hooks are structured correctly.
-   - Many warnings were false positives (module imports, refs, stable setState functions).
-   - Blindly adding dependencies risks infinite loops; deferred to a dedicated refactor window.
+- Missing hook dependencies (risk of loops)
+- Massive component splitting (AdminPage/CommunityPage/ArticlePage/PricingPage)
 
-8. **LocalStorage auth token → httpOnly cookies**
-   - This is a major auth architecture change (cookie issuance, CSRF, axios interceptor changes, cookie domain nuances).
-   - Deferred as a separate project to avoid destabilizing a live product.
+### Phase 50 — Cookie Auth Upgrade + Social Preview Cards + Sitemap GSC Fix ✅ COMPLETED (PREVIEW)
+Context: Session priorities:
+- Strengthen auth against XSS by moving session tokens to secure httpOnly cookies.
+- Improve social sharing by generating branded OG images per essay (LinkedIn/X).
+- Resolve Google Search Console sitemap error: `/sitemap.xml` being detected as HTML.
 
-9. **Large component splits + backend complexity refactors**
-   - Component splitting (AdminPage/CommunityPage/ArticlePage) and refactors (`admin_traffic`, `admin_narrations`) are valuable but high-risk.
-   - Deferred per “do not refactor working code” principle; GrowthPanel extraction demonstrates the pattern for future work.
+#### 50.A Google Sitemap Fix (GSC “Sitemap is HTML”) ✅ DONE
+Root cause:
+- Search Console was submitted `/sitemap.xml`, but the platform routes that path to the React app (HTML), while the real sitemap is served by the backend at `/api/sitemap.xml`.
 
-**VERIFIED**
-- Backend imports OK; `/health`, `/api/posts`, `/api/billing/config` return 200.
-- Frontend builds clean (esbuild).
-- Services running cleanly in Preview.
+Delivered:
+- Static `frontend/public/sitemap.xml` is now a valid XML sitemap **index** pointing to:
+  - `https://thetradingnarrative.com/api/sitemap.xml`
+- Verified: `/sitemap.xml` returns `application/xml` (not React HTML).
+
+User action after Production redeploy:
+- Resubmit `https://thetradingnarrative.com/sitemap.xml` in Google Search Console.
+
+#### 50.B Social Preview Cards (Branded OG Images) ✅ DONE
+Delivered:
+- `backend/services/og_service.py` renders branded 1200×630 PNG (Pillow):
+  - Dark navy `#101623`, teal `#2ba08a`
+  - EB Garamond headline, wordmark eyebrow, category label, byline
+  - Optional cover-image right panel with gradient fade; graceful fallback
+- Fonts included at `backend/assets/fonts/`.
+- Disk cache at `backend/cache/og_cards/` keyed by slug+title+updated_at+cover, auto-invalidates on edit and prunes stale versions.
+- New endpoint:
+  - `GET /api/og/{slug}.png` → `image/png` + `Cache-Control: public, max-age=86400`, 404 for unknown slug
+- Wired into:
+  - `/api/share/{slug}` meta tags (`og:image` + `twitter:image` + width/height/type)
+  - `ArticlePage` SEO image (so canonical `/post/{slug}` unfurls branded too)
+- JSON-LD preserves real cover photo for Google (prefers photos).
+
+#### 50.C Cookie Auth Upgrade (httpOnly cookies) ✅ DONE
+Delivered:
+- JWT moved from localStorage → secure httpOnly cookie `ttn_session` (30d, Secure, SameSite=Lax).
+- Backend:
+  - `security.py` reads JWT from cookie **or** legacy Authorization Bearer header (migration).
+  - `auth.py` endpoints now set cookie and **no longer return `token`** in JSON:
+    - register/login/magic verify/password-reset confirm
+  - New endpoints:
+    - `POST /api/auth/logout` clears cookie
+    - `POST /api/auth/cookie-sync` exchanges legacy Bearer session for cookie
+- Frontend:
+  - axios uses `withCredentials: true`
+  - AuthContext:
+    - `login(user)` signature
+    - refreshUser migrates legacy localStorage token via `/auth/cookie-sync` then deletes it
+    - logout calls backend
+  - `aiStream.js` uses `credentials: 'include'`.
+
+**CORS hardening required for cookie auth:**
+- Fixed critical misconfiguration: `CORS_ORIGINS='*'` is incompatible with `allow_credentials=True`.
+- Updated `CORS_ORIGINS` to include preview + production domains.
+
+#### 50.D Testing ✅ DONE
+- Testing agent report: `/app/test_reports/iteration_36.json`
+  - Backend: 15/15 passing
+  - Frontend: flows pass; cookie persistence verified
+- Manual/automated browser verification:
+  - httpOnly cookie set
+  - `localStorage.ttn_token` is `null`
+  - session persists across reload
+  - admin dashboard loads
+- Cleanups:
+  - Deleted temporary test artifact that contained credentials.
+  - Cleaned 7 test users.
 
 ---
 
@@ -615,6 +661,11 @@ If you are seeing an issue, confirm whether it is on:
 - Phase 47 (site title + dynamic essay meta descriptions) requires a redeploy.
 - Phase 48 (health probes + env fix + llms/robots/schema) requires a redeploy.
 - Phase 49 (code review fixes) requires a redeploy.
+- Phase 50 (sitemap index + OG images + cookie auth + CORS hardening) requires a redeploy.
+
+**After deploying Phase 50 to Production:**
+- Resubmit `https://thetradingnarrative.com/sitemap.xml` in GSC.
+- Readers should auto-migrate sessions; some may need to sign in again once depending on browser state.
 
 ### C) Payment gateways
 - “Test mode” banners cannot be removed with code.
@@ -692,6 +743,13 @@ If you are seeing an issue, confirm whether it is on:
 - GrowthPanel row keys fixed
 - AdminPage expensive filter memoized
 - Backend code linted (pyflakes) with only intentional side-effect import in db.py
+
+✅ Phase 50 success targets met (Preview)
+- `GET /sitemap.xml` returns valid XML sitemap index (not React HTML)
+- `GET /api/og/{slug}.png` returns branded OG image and is used by `/api/share/{slug}` and essay pages
+- Auth tokens are stored in secure httpOnly cookie `ttn_session` (Authorization header supported temporarily for migration)
+- Frontend uses `withCredentials` and removes localStorage token after migration
+- CORS is compatible with credentialed cookies (no `*` with `allow_credentials=True`)
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

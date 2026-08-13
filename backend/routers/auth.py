@@ -2,13 +2,13 @@
 import uuid
 from datetime import timedelta, date
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 
 from config import FRONTEND_URL, EARLY_SUPPORTER_LIMIT, logger
 from db import db
 from utils import now_utc, iso
 from security import (hash_password, verify_password, make_token, get_current_user,
-                      is_entitled, public_user)
+                      is_entitled, public_user, set_session_cookie, clear_session_cookie)
 from schemas import (RegisterIn, LoginIn, MagicRequestIn, MagicVerifyIn,
                      PasswordResetRequestIn, PasswordResetConfirmIn, StreakReadIn)
 from services.emailer import log_email
@@ -23,7 +23,7 @@ async def _is_early_supporter_slot_open() -> bool:
 
 
 @router.post('/auth/register')
-async def register(body: RegisterIn):
+async def register(body: RegisterIn, response: Response):
     existing = await db.users.find_one({'email': body.email.lower()})
     if existing:
         raise HTTPException(status_code=400, detail='An account with this email already exists')
@@ -34,17 +34,34 @@ async def register(body: RegisterIn):
         'created_at': iso(now_utc()),
     }
     await db.users.insert_one(dict(user))
-    token = make_token(user['id'])
-    return {'token': token, 'user': public_user(user, False)}
+    # session travels in an httpOnly cookie only — never exposed to page scripts
+    set_session_cookie(response, make_token(user['id']))
+    return {'user': public_user(user, False)}
 
 
 @router.post('/auth/login')
-async def login(body: LoginIn):
+async def login(body: LoginIn, response: Response):
     user = await db.users.find_one({'email': body.email.lower()})
     if not user or not user.get('password_hash') or not verify_password(body.password, user['password_hash']):
         raise HTTPException(status_code=401, detail='Invalid email or password')
     premium = await is_entitled(user)
-    return {'token': make_token(user['id']), 'user': public_user(user, premium)}
+    set_session_cookie(response, make_token(user['id']))
+    return {'user': public_user(user, premium)}
+
+
+@router.post('/auth/logout')
+async def logout(response: Response):
+    """Clear the httpOnly session cookie (script code cannot, by design)."""
+    clear_session_cookie(response)
+    return {'ok': True}
+
+
+@router.post('/auth/cookie-sync')
+async def cookie_sync(response: Response, user=Depends(get_current_user)):
+    """One-time migration: exchange a legacy Bearer token (old localStorage sessions)
+    for the httpOnly session cookie, so the frontend can drop the stored token."""
+    set_session_cookie(response, make_token(user['id']))
+    return {'ok': True}
 
 
 @router.post('/auth/magic-link/request')
@@ -70,7 +87,7 @@ async def magic_request(body: MagicRequestIn):
 
 
 @router.post('/auth/magic-link/verify')
-async def magic_verify(body: MagicVerifyIn):
+async def magic_verify(body: MagicVerifyIn, response: Response):
     rec = await db.magic_tokens.find_one({'token': body.token})
     if not rec or rec.get('used'):
         raise HTTPException(status_code=400, detail='Invalid or already used magic link')
@@ -88,7 +105,8 @@ async def magic_verify(body: MagicVerifyIn):
         }
         await db.users.insert_one(dict(user))
     premium = await is_entitled(user)
-    return {'token': make_token(user['id']), 'user': public_user(user, premium)}
+    set_session_cookie(response, make_token(user['id']))
+    return {'user': public_user(user, premium)}
 
 
 @router.get('/auth/me')
@@ -191,7 +209,7 @@ async def password_reset_request(body: PasswordResetRequestIn):
 
 
 @router.post('/auth/password-reset/confirm')
-async def password_reset_confirm(body: PasswordResetConfirmIn):
+async def password_reset_confirm(body: PasswordResetConfirmIn, response: Response):
     rec = await db.password_reset_tokens.find_one({'token': body.token})
     if not rec or rec.get('used'):
         raise HTTPException(status_code=400, detail='Invalid or already used reset link')
@@ -203,5 +221,6 @@ async def password_reset_confirm(body: PasswordResetConfirmIn):
     await db.password_reset_tokens.update_one({'token': body.token}, {'$set': {'used': True}})
     await db.users.update_one({'id': user['id']}, {'$set': {'password_hash': hash_password(body.password)}})
     premium = await is_entitled(user)
-    return {'ok': True, 'token': make_token(user['id']), 'user': public_user(user, premium),
+    set_session_cookie(response, make_token(user['id']))
+    return {'ok': True, 'user': public_user(user, premium),
             'message': 'Password updated. You are now signed in.'}

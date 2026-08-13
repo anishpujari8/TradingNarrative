@@ -5,8 +5,13 @@ export const API = `${BACKEND_URL}/api`;
 export const SITE_URL = BACKEND_URL;
 export const SITE_NAME = "The Trading Narrative";
 
-export const api = axios.create({ baseURL: API });
+// Session auth rides in a secure httpOnly cookie (ttn_session) — set/cleared by the
+// backend; withCredentials makes the browser attach it to every API call.
+export const api = axios.create({ baseURL: API, withCredentials: true });
 
+// Legacy migration shim: sessions created before the cookie upgrade stored a JWT in
+// localStorage. Keep sending it as a Bearer header until AuthContext exchanges it
+// for the httpOnly cookie (via /auth/cookie-sync) and deletes it.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("ttn_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;

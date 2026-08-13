@@ -20,7 +20,7 @@ import { QuoteCardDialog } from "@/components/QuoteCardDialog";
 import { AudioNarrator } from "@/components/AudioNarrator";
 import { AskEssayWidget } from "@/components/AskEssayWidget";
 import { toast } from "sonner";
-import { api, formatDate, trackEvent, CATEGORIES } from "@/lib/api";
+import { api, formatDate, trackEvent, CATEGORIES, SITE_URL } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const Paywall = ({ post }) => {
@@ -369,7 +369,7 @@ export default function ArticlePage() {
         title={post.title}
         description={metaDescription(post)}
         keywords={post.tags?.length ? `${post.tags.join(", ")}, commodity trading, trading technology` : undefined}
-        image={post.cover_image}
+        image={`${SITE_URL}/api/og/${post.slug}.png`}
         path={`/post/${post.slug}`}
         type="article"
       />

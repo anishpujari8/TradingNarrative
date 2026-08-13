@@ -51,7 +51,7 @@ export default function AuthPage() {
     setBusy(true);
     try {
       const res = await api.post("/auth/login", loginForm);
-      login(res.data.token, res.data.user);
+      login(res.data.user);
       toast.success(`Welcome back, ${res.data.user.name || "reader"}.`);
       navigate(next);
     } catch (err) {
@@ -66,7 +66,7 @@ export default function AuthPage() {
     setBusy(true);
     try {
       const res = await api.post("/auth/register", regForm);
-      login(res.data.token, res.data.user);
+      login(res.data.user);
       toast.success("Account created. Welcome to The Trading Narrative.");
       navigate(next);
     } catch (err) {

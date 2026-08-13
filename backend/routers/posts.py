@@ -377,6 +377,20 @@ async def get_series(series_slug: str):
 
 # ---------------------- social share (OG unfurl) ----------------------
 
+@router.get('/og/{slug}.png')
+async def og_card(slug: str):
+    """Branded 1200x630 Open Graph share card for an essay (Pillow, disk-cached).
+    Used as og:image / twitter:image so links unfurl with a consistent branded
+    preview on LinkedIn, X, WhatsApp and Telegram."""
+    from services.og_service import get_or_render_card
+    post = await db.posts.find_one({'slug': slug, **published_query()})
+    if not post:
+        raise HTTPException(status_code=404, detail='Post not found')
+    data = await get_or_render_card(post)
+    return Response(content=data, media_type='image/png',
+                    headers={'Cache-Control': 'public, max-age=86400'})
+
+
 @router.get('/share/{slug}')
 async def share_page(slug: str):
     """Crawler-readable HTML with per-essay Open Graph / Twitter cards.
@@ -387,7 +401,10 @@ async def share_page(slug: str):
     title = post['title'].replace('"', '&quot;')
     # Dynamic per-essay meta description derived from the article content
     desc = meta_description(post).replace('"', '&quot;')[:300]
-    image = post.get('cover_image', '')
+    # Branded OG card (title + wordmark) so shares look consistent on LinkedIn/X;
+    # JSON-LD keeps the real cover photo, which Google prefers for articles.
+    image = f'{FRONTEND_URL}/api/og/{slug}.png'
+    cover = post.get('cover_image', '')
     canonical = f'{FRONTEND_URL}/post/{slug}'
     # Paywall structured data (Google-compliant paywall signalling — no cloaking)
     import json as _json
@@ -403,7 +420,7 @@ async def share_page(slug: str):
         'description': meta_description(post),
         'keywords': ', '.join(post.get('tags', [])),
         'mainEntityOfPage': canonical,
-        'image': image,
+        'image': cover or image,
         'isAccessibleForFree': not locked,
     }
     if locked:
@@ -419,6 +436,9 @@ async def share_page(slug: str):
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:image" content="{image}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
 <meta property="og:url" content="{canonical}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{title}">
