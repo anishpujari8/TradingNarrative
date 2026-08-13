@@ -178,7 +178,7 @@ export default function ArticlePage() {
     if (!selInfo) return;
     const { text, blockIndex } = selInfo;
     setSelInfo(null);
-    try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+    try { window.getSelection()?.removeAllRanges(); } catch (e) { console.debug("selection clear failed", e); }
     if (!user) {
       toast("Sign in to save highlights", {
         description: "Create a free account to keep your favourite lines.",
@@ -200,7 +200,7 @@ export default function ArticlePage() {
     if (!selInfo || !post) return;
     const { text } = selInfo;
     setSelInfo(null);
-    try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+    try { window.getSelection()?.removeAllRanges(); } catch (e) { console.debug("selection clear failed", e); }
     setShareSel({ text, post_title: post.title, category_label: post.category_label });
   };
 
@@ -244,7 +244,7 @@ export default function ArticlePage() {
           const hist = JSON.parse(localStorage.getItem("ttn_read_history") || "[]").filter((h) => h.slug !== res.data.slug);
           hist.unshift({ slug: res.data.slug, category: res.data.category });
           localStorage.setItem("ttn_read_history", JSON.stringify(hist.slice(0, 50)));
-        } catch { /* ignore */ }
+        } catch (e) { console.debug("read history save failed", e); }
         try {
           const map = JSON.parse(localStorage.getItem("ttn_progress") || "{}");
           const saved = map[res.data.slug];
@@ -267,7 +267,7 @@ export default function ArticlePage() {
               });
             }, 700);
           }
-        } catch { /* ignore */ }
+        } catch (e) { console.debug("resume progress restore failed", e); }
       })
       .catch((err) => setError(err?.response?.status === 404 ? "This post doesn't exist." : "Failed to load the article."));
   }, [slug, authLoading, user?.is_premium]);

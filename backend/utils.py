@@ -2,7 +2,7 @@
 import re
 import math
 import uuid
-from datetime import datetime, timezone, timedelta  # noqa: F401
+from datetime import datetime, timezone
 from typing import List
 
 from seed_data import AUTHOR

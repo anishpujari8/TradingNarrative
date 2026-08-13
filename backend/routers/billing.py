@@ -1,7 +1,7 @@
 """Stripe billing routes: config, checkout, payment status, webhook, cancel, subscription, invoices."""
 import uuid
 import asyncio
-import random
+import secrets
 from datetime import timedelta
 
 from fastapi import APIRouter, HTTPException, Depends, Request
@@ -61,7 +61,7 @@ async def checkout(body: CheckoutIn, user=Depends(get_current_user)):
         await db.subscriptions.insert_one(dict(sub))
         invoice = {
             'id': str(uuid.uuid4()), 'user_id': user['id'], 'subscription_id': sub['id'],
-            'number': f"TTN-{now_utc().strftime('%Y%m')}-{random.randint(1000, 9999)}",
+            'number': f"TTN-{now_utc().strftime('%Y%m')}-{secrets.randbelow(9000) + 1000}",
             'amount': eb_usd, 'currency': plan['currency'], 'plan': body.plan,
             'status': 'paid', 'created_at': iso(now_utc()),
         }

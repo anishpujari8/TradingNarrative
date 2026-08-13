@@ -38,7 +38,7 @@ export default function HomePage() {
     let slugs = [];
     try {
       slugs = JSON.parse(localStorage.getItem("ttn_read_history") || "[]").map((h) => h.slug);
-    } catch { /* ignore */ }
+    } catch (e) { console.debug("read history parse failed", e); }
     if (slugs.length === 0 && !user) { setRecs({ posts: [], based_on: [] }); return; }
     api.get("/recommendations", { params: { slugs: slugs.join(","), limit: 3 } })
       .then((res) => setRecs(res.data))

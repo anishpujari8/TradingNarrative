@@ -14,7 +14,7 @@
     - Fallback to one-time Razorpay Orders when Subscriptions is not enabled
     - Live re-probe so Autopay switches on without restart
     - **Plan pricing cache hardening** ✅ *(Razorpay plan cache key includes amount so price changes mint new Razorpay plans)*
-  - **PayPal** ⛔ *(planned; still blocked pending user decisions + credentials)*
+  - **PayPal** ⛔ *(planned; blocked pending user decisions + credentials)*
     - Target: **Recurring subscription** *(user intent indicated; must confirm definitively + provide credentials)*
 
 ### Reader experience & engagement
@@ -543,6 +543,62 @@ Delivered:
   - Fixed by removing orphaned lines and re-applying the `jsonLd` edit.
 - `SEO.md`: Phase 48 AI readiness section added.
 
+### Phase 49 — Code Review Fixes ✅ COMPLETED (PREVIEW)
+Context: applied code-review recommendations that are safe/low-regression, focusing on deployment/security and removing test artifacts.
+
+**APPLIED**
+1. **Hardcoded secrets in test files**
+   - Deleted all 11 obsolete test-agent artifact scripts from `/app/backend`:
+     - `backend_test.py`, `comprehensive_backend_test.py`, `test_phase42.py`, `test_new_essay_import.py`, `test_founding_and_share.py`,
+       `test_audio_narration.py`, `test_core.py`, `test_highlight_notes.py`, `test_highlights_and_related.py`,
+       `test_narration_health.py`, `test_phase38.py`
+   - Verified: no production modules import any deleted test files.
+
+2. **“Possibly undefined variables (17 instances)”**
+   - Ran `pyflakes` on all production backend code; no undefined variables found.
+   - Findings were in deleted test files.
+   - Cleaned unused imports:
+     - `backend/utils.py`: removed unused `timedelta` import
+     - `backend/services/tts_service.py`: removed unused `PREVIEW_BLOCKS` import
+     - `backend/db.py`: retained `import config` (intentional .env loading side-effect, annotated with `# noqa: F401`)
+
+3. **Insecure random usage**
+   - Replaced `random.randint` with `secrets.randbelow` in:
+     - `services/stripe_service.py` invoice numbers
+     - `routers/billing.py` mock invoice numbers
+
+4. **Empty catch blocks (frontend)**
+   - Added `console.debug(...)` logging where catches previously swallowed errors silently, while preserving graceful-degradation behavior (localStorage parse/selection clear guards).
+
+5. **Array index as key (frontend)**
+   - Fixed `GrowthPanel` recent purchases row keys (now compound `created_at + slug`).
+   - Other index keys are intentionally used for:
+     - Skeleton loaders (static)
+     - Article content blocks where the index is the semantic identifier (highlight system keyed by block position)
+
+6. **Expensive JSX computation**
+   - `AdminPage` newsletter post picker now uses memoized `publishedPosts` via `useMemo` (avoids refilter on every render).
+   - PricingPage `FEATURES.filter(...)` is a tiny static array (skipped; negligible)
+
+**DEFERRED (WITH RATIONALE)**
+7. **“Missing hook dependencies (53)”**
+   - Spot-checked major pages (ArticlePage, HomePage, CommunityPage, PaymentSuccessPage): hooks are structured correctly.
+   - Many warnings were false positives (module imports, refs, stable setState functions).
+   - Blindly adding dependencies risks infinite loops; deferred to a dedicated refactor window.
+
+8. **LocalStorage auth token → httpOnly cookies**
+   - This is a major auth architecture change (cookie issuance, CSRF, axios interceptor changes, cookie domain nuances).
+   - Deferred as a separate project to avoid destabilizing a live product.
+
+9. **Large component splits + backend complexity refactors**
+   - Component splitting (AdminPage/CommunityPage/ArticlePage) and refactors (`admin_traffic`, `admin_narrations`) are valuable but high-risk.
+   - Deferred per “do not refactor working code” principle; GrowthPanel extraction demonstrates the pattern for future work.
+
+**VERIFIED**
+- Backend imports OK; `/health`, `/api/posts`, `/api/billing/config` return 200.
+- Frontend builds clean (esbuild).
+- Services running cleanly in Preview.
+
 ---
 
 ## 3) Next Actions
@@ -557,7 +613,8 @@ If you are seeing an issue, confirm whether it is on:
 - Phase 45 (keyword SEO targeting) requires a redeploy.
 - Phase 46 (growth suite + early bird + homepage banner) requires a redeploy.
 - Phase 47 (site title + dynamic essay meta descriptions) requires a redeploy.
-- **Phase 48 (health probes + env fix + llms/robots/schema)** requires a redeploy.
+- Phase 48 (health probes + env fix + llms/robots/schema) requires a redeploy.
+- Phase 49 (code review fixes) requires a redeploy.
 
 ### C) Payment gateways
 - “Test mode” banners cannot be removed with code.
@@ -627,6 +684,14 @@ If you are seeing an issue, confirm whether it is on:
 - robots policy exists for major AI crawlers and points to `/llms.txt`
 - Structured data enhanced: breadcrumbs, topic collection pages, pricing offers, about person
 - Sitemap verified dynamic and complete
+
+✅ Phase 49 success targets met (Preview)
+- No hardcoded secrets remain in backend test artifacts (deleted)
+- Crypto-safe randomness used for invoice numbers
+- Frontend silent catches now log debug info
+- GrowthPanel row keys fixed
+- AdminPage expensive filter memoized
+- Backend code linted (pyflakes) with only intentional side-effect import in db.py
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

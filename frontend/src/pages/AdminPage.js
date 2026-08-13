@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -69,6 +69,8 @@ export default function AdminPage() {
   const [digestSending, setDigestSending] = useState(false);
   const [digestPreviewSending, setDigestPreviewSending] = useState(false);
   const [issuePostId, setIssuePostId] = useState("");
+  // memoized so the newsletter post picker doesn't refilter on every render
+  const publishedPosts = useMemo(() => (posts || []).filter((p) => p.status === "published"), [posts]);
   const [issueSubject, setIssueSubject] = useState("");
   const [sending, setSending] = useState(false);
   const [traffic, setTraffic] = useState(null);
@@ -1068,7 +1070,7 @@ export default function AdminPage() {
               <Select value={issuePostId} onValueChange={setIssuePostId}>
                 <SelectTrigger data-testid="admin-issue-post-select"><SelectValue placeholder="Choose a post…" /></SelectTrigger>
                 <SelectContent>
-                  {(posts || []).filter((p) => p.status === "published").map((p) => (
+                  {publishedPosts.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
                   ))}
                 </SelectContent>

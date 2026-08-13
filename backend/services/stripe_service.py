@@ -1,6 +1,6 @@
 """Stripe SDK config + premium activation shared by Stripe and Razorpay flows."""
 import uuid
-import random
+import secrets
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -102,7 +102,7 @@ async def activate_premium_from_transaction(txn):
     invoice = {
         'id': str(uuid.uuid4()), 'user_id': user['id'],
         'subscription_id': txn['session_id'],
-        'number': f"TTN-{now_utc().strftime('%Y%m')}-{random.randint(1000, 9999)}",
+        'number': f"TTN-{now_utc().strftime('%Y%m')}-{secrets.randbelow(9000) + 1000}",
         'amount': txn.get('amount', plan['amount']),
         'currency': txn.get('currency', plan['currency']), 'plan': plan_id,
         'status': 'paid', 'created_at': iso(now_utc()),

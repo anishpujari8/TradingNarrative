@@ -174,8 +174,8 @@ export const GrowthPanel = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sales.recent.map((r, i) => (
-                    <TableRow key={i}>
+                  {sales.recent.map((r) => (
+                    <TableRow key={`${r.created_at}-${r.slug}`}>
                       <TableCell className="text-sm max-w-[140px] truncate">{r.email || "—"}</TableCell>
                       <TableCell className="text-sm max-w-[180px] truncate">{r.title}</TableCell>
                       <TableCell className="text-right font-mono text-sm">

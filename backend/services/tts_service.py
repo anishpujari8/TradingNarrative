@@ -3,7 +3,7 @@ import asyncio
 
 from bson import Binary
 
-from config import ELEVENLABS_API_KEY, PREVIEW_BLOCKS, TTS_ENABLED, TTS_MODEL, TTS_OUTPUT_FORMAT, TTS_VOICES, logger
+from config import ELEVENLABS_API_KEY, TTS_ENABLED, TTS_MODEL, TTS_OUTPUT_FORMAT, TTS_VOICES, logger
 from db import db
 from utils import now_utc, iso, published_query
 
