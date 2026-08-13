@@ -236,7 +236,7 @@
 - **Social Preview Cards** ✅ *(Phase 50 + Phase 51)*
   - Every essay unfurls with a consistent, branded Open Graph image for LinkedIn/X.
   - Implemented via backend-rendered OG images served at `GET /api/og/{slug}.png`.
-  - **Phase 51:** share cards are now **pillar-coloured** (pillar-specific accent palette) and have a richer v2 design.
+  - **Phase 51:** share cards are **pillar-coloured** and visually richer.
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -266,7 +266,6 @@
   - Migration: legacy Bearer tokens supported temporarily + `/api/auth/cookie-sync` exchanges them for cookie and frontend deletes localStorage token.
   - Logout: `/api/auth/logout` clears the cookie.
   - **CORS compatibility for credentialed cookies:**
-    - Starlette CORS requires **not** using explicit origin lists when `allow_credentials` is enabled in this environment.
     - Deployment configuration uses `CORS_ORIGINS="*"` (platform requirement) and has been re-verified to work with cookie auth.
 
 ---
@@ -600,12 +599,9 @@ User action after Production redeploy:
 
 #### 50.B Social Preview Cards (Branded OG Images) ✅ DONE
 Delivered:
-- `backend/services/og_service.py` renders branded 1200×630 PNG (Pillow):
-  - Dark navy `#101623`, teal `#2ba08a`
-  - EB Garamond headline, wordmark eyebrow, category label, byline
-  - Optional cover-image right panel with gradient fade; graceful fallback
+- `backend/services/og_service.py` renders branded 1200×630 PNG (Pillow).
 - Fonts included at `backend/assets/fonts/`.
-- Disk cache at `backend/cache/og_cards/` keyed by slug+title+updated_at+cover, auto-invalidates on edit and prunes stale versions.
+- Disk cache at `backend/cache/og_cards/` keyed by slug+title+updated_at+cover (+ design version), auto-invalidates on edit.
 - New endpoint:
   - `GET /api/og/{slug}.png` → `image/png` + `Cache-Control: public, max-age=86400`, 404 for unknown slug
 - Wired into:
@@ -618,8 +614,7 @@ Delivered:
 - JWT moved from localStorage → secure httpOnly cookie `ttn_session` (30d, Secure, SameSite=Lax).
 - Backend:
   - `security.py` reads JWT from cookie **or** legacy Authorization Bearer header (migration).
-  - `auth.py` endpoints now set cookie and **no longer return `token`** in JSON:
-    - register/login/magic verify/password-reset confirm
+  - `auth.py` endpoints set cookie and **no longer return `token`** in JSON.
   - New endpoints:
     - `POST /api/auth/logout` clears cookie
     - `POST /api/auth/cookie-sync` exchanges legacy Bearer session for cookie
@@ -632,8 +627,7 @@ Delivered:
   - `aiStream.js` uses `credentials: 'include'`.
 
 **CORS hardening required for cookie auth:**
-- Initial assumption: `CORS_ORIGINS='*'` incompatible with `allow_credentials=True`.
-- Final verified configuration: `CORS_ORIGINS="*"` works in this environment (Starlette echoes origin on credentialed requests); required by platform deployment rules.
+- Final verified configuration: `CORS_ORIGINS="*"` works in this environment and satisfies platform deployment rules.
 
 #### 50.D Testing ✅ DONE
 - Testing agent report: `/app/test_reports/iteration_36.json`
@@ -648,34 +642,24 @@ Delivered:
   - Deleted temporary test artifact that contained credentials.
   - Cleaned test users.
 
-### Phase 51 — Pillar-Coloured Share Cards (v2 design) ✅ COMPLETED (PREVIEW)
-User request: give each pillar its own accent colour on OG share cards + make them more attractive.
+### Phase 51 — Distinct Pillar Share Cards (v3 motifs) ✅ COMPLETED (PREVIEW)
+User request: **EVERY pillar must be distinct and attractive**.
 
-Delivered in `backend/services/og_service.py` (v2; cache version bumped so old cards auto-regenerate):
-- Pillar accent palette:
-  - Tech & AI → **violet** `(129,122,244)`
-  - Business & Finance → **brand teal** `(52,178,153)`
-  - Personal Growth → **warm amber** `(222,158,66)`
-  - Delivery & Systems → **steel blue** `(86,148,222)`
-  - Unknown categories fall back to brand teal.
-- Design upgrades:
-  - Vertical vignette for depth
-  - Soft radial accent glow behind headline
-  - Subtle dot-grid texture
-  - Rounded pillar chip (translucent accent fill + accent outline/text)
-  - Accent wordmark tick + byline bar
-  - Accent-tinted duotone cover panel with smoother eased gradient fade
-  - Bottom accent strip that eases into the canvas
-- QA bug fix:
-  - 4-line titles without a cover overlapped the byline — adaptive sizing now also constrains vertical fit (shrinks down to 38px min and keeps clear of footer).
-- Verified:
-  - All 4 pillar variants render correctly (screenshots reviewed)
-  - Long-title / no-cover / unknown-category edge cases pass
-  - Live endpoint returns 200 `image/png` 1200×630 w/ Cache-Control
-  - 404 for unknown slug
-  - Logs clean
-- Caching:
-  - `_OG_VERSION='v2'` and `category` included in cache signature → production will mint new cards automatically after redeploy (no manual cache clearing).
+Delivered in `backend/services/og_service.py` (v3; cache version bumped so old cards auto-regenerate):
+- **Pillar accent palette** (retained):
+  - Tech & AI → violet
+  - Business & Finance → teal
+  - Personal Growth → amber
+  - Delivery & Systems → steel blue
+- **Distinct signature background motifs per pillar** (drawn 2× supersampled for smooth anti-aliased lines; composited at low alpha so headlines remain legible):
+  - **Tech & AI (violet):** circuit-board traces + solder-pad nodes and junction squares
+  - **Business & Finance (teal):** ascending market sparkline with data points + baseline ticks
+  - **Personal Growth (amber):** sunrise arcs radiating from the top-right corner + rising spark dots
+  - **Delivery & Systems (steel blue):** dashed Bezier shipping route with ringed waypoints + double-ring destination
+- **Chip upgrade:** pillar chip is now a **solid accent pill** with dark text for instant recognition.
+- **Visual polish:** accent glow strengthened; dot grid alpha tuned.
+- **QA:** verified all 4 pillars with cover images + no-cover variants; strengthened delivery route visibility; live endpoint returns 200 `image/png` 1200×630; frontend compiles; logs clean.
+- **Caching:** `_OG_VERSION` bumped to **`v3`** and included in cache signature; production will auto-generate the new style on demand after redeploy (no manual cache clearing).
 
 **Requires redeploy to reach Production.**
 
@@ -696,13 +680,13 @@ If you are seeing an issue, confirm whether it is on:
 - Phase 48 (health probes + env fix + llms/robots/schema) requires a redeploy.
 - Phase 49 (code review fixes) requires a redeploy.
 - Phase 50 (sitemap index + OG images + cookie auth) requires a redeploy.
-- **Phase 51 (pillar-coloured OG share cards v2)** requires a redeploy.
+- **Phase 51 (distinct pillar share cards v3 motifs)** requires a redeploy.
 
 **After deploying Phase 50+51 to Production:**
 - Resubmit `https://thetradingnarrative.com/sitemap.xml` in GSC.
 - Validate social previews:
   - LinkedIn Post Inspector: paste a `/post/{slug}` URL
-  - X Card Validator alternatives / WhatsApp share
+  - X (card validators) / WhatsApp share
 - Readers should auto-migrate sessions; some may need to sign in again once depending on browser state.
 
 ### C) Payment gateways
@@ -790,9 +774,10 @@ If you are seeing an issue, confirm whether it is on:
 - CORS is compatible with credentialed cookies under platform deployment rules
 
 ✅ Phase 51 success targets met (Preview)
-- OG cards are pillar-coloured and visually richer (v2)
-- v2 auto-invalidates old cached cards via `_OG_VERSION='v2'`
-- 4-line/no-cover title layout is stable (no byline overlap)
+- OG cards are pillar-coloured and visually richer
+- **Each pillar has a distinct, recognisable background motif** (tech circuits, finance sparkline, growth sunrise arcs, delivery route)
+- v3 auto-invalidates old cached cards via `_OG_VERSION='v3'`
+- No-cover and long-title layouts are stable (no byline overlap)
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

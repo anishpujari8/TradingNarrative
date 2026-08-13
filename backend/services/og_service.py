@@ -44,7 +44,7 @@ _FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cache', 'og_cards')
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-_OG_VERSION = 'v2'  # bump to invalidate previously cached card designs
+_OG_VERSION = 'v3'  # bump to invalidate previously cached card designs
 
 
 def _font(file: str, size: int, weight: int | None = None) -> ImageFont.FreeTypeFont:
@@ -107,16 +107,115 @@ def _accent_glow(img: Image.Image, accent: tuple) -> None:
     gd = ImageDraw.Draw(glow)
     cx = cy = size // 2
     for r in range(size // 2, 0, -6):
-        alpha = int(26 * (1 - r / (size / 2)) ** 1.6)
+        alpha = int(34 * (1 - r / (size / 2)) ** 1.6)
         gd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=alpha)
     img.paste(Image.new('RGB', (size, size), accent), (-260, -300), glow)
+
+
+# ---------------------------------------------------------------------------
+# Pillar signature motifs — each pillar gets its own recognisable background
+# illustration, drawn 2x supersampled for smooth anti-aliased lines.
+#   Tech & AI          -> circuit-board traces with solder nodes
+#   Business & Finance -> ascending market sparkline with data points
+#   Personal Growth    -> sunrise arcs radiating from the corner
+#   Delivery & Systems -> dashed shipping route with waypoints
+# ---------------------------------------------------------------------------
+
+def _bezier(p0, p1, p2, n=120):
+    pts = []
+    for i in range(n + 1):
+        t = i / n
+        x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t ** 2 * p2[0]
+        y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t ** 2 * p2[1]
+        pts.append((x, y))
+    return pts
+
+
+def _motif_tech(d: ImageDraw.ImageDraw, s: int, a: tuple) -> None:
+    """Circuit traces: right-angle runs ending in solder pads."""
+    traces = [
+        [(78, 548), (330, 548), (374, 504), (600, 504)],
+        [(78, 590), (430, 590), (474, 546), (652, 546)],
+        [(700, 92), (980, 92), (1024, 136), (1024, 300)],
+        [(1122, 360), (1122, 520), (1078, 564), (900, 564)],
+    ]
+    for tr in traces:
+        d.line([(x * s, y * s) for x, y in tr], fill=a + (64,), width=2 * s)
+        for i, (x, y) in enumerate(tr):
+            if i in (0, len(tr) - 1):
+                d.ellipse([(x - 5) * s, (y - 5) * s, (x + 5) * s, (y + 5) * s],
+                          outline=a + (120,), width=2 * s)
+                d.ellipse([(x - 2) * s, (y - 2) * s, (x + 2) * s, (y + 2) * s], fill=a + (140,))
+            elif 0 < i < len(tr) - 1:
+                d.rectangle([(x - 3) * s, (y - 3) * s, (x + 3) * s, (y + 3) * s], fill=a + (90,))
+
+
+def _motif_finance(d: ImageDraw.ImageDraw, s: int, a: tuple) -> None:
+    """Ascending market sparkline with data points and baseline ticks."""
+    pts = [(70, 592), (190, 546), (310, 568), (430, 488), (550, 516),
+           (670, 440), (790, 464), (910, 380), (1030, 408), (1155, 308)]
+    d.line([(x * s, y * s) for x, y in pts], fill=a + (78,), width=3 * s)
+    for x, y in pts:
+        d.ellipse([(x - 5) * s, (y - 5) * s, (x + 5) * s, (y + 5) * s], fill=a + (34,))
+        d.ellipse([(x - 2) * s, (y - 2) * s, (x + 2) * s, (y + 2) * s], fill=a + (150,))
+        d.line([(x * s, (y + 12) * s), (x * s, 614 * s)], fill=a + (26,), width=1 * s)
+
+
+def _motif_growth(d: ImageDraw.ImageDraw, s: int, a: tuple) -> None:
+    """Sunrise arcs radiating from the top-right corner + rising sparks."""
+    cx, cy = 1185, -55
+    for i, r in enumerate(range(110, 560, 74)):
+        alpha = max(20, 66 - i * 8)
+        d.arc([(cx - r) * s, (cy - r) * s, (cx + r) * s, (cy + r) * s],
+              start=88, end=182, fill=a + (alpha,), width=2 * s)
+    for (x, y, r) in [(985, 330, 4), (1075, 415, 3), (880, 245, 3), (1140, 500, 4)]:
+        d.ellipse([(x - r) * s, (y - r) * s, (x + r) * s, (y + r) * s], fill=a + (110,))
+
+
+def _motif_delivery(d: ImageDraw.ImageDraw, s: int, a: tuple) -> None:
+    """Dashed shipping route with ringed waypoints and destination pin."""
+    path = _bezier((85, 600), (620, 690), (1130, 132), n=140)
+    on = True
+    for i in range(0, len(path) - 6, 6):
+        if on:
+            seg = [(x * s, y * s) for x, y in path[i:i + 7]]
+            d.line(seg, fill=a + (105,), width=3 * s)
+        on = not on
+    for t in (0.0, 0.35, 0.7):
+        x, y = path[int(t * (len(path) - 1))]
+        d.ellipse([(x - 7) * s, (y - 7) * s, (x + 7) * s, (y + 7) * s], outline=a + (150,), width=2 * s)
+        d.ellipse([(x - 2) * s, (y - 2) * s, (x + 2) * s, (y + 2) * s], fill=a + (180,))
+    # destination: double ring
+    x, y = path[-1]
+    d.ellipse([(x - 12) * s, (y - 12) * s, (x + 12) * s, (y + 12) * s], outline=a + (150,), width=2 * s)
+    d.ellipse([(x - 4) * s, (y - 4) * s, (x + 4) * s, (y + 4) * s], fill=a + (200,))
+
+
+_MOTIFS = {
+    'tech-business': _motif_tech,
+    'finance': _motif_finance,
+    'lifestyle': _motif_growth,
+    'delivery': _motif_delivery,
+}
+
+
+def _pillar_motif(img: Image.Image, category: str, accent: tuple) -> None:
+    """Composite the pillar's signature illustration over the full canvas."""
+    motif = _MOTIFS.get(category)
+    if not motif:
+        return
+    s = 2  # supersample for smooth lines
+    layer = Image.new('RGBA', (W * s, H * s), (0, 0, 0, 0))
+    motif(ImageDraw.Draw(layer), s, accent)
+    layer = layer.resize((W, H), Image.LANCZOS)
+    img.paste(layer, (0, 0), layer)
 
 
 def _dot_grid(draw: ImageDraw.ImageDraw, x0: int, y0: int, x1: int, y1: int) -> None:
     """Subtle dot texture so the canvas never reads flat."""
     for y in range(y0, y1, 34):
         for x in range(x0, x1, 34):
-            draw.ellipse([x, y, x + 2, y + 2], fill=(250, 248, 243, 14))
+            draw.ellipse([x, y, x + 2, y + 2], fill=(250, 248, 243, 12))
 
 
 def render_card(post: dict, cover_bytes: bytes | None = None) -> bytes:
@@ -155,6 +254,8 @@ def render_card(post: dict, cover_bytes: bytes | None = None) -> bytes:
 
     draw = ImageDraw.Draw(img, 'RGBA')
     _dot_grid(draw, PAD, 210, panel_x - 40 if cover_bytes else W - PAD, H - 150)
+    _pillar_motif(img, post.get('category', ''), accent)
+    draw = ImageDraw.Draw(img, 'RGBA')
 
     mono = _font('IBMPlexMono-SemiBold.ttf', 24)
     mono_sm = _font('IBMPlexMono-SemiBold.ttf', 21)
@@ -165,13 +266,12 @@ def render_card(post: dict, cover_bytes: bytes | None = None) -> bytes:
     draw.rectangle([PAD, y + 3, PAD + 16, y + 19], fill=accent)
     draw.text((PAD + 32, y), 'THE TRADING NARRATIVE', font=mono, fill=MUTED)
 
-    # pillar chip — pill with translucent accent fill + accent text
+    # pillar chip — solid accent pill with dark text for instant recognition
     label = str(CATEGORIES.get(post.get('category', ''), post.get('category', '') or 'Essay')).upper()
     chip_y = y + 58
     tw = draw.textlength(label, font=mono_sm)
-    draw.rounded_rectangle([PAD, chip_y, PAD + tw + 44, chip_y + 44], radius=22,
-                           fill=accent + (36,), outline=accent + (110,), width=2)
-    draw.text((PAD + 22, chip_y + 10), label, font=mono_sm, fill=accent)
+    draw.rounded_rectangle([PAD, chip_y, PAD + tw + 44, chip_y + 44], radius=22, fill=accent)
+    draw.text((PAD + 22, chip_y + 10), label, font=mono_sm, fill=BG_DEEP)
 
     # headline: adaptive size so long titles always fit (max 4 lines)
     title = post.get('title', 'The Trading Narrative')
