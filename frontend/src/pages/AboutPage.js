@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SITE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Seo } from "@/components/Seo";
@@ -9,7 +10,24 @@ import { FoundingWall } from "@/components/FoundingWall";
 export default function AboutPage() {
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="about-page">
-      <Seo title="About" description="The story behind The Trading Narrative and its author, Anish Pujari." path="/about" />
+      <Seo
+        title="About"
+        description="The story behind The Trading Narrative and its author, Anish Pujari."
+        path="/about"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          name: "About The Trading Narrative",
+          url: `${SITE_URL}/about`,
+          mainEntity: {
+            "@type": "Person",
+            name: "Anish Pujari",
+            jobTitle: "Founder & Author",
+            worksFor: { "@type": "Organization", name: "The Trading Narrative", url: SITE_URL },
+            knowsAbout: ["commodity trading", "energy markets", "trading technology", "ETRM", "market risk", "freight and shipping"],
+          },
+        }}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
         <div className="lg:col-span-5">
           <div className="rounded-2xl overflow-hidden border border-border shadow-[var(--shadow-float)] card-img-zoom">

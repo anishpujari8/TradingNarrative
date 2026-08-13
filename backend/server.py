@@ -25,6 +25,20 @@ from routers import auth, posts, billing, razorpay_routes, newsletter, analytics
 app = FastAPI(title='The Trading Narrative API')
 
 
+# ---------------------- health probes (Kubernetes liveness/readiness) ----------------------
+# The deployment platform probes GET /health (no /api prefix). Must return 200 fast,
+# without touching the database, so pods pass readiness even during cold starts.
+
+@app.get('/health')
+async def health():
+    return {'status': 'ok'}
+
+
+@app.get('/')
+async def root():
+    return {'status': 'ok', 'service': 'The Trading Narrative API'}
+
+
 # ---------------------- seed ----------------------
 
 async def seed_database():

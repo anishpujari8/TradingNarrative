@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Check, X, Crown, Loader2, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
-import { api, trackEvent, getPreferredCurrency, setPreferredCurrency, formatINR } from "@/lib/api";
+import { api, trackEvent, getPreferredCurrency, setPreferredCurrency, formatINR, SITE_URL } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const FEATURES = [
@@ -220,7 +220,27 @@ export default function PricingPage() {
 
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="pricing-page">
-      <Seo title="Pricing" description="Free vs Premium, unlock every essay on The Trading Narrative." path="/pricing" />
+      <Seo
+        title="Pricing"
+        description="Free vs Premium, unlock every essay on The Trading Narrative."
+        path="/pricing"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: "The Trading Narrative Premium",
+          description:
+            "Premium membership: every essay across all pillars, full audio narrations, early drafts, and the members-only Lounge.",
+          brand: { "@type": "Brand", name: "The Trading Narrative" },
+          offers: [
+            { "@type": "Offer", name: "Monthly", price: "99", priceCurrency: "INR", url: `${SITE_URL}/pricing` },
+            { "@type": "Offer", name: "Monthly", price: "1.04", priceCurrency: "USD", url: `${SITE_URL}/pricing` },
+            { "@type": "Offer", name: "Annual", price: "999", priceCurrency: "INR", url: `${SITE_URL}/pricing` },
+            { "@type": "Offer", name: "Annual", price: "10.50", priceCurrency: "USD", url: `${SITE_URL}/pricing` },
+            { "@type": "Offer", name: "Founding Member", price: "5499", priceCurrency: "INR", url: `${SITE_URL}/pricing` },
+            { "@type": "Offer", name: "Founding Member", price: "57.69", priceCurrency: "USD", url: `${SITE_URL}/pricing` },
+          ],
+        }}
+      />
       <div className="text-center max-w-2xl mx-auto">
         <span className="section-label justify-center">Membership</span>
         <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3">Read everything. Own your edge.</h1>

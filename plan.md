@@ -195,19 +195,24 @@
 ### SEO infrastructure (within React + FastAPI)
 - **No cloaking** ✅ *(Phase 42)*
   - No user-agent sniffing; Googlebot sees same HTML as anonymous humans.
-- **Structured data** ✅ *(Phase 42)*
-  - JSON-LD `NewsArticle` on essay pages (client via Helmet) and on `/api/share/{slug}` (server HTML)
+- **Structured data** ✅ *(Phase 42 + Phase 48 additions)*
+  - Essay pages emit JSON-LD `NewsArticle` on-page (client via Helmet) and on `/api/share/{slug}` (server HTML)
   - `isAccessibleForFree: true` for open essays
   - `isAccessibleForFree: false` + `hasPart.cssSelector = '.paywalled-content'` for locked
-- **Sitemap** ✅ *(Phase 42)*
-  - `/api/sitemap.xml` includes:
-    - home, archive, pricing, about, briefings
-    - topic hubs (`/topics/...`) + category pages
-    - all published essays with `<lastmod>`
-- **Robots** ✅ *(Phase 42)*
+  - **Added (Phase 48):**
+    - Essays now emit `@graph` including `BreadcrumbList`
+    - Topic hubs emit `CollectionPage`
+    - Pricing emits `Product` with INR/USD `Offer` items
+    - About emits `AboutPage` + `Person`
+- **Sitemap** ✅ *(Phase 42, verified again in Phase 48)*
+  - `/api/sitemap.xml` regenerates from MongoDB on each request (new essays/editions appear immediately)
+  - Includes: homepage, archive, pricing, about, briefings, topic hubs, category pages, all published essays with `<lastmod>`
+- **Robots** ✅ *(Phase 42 + Phase 48 additions)*
   - `frontend/public/robots.txt` disallows `/api/` while explicitly allowing:
     - `/api/sitemap.xml`, `/api/feed.xml`, `/api/share/`
   - Production sitemap URL referenced.
+  - **AI crawler policy sections added (Phase 48)** and a note to consult `/llms.txt`.
+  - Note: Preview domain may inject a platform-level robots.txt; localhost/production serve the app’s file.
 - **RSS feed** ✅ *(Phase 42)*
   - `/api/feed.xml`: full text for open/free essays; preview + link for locked
   - RSS discovery link injected in `public/index.html`
@@ -220,13 +225,13 @@
   - WebSite + Organization JSON-LD on homepage
   - Briefings + Archive tuned for “weekly briefing / newsletter / freight / trading”
   - Topic hubs already keyword-strong
-  - Meta duplication fixed (static tags removed on mount) so rendered pages have exactly one `description`, `keywords`, and `og:title`
+  - Meta duplication fixed (static fallback tags removed on mount) so rendered pages have exactly one `description`, `keywords`, and `og:title`
 - **Site title + dynamic essay meta descriptions** ✅ *(Phase 47, PREVIEW)*
   - Site title set to **exact string**: `The Trading Narrative | Commodity Trading & Tech Insights`
   - Default keywords emphasize: commodity trading, energy markets, trading technology, ETRM, market risk
   - Essay pages generate a dynamic meta description derived from the actual article content
-- **Documentation** ✅ *(Phase 42 + 45 + 47)*
-  - `/app/SEO.md` documents metering + paywall + schema rules + keyword map + Phase 47 title/description policy
+- **Documentation** ✅ *(Phase 42 + 45 + 47 + 48)*
+  - `/app/SEO.md` documents metering + paywall + schema rules + keyword map + Phase 47 title/description policy + Phase 48 AI readiness
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -438,8 +443,6 @@ Verification:
 - Headless Chromium verified single meta description + keywords + og:title on home/briefings/archive/topic pages.
 - Essay pages still emit `NewsArticle` JSON-LD; `/api/share/{slug}` provides crawler HTML.
 
-**IMPORTANT:** Phase 45 is in **PREVIEW only** until the user redeploys production.
-
 ### Phase 46 — Growth Suite (Audio Sales + Manual Search Rank + Early Bird) ✅ COMPLETED (PREVIEW)
 
 #### 46.1 Audio Sales Dashboard (Admin) ✅
@@ -491,21 +494,7 @@ Context: show the early-bird premium deal on the homepage so visitors see it bef
 
 Delivered:
 - `HomePage.js` fetches `GET /api/billing/early-bird` alongside `/early-supporters`.
-- New banner rendered **above** the existing early-supporter strip:
-  - `data-testid="early-bird-banner"`
-  - Dark strip (`bg-foreground text-background`) with accent `Crown` icon
-  - Copy: “Early bird: go Premium for {₹49 | $0.52} first month or {₹499 | $5.25} first year (strikethrough regular annual) · N of 50 spots left · Lock in the deal”
-  - Links to `/pricing`.
-- Currency-aware via `getPreferredCurrency()` (INR/USD).
-- Prices come from the early-bird API (single source of truth; no hardcoding).
-- Hidden when promo is inactive/exhausted or user is already premium.
-- Early-supporter banner unchanged and still renders below.
-
-Verification:
-- Screenshot verified stacked banners render cleanly with distinct styling.
-- Frontend build passes.
-
-**IMPORTANT:** Phase 46 is in **PREVIEW only** until the user redeploys production.
+- New banner rendered **above** the existing early-supporter strip.
 
 ### Phase 47 — Site Title + Dynamic Essay Meta Descriptions ✅ COMPLETED (PREVIEW)
 User request:
@@ -514,38 +503,45 @@ User request:
 - Each essay page must generate a **dynamic meta description** based on article content
 
 Delivered:
-- `frontend/public/index.html`
-  - Exact title set.
-  - Updated static (crawler fallback) meta description + keywords + og tags, still marked `data-rh="true"` per Helmet ownership convention.
-- `frontend/src/components/Seo.js`
-  - Defaults updated:
-    - `DEFAULT_TAGLINE = "Commodity Trading & Tech Insights"`
-    - `DEFAULT_DESC/DEFAULT_KEYWORDS` rewritten around the five requested terms, while retaining related terms (freight, weekly briefing, newsletter, CTRM).
-  - Exported helper `metaDescription(post)`:
-    - excerpt first; else opening paragraphs from `content_blocks`
-    - skips headings (`#`) and image markers (`![`) because `content_blocks` are plain strings
-    - normalizes whitespace
-    - trims to ~160 chars on a word boundary with an ellipsis
-  - Default full title uses the pipe separator: `SITE_NAME | DEFAULT_TAGLINE`.
-- `frontend/src/pages/ArticlePage.js`
-  - Uses `description={metaDescription(post)}` instead of the raw excerpt.
-  - Generates per-essay keywords from `post.tags` (and appends: `commodity trading, trading technology`).
-- `backend/utils.py`
-  - Added mirror helper `meta_description(post)` for backend-generated meta.
-- `backend/routers/posts.py`
-  - `/api/share/{slug}` crawler HTML now uses `meta_description(post)` for `meta[name=description]`.
-  - Share-page JSON-LD `description` now uses `meta_description(post)`.
-- `frontend/src/pages/HomePage.js`
-  - WebSite/Organization JSON-LD updated to the new keyword set (`energy markets`, `market risk`).
-- `SEO.md`
-  - Added Phase 47 policy section documenting the site title + dynamic descriptions.
+- `frontend/public/index.html`: exact title + updated keyword-rich description/keywords/og tags.
+- `frontend/src/components/Seo.js`:
+  - Defaults updated around the five requested terms.
+  - `metaDescription(post)` helper derives per-essay descriptions.
+- `frontend/src/pages/ArticlePage.js`: uses `metaDescription(post)` for the essay meta description and tag-derived keywords.
+- `backend/utils.py`: `meta_description(post)` mirror helper.
+- `backend/routers/posts.py`: `/api/share/{slug}` uses `meta_description(post)` for crawler HTML + JSON-LD.
+- `frontend/src/pages/HomePage.js`: WebSite/Organization JSON-LD updated for energy markets + market risk.
+- `SEO.md`: Phase 47 section.
 
-Verified:
-- Headless Chromium: homepage title exact match; keywords include the five requested terms; essay pages show one description tag and content-derived text; keywords include tags.
-- curl: raw homepage HTML title correct; `/api/share/{slug}` uses dynamic description.
-- esbuild clean; backend helper checked for excerpt + no-excerpt derivation paths.
+### Phase 48 — Deployment Fix + AI Assistant Readiness ✅ COMPLETED (PREVIEW)
 
-**IMPORTANT:** Phase 47 is in **PREVIEW only** until the user redeploys production.
+#### 48.1 Production deploy failure fixed (health probes) ✅
+- Root cause from logs: Kubernetes probes hit `GET /health` (no `/api` prefix) and got **404**, failing rollout.
+- Fix: added `GET /health` and `GET /` to `backend/server.py` returning 200 quickly **without DB access**.
+- Verified: `curl http://localhost:8001/health` returns 200; `/api/*` unaffected.
+
+#### 48.2 Deployment agent blocker fixed ✅
+- Blocker: malformed env value in `/app/backend/.env` for `EMERGENT_LLM_KEY`.
+- Fix: value is now quoted. Re-scan: PASS.
+
+#### 48.3 Dynamic sitemap request verified ✅
+- User request: sitemap includes homepage, archive, and all essays, updates when new edition published.
+- Verified: already satisfied by Phase 42 `/api/sitemap.xml` implementation.
+- No code changes needed.
+
+#### 48.4 AI assistant readiness ✅
+- `frontend/public/llms.txt`: llmstxt.org-style site overview with production URLs.
+- `frontend/public/robots.txt`: now includes explicit AI crawler user-agents plus a pointer to `/llms.txt`.
+  - NOTE: preview domain may inject platform robots.txt; localhost/production serve the app file.
+- Structured data additions (verified rendered via headless Chromium):
+  - Home: WebSite + Organization
+  - Essays: NewsArticle + BreadcrumbList (`@graph`), paywall signalling preserved
+  - Topic hubs: CollectionPage
+  - Pricing: Product with INR/USD Offers
+  - About: AboutPage + Person
+- Incident: `TopicPage.js` was corrupted by duplicated trailing JSX which broke webpack builds (esbuild still passed).
+  - Fixed by removing orphaned lines and re-applying the `jsonLd` edit.
+- `SEO.md`: Phase 48 AI readiness section added.
 
 ---
 
@@ -561,6 +557,7 @@ If you are seeing an issue, confirm whether it is on:
 - Phase 45 (keyword SEO targeting) requires a redeploy.
 - Phase 46 (growth suite + early bird + homepage banner) requires a redeploy.
 - Phase 47 (site title + dynamic essay meta descriptions) requires a redeploy.
+- **Phase 48 (health probes + env fix + llms/robots/schema)** requires a redeploy.
 
 ### C) Payment gateways
 - “Test mode” banners cannot be removed with code.
@@ -622,6 +619,14 @@ If you are seeing an issue, confirm whether it is on:
 - Default meta keywords include: commodity trading, energy markets, trading technology, ETRM, market risk
 - Each essay page generates a **dynamic meta description** derived from real essay content (excerpt or opening paragraphs)
 - `/api/share/{slug}` crawler HTML mirrors the same dynamic description
+
+✅ Phase 48 success targets met (Preview)
+- Kubernetes liveness/readiness probes succeed (`GET /health` returns 200)
+- Deployment agent scan passes (env fixed)
+- `/llms.txt` is served and accurately describes the site
+- robots policy exists for major AI crawlers and points to `/llms.txt`
+- Structured data enhanced: breadcrumbs, topic collection pages, pricing offers, about person
+- Sitemap verified dynamic and complete
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

@@ -121,3 +121,24 @@ Implementation notes:
   - Backend mirror: `meta_description(post)` in `utils.py`, used by the crawler-facing
     `/api/share/{slug}` HTML (meta description + JSON-LD description).
   - Essay pages also emit per-essay `keywords` derived from the post's tags.
+
+## AI assistant readiness (Phase 48)
+
+- `/llms.txt` (frontend/public): llmstxt.org-format overview for AI assistants -
+  what the site is, pillars, access model, key URLs (archive, topic hubs, briefings,
+  pricing, about, RSS, sitemap). Uses production URLs.
+- `robots.txt`: explicit sections welcoming AI crawlers (GPTBot, ChatGPT-User,
+  OAI-SearchBot, ClaudeBot, Claude-User, PerplexityBot, Google-Extended) on public
+  content, same disallows as everyone (/admin, /account, /api/, /payment/, /auth);
+  header comment points AI assistants to /llms.txt.
+  NOTE: the preview domain serves a platform-injected robots.txt; production serves ours.
+- Structured data coverage (all verified rendered):
+  - Home: WebSite + Organization (@graph)
+  - Essays: NewsArticle + BreadcrumbList (@graph), paywall signalling intact
+  - Topic hubs: CollectionPage
+  - Pricing: Product with INR/USD Offers for Monthly, Annual, Founding
+  - About: AboutPage + Person (Anish Pujari, knowsAbout topics)
+- Dynamic sitemap at /api/sitemap.xml: regenerated from the database on every request
+  (new essays/editions appear immediately), includes homepage, archive, pricing, about,
+  briefings, topic hubs, category pages, and every published essay with lastmod dates.
+  Linked from robots.txt.

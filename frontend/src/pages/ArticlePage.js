@@ -20,7 +20,7 @@ import { QuoteCardDialog } from "@/components/QuoteCardDialog";
 import { AudioNarrator } from "@/components/AudioNarrator";
 import { AskEssayWidget } from "@/components/AskEssayWidget";
 import { toast } from "sonner";
-import { api, formatDate, trackEvent } from "@/lib/api";
+import { api, formatDate, trackEvent, CATEGORIES } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const Paywall = ({ post }) => {
@@ -326,27 +326,41 @@ export default function ArticlePage() {
   const visibleBlocks = post.is_locked ? post.content_blocks.slice(0, -1) : post.content_blocks;
   const blurredBlock = post.is_locked ? post.content_blocks[post.content_blocks.length - 1] : null;
 
-  // Paywall structured data (schema.org NewsArticle) — Google-compliant paywall signalling
+  // Paywall structured data (schema.org NewsArticle) — Google-compliant paywall signalling,
+  // plus BreadcrumbList so search engines and AI assistants understand site hierarchy
+  const categoryLabel = CATEGORIES.find((c) => c.slug === post.category)?.label || post.category;
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: post.title,
-    datePublished: post.published_at,
-    dateModified: post.updated_at || post.published_at,
-    author: { "@type": "Person", name: post.author || "Anish Pujari" },
-    publisher: {
-      "@type": "Organization",
-      name: "The Trading Narrative",
-      logo: { "@type": "ImageObject", url: `${window.location.origin}/logo.png` },
-    },
-    description: post.excerpt,
-    keywords: (post.tags || []).join(", "),
-    mainEntityOfPage: `${window.location.origin}/post/${post.slug}`,
-    image: post.cover_image,
-    isAccessibleForFree: post.tier !== "premium",
-    ...(post.tier === "premium"
-      ? { hasPart: { "@type": "WebPageElement", isAccessibleForFree: false, cssSelector: ".paywalled-content" } }
-      : {}),
+    "@graph": [
+      {
+        "@type": "NewsArticle",
+        headline: post.title,
+        datePublished: post.published_at,
+        dateModified: post.updated_at || post.published_at,
+        author: { "@type": "Person", name: post.author || "Anish Pujari" },
+        publisher: {
+          "@type": "Organization",
+          name: "The Trading Narrative",
+          logo: { "@type": "ImageObject", url: `${window.location.origin}/logo.png` },
+        },
+        description: metaDescription(post),
+        keywords: (post.tags || []).join(", "),
+        mainEntityOfPage: `${window.location.origin}/post/${post.slug}`,
+        image: post.cover_image,
+        isAccessibleForFree: post.tier !== "premium",
+        ...(post.tier === "premium"
+          ? { hasPart: { "@type": "WebPageElement", isAccessibleForFree: false, cssSelector: ".paywalled-content" } }
+          : {}),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: window.location.origin },
+          { "@type": "ListItem", position: 2, name: categoryLabel, item: `${window.location.origin}/topics/${post.category}` },
+          { "@type": "ListItem", position: 3, name: post.title, item: `${window.location.origin}/post/${post.slug}` },
+        ],
+      },
+    ],
   };
 
   return (

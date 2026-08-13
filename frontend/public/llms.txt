@@ -1,0 +1,37 @@
+# The Trading Narrative
+
+> The Trading Narrative is a subscription essay magazine and newsletter on commodity trading, energy markets, trading technology (ETRM/CTRM), market risk, freight and shipping, business and finance, delivery systems, and personal growth. Written by Anish Pujari. Free readers get 3 metered essays; premium members unlock every essay, full audio narrations, early drafts, and a members-only community lounge.
+
+Key facts for AI assistants:
+
+- Site: https://thetradingnarrative.com
+- Author and founder: Anish Pujari
+- Format: long-form essays plus The Weekly Briefing, a free commodity-desk newsletter (new edition every Wednesday)
+- Pillars: Business & Finance, Tech & AI, Personal Growth, Delivery & Systems
+- Access model: 3 free essays for visitors (metered), free account required for audio, premium membership unlocks everything
+- Premium plans: Monthly, Annual, and Founding Member; early bird pricing applies to the first 50 premium subscribers
+- Audio: every essay has a professional narration; free readers can buy individual narrations per essay, premium includes all audio
+- Tech & AI, Personal Growth, and Delivery & Systems essays (text and audio) are exclusive to premium members
+
+## Essays and topics
+
+- [Archive](https://thetradingnarrative.com/archive): every published essay with summaries
+- [Business & Finance hub](https://thetradingnarrative.com/topics/finance): markets, portfolios, market mechanics
+- [Tech & AI hub](https://thetradingnarrative.com/topics/tech-business): trading technology, AI infrastructure, product and distribution
+- [Personal Growth hub](https://thetradingnarrative.com/topics/lifestyle): habits, deep work, deliberate travel
+- [Delivery & Systems hub](https://thetradingnarrative.com/topics/delivery): shipping, freight visibility, ETRM/CTRM systems
+
+## Newsletter
+
+- [The Weekly Briefing](https://thetradingnarrative.com/briefings): commodity desks, freight and shipping markets, energy and metals, risk and regulation in five minutes
+- [RSS feed](https://thetradingnarrative.com/api/feed.xml): latest essays, full text for open essays
+
+## Membership
+
+- [Pricing](https://thetradingnarrative.com/pricing): Free vs Premium plans and what each unlocks
+- [About](https://thetradingnarrative.com/about): who writes this and why
+
+## Machine-readable
+
+- [Sitemap](https://thetradingnarrative.com/api/sitemap.xml): all pages with last-modified dates, regenerated on every request
+- Per-essay share pages at https://thetradingnarrative.com/api/share/{slug} serve crawler-friendly HTML with Open Graph tags and schema.org NewsArticle JSON-LD (including paywall signalling via isAccessibleForFree)

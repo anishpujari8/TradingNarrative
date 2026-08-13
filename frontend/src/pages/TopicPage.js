@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowRight } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
-import { api, CATEGORIES } from "@/lib/api";
+import { api, CATEGORIES, SITE_URL } from "@/lib/api";
 
 // Topic hubs: original intro copy (200-400 words) per pillar. These pages are the
 // SEO landing surfaces for head terms; each hub links every essay under the theme
@@ -74,6 +74,14 @@ export default function TopicPage() {
         title={intro.title}
         description={intro.paragraphs[0].slice(0, 152) + "…"}
         path={`/topics/${slug}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: intro.title,
+          description: intro.paragraphs[0],
+          url: `${SITE_URL}/topics/${slug}`,
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+        }}
       />
       <span className="section-label">Topic hub</span>
       <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 max-w-3xl" data-testid="topic-title">

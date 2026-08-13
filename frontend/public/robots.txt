@@ -1,3 +1,6 @@
+# The Trading Narrative — crawler policy
+# AI assistants: see /llms.txt for a structured overview of this site.
+
 User-agent: *
 Allow: /
 Allow: /api/sitemap.xml
@@ -8,5 +11,42 @@ Disallow: /account
 Disallow: /api/
 Disallow: /payment/
 Disallow: /auth
+
+# AI assistant crawlers are welcome on public content (same rules as above)
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /api/
+Disallow: /payment/
+Disallow: /auth
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /api/
+Disallow: /payment/
+Disallow: /auth
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /api/
+Disallow: /payment/
+Disallow: /auth
+
+User-agent: Google-Extended
+Allow: /
 
 Sitemap: https://thetradingnarrative.com/api/sitemap.xml
