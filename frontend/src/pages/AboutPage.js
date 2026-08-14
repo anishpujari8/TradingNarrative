@@ -142,7 +142,7 @@ export default function AboutPage() {
             </p>
             <div className="flex items-center gap-4 mt-6 flex-wrap">
               <a
-                href="https://www.amazon.in/s?k=How+Trading+Can+Make+You+Money+Anish+Pujari"
+                href="https://www.amazon.in/dp/B0HBR9THSX"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="about-book-buy-link"

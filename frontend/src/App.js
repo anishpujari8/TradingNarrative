@@ -31,6 +31,7 @@ import AdminEditorPage from "@/pages/AdminEditorPage";
 import CommunityPage from "@/pages/CommunityPage";
 import BriefingsPage from "@/pages/BriefingsPage";
 import GlossaryPage from "@/pages/GlossaryPage";
+import BooksPage from "@/pages/BooksPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
 const RouteEffects = () => {
@@ -73,6 +74,7 @@ function App() {
                   <Route path="/lounge" element={<CommunityPage />} />
                   <Route path="/briefings" element={<BriefingsPage />} />
                   <Route path="/glossary" element={<GlossaryPage />} />
+                  <Route path="/books" element={<BooksPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/editor" element={<AdminEditorPage />} />
                   <Route path="/admin/editor/:id" element={<AdminEditorPage />} />

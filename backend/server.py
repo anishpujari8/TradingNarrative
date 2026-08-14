@@ -170,6 +170,7 @@ async def seed_database():
 @app.on_event('startup')
 async def startup():
     await seed_database()
+    await books_router.ensure_seed_books()
     await probe_razorpay_subscriptions()
     asyncio.create_task(digest_autosend_loop())
     asyncio.create_task(briefing_reminder_loop())
@@ -189,6 +190,8 @@ app.include_router(admin.router)
 app.include_router(highlights.router)
 app.include_router(sync.router)
 app.include_router(ai.router)
+from routers import books as books_router
+app.include_router(books_router.router)
 
 app.add_middleware(
     CORSMiddleware,

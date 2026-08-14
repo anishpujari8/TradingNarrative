@@ -126,6 +126,8 @@
   - Audio Sales Dashboard ✅
   - Manual Search Rank Tracker ✅
   - Early Bird Premium offer ✅
+- **Bookshelf Admin Panel** ✅ *(Phase 62)*
+  - Manage `/books` recommendations (add/edit/delete)
 
 ### Community (Premium Lounge)
 - Private Community Lounge ✅
@@ -158,10 +160,13 @@
   - `/glossary` (crawlable) + **DefinedTermSet JSON-LD**
   - Linked in footer
   - Included in sitemap
+- **Books page** ✅ *(Phase 62)*
+  - `/books` (crawlable) + ItemList/Book JSON-LD
+  - Included in sitemap
 
 ### Social sharing (unfurls + branded assets)
 - **Branded OG share cards** ✅ *(Phase 50)*
-- **Pillar-coloured OG cards with signature motifs (v3)** ✅ *(Phase 51)*
+- **Pillar-coloured OG cards with signature motifs** ✅ *(Phase 51+)*
 - **Pillar mascots generated + integrated (UI)** ✅ *(Phase 57)*
 - **Quote-card sharing matches pillar accents + motifs** ✅ *(Phase 54 + Phase 55)*
 - **Navbar pillar dots** ✅ *(Phase 58)*
@@ -180,6 +185,7 @@
   - Byline + photo on post cards
   - Strong author byline on article page
 - **Book showcase on About page** ✅ *(Phase 61)*
+- **Dedicated Books page + Admin bookshelf** ✅ *(Phase 62)*
 
 ### Stability
 - Modular backend ✅
@@ -429,12 +435,53 @@ User request: address external review feedback to reduce bounce + increase trust
   - Subtitle: **An Honest Beginner's Roadmap: Strategies, AI Prompts & a 12-Month Plan**
   - User blurb: SEBI F&O 90% stat + risk/process promise (dash-free phrasing)
 - CTAs:
-  - “Get the book” button currently points to an **Amazon.in search** for the title+author.
+  - “Get the book” button now points to canonical Amazon dp URL: **https://www.amazon.in/dp/B0HBR9THSX** ✅ *(blocker cleared in Phase 62)*
   - “Subscribe on LinkedIn” points to the LinkedIn newsletter follow URL.
 
-**NOTE:** No direct retailer URL was provided. When you share the exact buy link (Amazon product page, Kindle, or your preferred store), we should swap the search link to the canonical product URL.
-
 **Verified:** screenshot confirms the section renders beautifully above The Pillars; Instagram hrefs correct; `esbuild` clean.
+
+### Phase 62 — Books Page + Admin Bookshelf ✅ COMPLETED (PREVIEW)
+User request: dedicated `/books` page with scalable recommendations managed from admin.
+
+**62.1 Backend (routers/books.py):**
+- Public: `GET /api/books`.
+- Admin CRUD (guarded by `get_admin_user`):
+  - `POST /api/admin/books`
+  - `PUT /api/admin/books/{id}`
+  - `DELETE /api/admin/books/{id}`
+- Sorting: featured-first → sort → created_at.
+- Seed-on-startup via `ensure_seed_books()`:
+  - `seed_key`: `how-trading-can-make-you-money-v1`
+  - Title: **How Trading Can Make You Money**
+  - Author: **Anish Pujari**
+  - Cover: `/book-cover.webp`
+  - Buy link: **https://www.amazon.in/dp/B0HBR9THSX**
+  - `featured=True` (shows “By the author” badge)
+- Router registered in `server.py` and seeded in the startup hook.
+
+**62.2 Frontend `/books` page (BooksPage.js):**
+- Grid layout of book cards (cover, title, author, description, “Buy on Amazon” button).
+- Loading skeletons + empty state.
+- SEO meta + ItemList/Book JSON-LD.
+- Routed in `App.js`.
+
+**62.3 Navbar:**
+- Desktop: “Books” link (`nav-books-link`).
+- Mobile: “Books” link (`nav-mobile-books-link`).
+
+**62.4 Admin:**
+- New “Books” tab (`admin-tab-books`) in `AdminPage` rendering `components/admin/BooksPanel.js`:
+  - Add/edit form: title, author, description, cover URL, buy URL, featured switch, sort.
+  - Shelf list with edit + delete (confirm).
+
+**62.5 SEO plumbing:**
+- `/books` added to dynamic sitemap.
+
+**Verification:**
+- API seed + CRUD smoke test (create/update/delete 200, unauthed 401).
+- `/books` page + navbar link + admin panel verified visually; `esbuild` clean.
+
+**Requires redeploy:** to ship live (seed will self-heal into production on startup).
 
 ---
 
@@ -451,20 +498,21 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–61 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–62 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
-   - Navbar category links show pillar dots
-   - Home hero: inline email capture + social proof line
-   - Home: author strip under hero
-   - Home: “Start here, free” section shows 3 free essays
-   - `/topics/{pillar}` shows mascot + motif header
-   - Article pages show pillar-tinted badge + progress bar and improved author byline
-   - Post cards show author byline + photo
-   - `/glossary` exists, is linked in footer, and is included in sitemap
-   - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention + real Instagram profile
-   - About page: book showcase section visible above The Pillars
-   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the new **v5** chips and mascot medallion
+   - Navbar category links show pillar dots; navbar includes “Books”.
+   - Home hero: inline email capture + social proof line.
+   - Home: author strip under hero.
+   - Home: “Start here, free” section shows 3 free essays.
+   - `/topics/{pillar}` shows mascot + motif header.
+   - Article pages show pillar-tinted badge + progress bar and improved author byline.
+   - Post cards show author byline + photo.
+   - `/glossary` exists, is linked in footer, and is included in sitemap.
+   - `/books` exists, is linked in navbar, and is included in sitemap.
+   - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention + real Instagram profile.
+   - About page: book showcase section visible above The Pillars; “Get the book” goes to https://www.amazon.in/dp/B0HBR9THSX.
+   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the latest share cards (v5 chips + mascot medallion).
 3. Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
 
 ### C) Marketing copy accuracy
@@ -477,7 +525,6 @@ If you report any issue, confirm whether it is on:
 ### E) Still blocked
 - PayPal recurring subscriptions: needs credentials + final decision
 - Resend: needs API key + verified sender domain
-- **Book retailer URL**: needs exact canonical purchase link to replace the Amazon search link
 
 ---
 
@@ -538,6 +585,13 @@ If you report any issue, confirm whether it is on:
 ✅ Phase 61 content/links addressed (PREVIEW)
 - Instagram profile linked everywhere
 - About page includes book showcase with cover + promise
+- “Get the book” uses canonical Amazon dp URL
+
+✅ Phase 62 Bookshelf targets met (PREVIEW)
+- Dedicated `/books` page (SEO + JSON-LD)
+- Admin-managed bookshelf (CRUD)
+- Navbar includes Books link
+- Seeded first book (B0HBR9THSX)
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.
@@ -546,4 +600,3 @@ If you report any issue, confirm whether it is on:
 ⛔ Blockers
 - PayPal: awaiting decisions + credentials.
 - Resend: awaiting decisions + API key + sender domain verification.
-- Book: awaiting canonical purchase link (currently using Amazon search).
