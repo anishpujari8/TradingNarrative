@@ -10,6 +10,9 @@ export const PILLAR_ACCENTS = {
   finance: "#1c8570", // brand teal
   lifestyle: "#c4872e", // warm amber
   delivery: "#3f7cc4", // steel blue
+  // Section identities: non-pillar destinations that share the same visual system
+  briefings: "#c14953", // signal crimson (The Weekly Briefing)
+  books: "#9a6b3f", // leather bronze (The Bookshelf)
 };
 
 export const PILLAR_TAGLINES = {
@@ -17,6 +20,8 @@ export const PILLAR_TAGLINES = {
   finance: "Market mechanics, from yield curves to treatment charges.",
   lifestyle: "Life systems for operators, instrumented like trading systems.",
   delivery: "How complex platforms actually get shipped and adopted.",
+  briefings: "Five things that change how desks work, every Wednesday.",
+  books: "A short, honest shelf that feeds the essay archive.",
 };
 
 export const pillarAccent = (slug) => PILLAR_ACCENTS[slug] || "#1c8570";
@@ -103,6 +108,34 @@ export const PillarMotif = ({ category, className = "", strokeWidth = 2 }) => {
         ))}
         <circle cx="570" cy="45" r="12" />
         <circle cx="570" cy="45" r="4" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  if (category === "briefings") {
+    // Telegraph wire pulses: the weekly signal arriving on the desk.
+    return (
+      <svg {...common}>
+        <polyline points="20,90 180,90 210,58 260,58 290,90 570,90" />
+        <polyline points="20,165 240,165 270,132 320,132 350,196 380,165 570,165" />
+        <polyline points="20,238 140,238 170,206 220,206 250,238 570,238" strokeDasharray="10 8" opacity="0.7" />
+        {[[210, 58], [320, 132], [250, 238]].map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="3.5" fill="currentColor" stroke="none" />
+        ))}
+      </svg>
+    );
+  }
+  if (category === "books") {
+    // A shelf of spines with one leaning volume.
+    return (
+      <svg {...common}>
+        {[360, 402, 444, 486].map((x, i) => (
+          <rect key={i} x={x} y={78 + (i % 2) * 12} width="30" height={186 - (i % 2) * 12} rx="4" />
+        ))}
+        <rect x="528" y="92" width="30" height="172" rx="4" transform="rotate(9 543 178)" />
+        <line x1="330" y1="272" x2="590" y2="272" />
+        {[375, 417, 459].map((x, i) => (
+          <line key={i} x1={x} y1={112 + (i % 2) * 12} x2={x} y2={122 + (i % 2) * 12} />
+        ))}
       </svg>
     );
   }

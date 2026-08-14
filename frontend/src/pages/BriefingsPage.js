@@ -6,6 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Lock, Clock, ArrowRight, Newspaper, Sparkles } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
+import { pillarAccent, withAlpha, PillarMotif, pillarMascot, PILLAR_MASCOT_ALTS } from "@/lib/pillars";
+
+const ACCENT = pillarAccent("briefings");
 
 export default function BriefingsPage() {
   const [briefings, setBriefings] = useState(null);
@@ -22,13 +25,33 @@ export default function BriefingsPage() {
         keywords="weekly briefing, newsletter, trading, freight, commodity trading, shipping, markets, risk, regulation"
         path="/briefings"
       />
-      <div className="max-w-2xl">
-        <span className="section-label">The series</span>
-        <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 leading-tight">The Weekly Briefing</h1>
-        <p className="text-muted-foreground leading-relaxed mt-4">
-          Five things that actually change how trading and risk teams work, every week,
-          written the way a desk reads them. Follow the editions in order or jump to the latest.
-        </p>
+      <div
+        className="relative overflow-hidden rounded-2xl border px-6 sm:px-10 py-8 sm:py-10"
+        style={{ borderColor: withAlpha(ACCENT, 0.35), backgroundColor: withAlpha(ACCENT, 0.07) }}
+        data-testid="briefings-header-banner"
+      >
+        <div className="absolute inset-y-0 right-0 w-3/4 sm:w-1/2 pointer-events-none" style={{ color: ACCENT, opacity: 0.16 }}>
+          <PillarMotif category="briefings" className="h-full w-full" />
+        </div>
+        <div className="relative flex items-center gap-6 sm:gap-10">
+          <div className="min-w-0 flex-1">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: ACCENT }}>The series</span>
+            <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 leading-tight">The Weekly Briefing</h1>
+            <p className="text-muted-foreground leading-relaxed mt-4 max-w-2xl">
+              Five things that actually change how trading and risk teams work, every week,
+              written the way a desk reads them. Follow the editions in order or jump to the latest.
+            </p>
+            <div className="h-1 w-16 rounded-full mt-5" style={{ backgroundColor: ACCENT }} aria-hidden />
+          </div>
+          <img
+            src={pillarMascot("briefings")}
+            alt={PILLAR_MASCOT_ALTS.briefings}
+            className="hidden sm:block h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
+            style={{ border: `3px solid ${withAlpha(ACCENT, 0.55)}` }}
+            loading="lazy"
+            data-testid="briefings-mascot"
+          />
+        </div>
       </div>
 
       <div className="mt-10 max-w-3xl space-y-4">

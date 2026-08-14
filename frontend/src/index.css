@@ -280,3 +280,25 @@ mark.popular-highlight .popular-count {
         border-bottom-color: inherit;
     }
 }
+
+/* Pillar identity inside the Navbar "Pillars" dropdown.
+   Each item carries --pillar-accent; hover/focus tints adapt per theme. */
+.pillar-dd-item {
+  border-left: 2px solid transparent;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+.pillar-dd-item:focus,
+.pillar-dd-item[data-highlighted] {
+  background-color: color-mix(in srgb, var(--pillar-accent) 12%, transparent) !important;
+  border-left-color: var(--pillar-accent);
+}
+.dark .pillar-dd-item:focus,
+.dark .pillar-dd-item[data-highlighted] {
+  background-color: color-mix(in srgb, var(--pillar-accent) 22%, transparent) !important;
+}
+.pillar-dd-title {
+  color: var(--pillar-accent);
+}
+.dark .pillar-dd-title {
+  filter: brightness(1.3) saturate(0.92);
+}

@@ -2,11 +2,16 @@
 
 ## 1) Objectives
 - Ship a modern, subscription-based blog + newsletter platform (**The Trading Narrative**) with an editorial reading experience, a freemium → premium conversion model, and a **premium community destination (Lounge)**.
-- Support **four pillars/themes** with a unified, recognisable identity everywhere (site UI + share assets):
-  - **Tech & AI** (`tech-business`)
-  - **Trading, Business & Finance** (`finance`) ✅ *(renamed from “Business & Finance”)*
-  - **Personal Growth** (`lifestyle`) *(DB slug; displayed as Personal Growth)*
-  - **Delivery & Systems** (`delivery`) ✅
+- Support a unified, recognisable identity everywhere (site UI + share assets):
+  - **Four core pillars/themes** (categories):
+    - **Tech & AI** (`tech-business`)
+    - **Trading, Business & Finance** (`finance`) ✅ *(renamed from “Business & Finance”)*
+    - **Personal Growth** (`lifestyle`) *(DB slug; displayed as Personal Growth)*
+    - **Delivery & Systems** (`delivery`) ✅
+  - **Two section identities** (non-category destinations, styled like pillars):
+    - **The Weekly Briefing** (`briefings`) ✅ *(Phase 64)*
+    - **Bookshelf** (`books`) ✅ *(Phase 64)*
+
 - Provide subscriptions via:
   - **Stripe (international recurring payments)** ✅
   - **Razorpay (India)** ✅
@@ -189,6 +194,9 @@
   - Strong author byline on article page
 - **Book showcase on About page** ✅ *(Phase 61)*
 - **Dedicated Books page + Admin bookshelf** ✅ *(Phase 62)*
+- **Briefings + Books mascots + palettes (styled like pillars)** ✅ *(Phase 64)*
+  - Dedicated mascots, accents, motifs
+  - Pillar-style header banners on `/briefings` and `/books`
 
 ### Navigation + information architecture
 - Navbar includes primary site sections ✅
@@ -199,6 +207,11 @@
   - Trigger highlights when on `/category/*` pages.
   - All other nav links remain **single-line** via `whitespace-nowrap` and are vertically centered (no wrapping).
 - Mobile sheet nav groups pillars under a **“Pillars”** label ✅ *(Phase 63)*
+- **Per-pillar themed dropdown styling (light + dark)** ✅ *(Phase 64)*
+  - Dropdown titles use pillar accent colours.
+  - Hover/focus tint + left border adapt by theme:
+    - Light mode ~12% accent tint
+    - Dark mode ~22% accent tint
 
 ### Stability
 - Modular backend ✅
@@ -539,10 +552,65 @@ User request: streamline navbar + make book shelf feed the archive.
   - Hover open/close + click navigation works for Pillars dropdown.
   - Admin picker saves and persists.
   - Mobile sheet layout verified.
-- Seeded book’s **Preview DB record** now links to the essay.
+- Seeded book’s **Preview DB record** links to the essay.
 
 **Requires redeploy:** to ship UI changes to production.
 **Optional:** books DB data can be synced Preview → Production using the existing sync tool/endpoint (content-only), without redeploy.
+
+### Phase 64 — Briefings + Books Mascots & Palettes + Themed Pillars Dropdown ✅ COMPLETED (PREVIEW)
+User request: add mascots and distinct colour identities for Weekly Briefing + Books, and colour the pillar dropdown per pillar in both light and dark mode.
+
+**64.1 New section mascots (Gemini image gen):**
+- Generated via `gemini-3.1-flash-image-preview` using `EMERGENT_LLM_KEY`.
+- Style-matched against the existing pillar emblems using the **finance bull** as the reference.
+- New mascots:
+  - **Weekly Briefing** (`briefings`): *The Wire Falcon* — crimson accent **#c14953**, falcon carrying a rolled briefing over signal lines.
+  - **Bookshelf** (`books`): *The Ledger Tortoise* — bronze accent **#9a6b3f**, tortoise with book-spine shell.
+- Optimized to 560×560 WebP (~20–22KB) at:
+  - `frontend/public/pillars/briefings.webp`
+  - `frontend/public/pillars/books.webp`
+
+**64.2 Section palettes + motifs in the pillar identity engine:**
+- `frontend/src/lib/pillars.js`:
+  - Added `briefings` and `books` to:
+    - `PILLAR_ACCENTS`
+    - `PILLAR_TAGLINES`
+    - `PILLAR_MASCOT_ALTS`
+  - Added new motif variants to `PillarMotif`:
+    - `briefings`: telegraph pulses
+    - `books`: book spines/shelf
+  - `pillarAccent()` + `pillarMascot()` now support these section slugs.
+
+**64.3 Pillar-style banners on /briefings and /books:**
+- `BriefingsPage.js`:
+  - Added pillar-style header banner:
+    - accent border + background tint
+    - motif background
+    - accent underline bar
+    - mascot medallion
+  - Test IDs: `briefings-header-banner`, `briefings-mascot`
+- `BooksPage.js`:
+  - Added matching pillar-style header banner
+  - Test IDs: `books-header-banner`, `books-mascot`
+
+**64.4 Per-pillar themed dropdown styling (light + dark):**
+- `Navbar.js`:
+  - Each dropdown item sets a CSS var `--pillar-accent` for its own accent.
+  - Added classes `pillar-dd-item` + `pillar-dd-title`.
+- `index.css`:
+  - Added theme-aware rules:
+    - Title colour uses pillar accent (slightly brightened in dark mode)
+    - Hover/focus background tint uses `color-mix()` (12% light / 22% dark)
+    - Accent left border
+
+**64.5 Verification / QA:**
+- `esbuild` clean.
+- Screenshots verified for:
+  - `/briefings` banner + mascot
+  - `/books` banner + mascot
+  - Pillars dropdown hover styling in both light and dark mode (Playwright)
+
+**Requires redeploy:** to ship Phase 64 UI changes to production.
 
 ---
 
@@ -559,11 +627,14 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–63 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–64 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: “Pillars” dropdown works; items don’t wrap; hover-open works on desktop.
+   - Navbar: per-pillar colour highlight works in both light and dark mode.
    - Navbar: still includes “Books”, “Archive”, “Briefings”, “Lounge”, “About”.
+   - `/briefings`: banner shows crimson motif + falcon mascot.
+   - `/books`: banner shows bronze motif + tortoise mascot.
    - Home hero: inline email capture + social proof line.
    - Home: author strip under hero.
    - Home: “Start here, free” section shows 3 free essays.
@@ -571,7 +642,6 @@ If you report any issue, confirm whether it is on:
    - Article pages show pillar-tinted badge + progress bar and improved author byline.
    - Post cards show author byline + photo.
    - `/glossary` exists, is linked in footer, and is included in sitemap.
-   - `/books` exists, is linked in navbar, and is included in sitemap.
    - `/books`: each configured book shows “Reading Notes →” linking into the archive.
    - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention + real Instagram profile.
    - About page: book showcase section visible above The Pillars; “Get the book” goes to https://www.amazon.in/dp/B0HBR9THSX.
@@ -660,6 +730,11 @@ If you report any issue, confirm whether it is on:
 - Desktop navbar: “Pillars” hover dropdown replaces the 4 pillar links; nav items remain single-line and centered.
 - Books page: optional “Reading Notes →” links each book to a related essay.
 - Admin: can attach a related essay to a book via picker.
+
+✅ Phase 64 targets met (PREVIEW)
+- Briefings and Books now have mascots + their own colour palette + motifs.
+- `/briefings` and `/books` have pillar-style header banners.
+- Pillars dropdown now tints items per pillar in both light and dark mode.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

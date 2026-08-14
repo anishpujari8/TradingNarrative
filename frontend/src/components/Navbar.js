@@ -122,13 +122,14 @@ export const Navbar = () => {
               {CATEGORIES.map((c) => (
                 <DropdownMenuItem
                   key={c.slug}
-                  className="py-2.5 cursor-pointer"
+                  className="py-2.5 cursor-pointer pillar-dd-item"
+                  style={{ "--pillar-accent": pillarAccent(c.slug) }}
                   onClick={() => { setPillarsOpen(false); navigate(`/category/${c.slug}`); }}
                   data-testid={`nav-category-${c.slug}`}
                 >
                   <span className="mt-1 inline-block h-2 w-2 rounded-full shrink-0 self-start" style={{ backgroundColor: pillarAccent(c.slug) }} aria-hidden />
                   <span className="ml-2.5 min-w-0">
-                    <span className="block text-sm font-medium text-foreground">{c.label}</span>
+                    <span className="block text-sm font-medium pillar-dd-title">{c.label}</span>
                     {PILLAR_TAGLINES[c.slug] && (
                       <span className="block text-xs text-muted-foreground leading-snug mt-0.5">{PILLAR_TAGLINES[c.slug]}</span>
                     )}
