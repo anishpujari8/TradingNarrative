@@ -142,3 +142,38 @@ Implementation notes:
   (new essays/editions appear immediately), includes homepage, archive, pricing, about,
   briefings, topic hubs, category pages, and every published essay with lastmod dates.
   Linked from robots.txt.
+
+## Phase 52 — Keyword Gap Map (research, 2026)
+
+Method: inventory of all 18 published essays + tracked keywords (none yet) vs. researched
+search demand in the site's authority niche (commodity trading ops / ETRM / freight).
+Principle: the winnable gaps are niche, operational, question-shaped queries — NOT broad
+head terms ("index funds", "productivity") where the site cannot outrank incumbents.
+
+### Tier 1 — On-page quick wins (existing essays, retitle/answer-first edits only)
+| Target query | Existing essay | Action |
+|---|---|---|
+| what is a yield curve inversion | Reading the Yield Curve Like a Trader | Answer the exact question in the first 2 sentences; add FAQ block |
+| how to reduce demurrage charges | The Shipping Industry $15B Problem | Add an answer-first section + FAQ |
+| how do power trading desks work | Delivering a Power Trading Desk | Add definitional intro section |
+| what is freight visibility in logistics | Freight Management & Tracking Visibility | Add answer-first definition near top |
+| why are copper treatment charges negative (TC/RC) | (Lounge take only — not indexable) | Promote to a public essay |
+
+### Tier 2 — New glossary/question essays (low competition, high intent)
+- what is demurrage in commodity trading (+ demurrage vs detention)
+- what does TC/RC mean in metals trading (treatment & refining charges explained)
+- ETRM vs CTRM: what's the difference (strong BOFU comparison gap)
+- what is laytime in shipping (pairs with demurrage cluster)
+- commodity trade lifecycle explained (capture → confirmation → settlement)
+
+### Tier 3 — Workflow/problem essays (capability-intent, converts)
+- demurrage tracking in CTRM systems
+- commodity trading workflow automation (confirmations & settlements)
+- freight visibility for bulk commodities: what traders actually need
+- CTRM vendor selection checklist (2026)
+
+### Notes
+- Format every piece to answer the exact question in the first 1–2 sentences
+  (featured snippet + AI answer-engine optimization; the site already serves llms.txt).
+- Add each target keyword to Admin → Growth → Search Rank Tracker when checking positions.
+- Lifestyle/travel pillars: do not chase generic keywords; keep them brand/retention plays.
