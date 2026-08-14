@@ -222,7 +222,7 @@
   - Chronological essay grids + archive links
   - Essay category badge links to hub
 - **Keyword targeting** ✅ *(Phase 45)*
-  - Keyword-rich defaults for title/description/keywords
+  - Keyword-rich defaults (title/description/keywords)
   - WebSite + Organization JSON-LD on homepage
   - Briefings + Archive tuned for “weekly briefing / newsletter / freight / trading”
   - Topic hubs already keyword-strong
@@ -515,7 +515,7 @@ Verified:
 
 #### 54.2 Dash cleanup ✅
 - Removed remaining mid-paragraph em/en dashes from essays (e.g., `60–90` → `60 to 90`).
-- Rephrased one em-dash excerpt line in the ETRM essay.
+- Rephrased one em-dash excerpt line in the ETRM excerpt.
 - Applied in **DB + `seed_data.py`**.
 - Verified: **zero em/en dashes remain** in excerpts and bodies.
 - Intentionally kept correct compound-word hyphens (e.g., “day-ahead”, “plain-English”).
@@ -535,7 +535,7 @@ Verified:
 #### 54.5 Quote card accents + motifs ✅
 - `QuoteCardDialog.js` updated to mirror pillar identity:
   - Pillar accent palette + signature motifs (circuits / sparkline / sunrise arcs / route)
-- `ArticlePage` now passes `post.category` into quote-share payload.
+- `ArticlePage` passes `post.category` into quote-share payload.
 - Verified visually: all 4 pillar variants render correctly.
 
 **Important production note (Phase 54):**
@@ -568,7 +568,7 @@ Verified:
 - `TopicPage.js` updated:
   - header rebuilt as accent-tinted banner with motif background + accent underline bar
   - coloured marker on the essays heading
-- **Bug fixed:** initial runtime error (`withAlpha is not defined`) due to missing import after edit anomaly; fixed + verified.
+- **Bug fixed:** runtime error due to missing import after edit anomaly; fixed + verified.
 
 #### 55.5 Essay recategorization ✅
 - Moved 3 essays from **Delivery** → **Personal Growth** in **DB + `seed_data.py`**:
@@ -588,7 +588,28 @@ Verified:
 
 **Important production note (Phase 55):**
 - Requires redeploy for the site-wide UI changes to ship.
-- Recategorization on production requires **Admin → Content Sync (Update Mode)** *if* `category` is in the sync allowlist; otherwise the move only applies on fresh DBs via seeding.
+- Recategorization on production can be pushed via **Admin → Content Sync (Update Mode)** because `category` is in `SYNC_FIELDS`.
+
+### Phase 56 — Article Page Pillar Accents ✅ COMPLETED (PREVIEW)
+User request: carry the pillar colour into the essay page with a tinted category badge and reading progress bar.
+
+Delivered:
+- `ReadingProgress.js`: added optional `accent` prop
+  - Top progress bar uses pillar accent colour
+  - “≈ N min left” pill gains a pillar-coloured dot
+- `ArticlePage.js`:
+  - Category badge now pillar-tinted (accent bg 12%, accent text, accent border 30%); still links to the topic hub
+  - Passes `pillarAccent(post.category)` into `ReadingProgress`
+  - Imports `pillarAccent`/`withAlpha` from `lib/pillars`
+
+Verification:
+- Browser-verified on a Personal Growth essay:
+  - badge text + progress bar computed colour match `#c4872e` (rgb(196,135,46))
+  - pill visible with dot
+- Frontend compiles cleanly (`esbuild`).
+
+Production note:
+- Ships with next redeploy.
 
 ---
 
@@ -600,11 +621,11 @@ If you report any issue, confirm whether it is on:
 - **Production** (https://thetradingnarrative.com)
 
 ### B) Production rollout checklist (recommended order)
-1. **Redeploy** to ship Phase 55 UI updates (site-wide pillar identity) + new SEO essays.
+1. **Redeploy** to ship Phase 55–56 UI updates (site-wide + article-page pillar identity) + new SEO essays.
 2. Run **Admin → Content Sync (Update Mode)** to apply to production:
    - Phase 53 snippet-ready intros
    - Phase 54 dash cleanup
-   - Phase 55 recategorization (if allowed)
+   - Phase 55 recategorization
 3. **Resubmit sitemap** in Google Search Console:
    - `https://thetradingnarrative.com/sitemap.xml`
 4. **Force refresh social previews** for key URLs:
@@ -662,6 +683,10 @@ If you report any issue, confirm whether it is on:
 - Site-wide pillar identity applied via shared module (accents + motifs)
 - Post cards, homepage browse-by-pillar UI, and topic hub headers all use pillar styling
 - Delivery pillar now contains only the Power Trading Desk essay; other three moved to Personal Growth
+
+✅ Phase 56 success targets met (PREVIEW)
+- Article page category badge + reading progress UI adopt pillar accents
+- Verified visually and compiled cleanly
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

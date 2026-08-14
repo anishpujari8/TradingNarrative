@@ -21,6 +21,7 @@ import { AudioNarrator } from "@/components/AudioNarrator";
 import { AskEssayWidget } from "@/components/AskEssayWidget";
 import { toast } from "sonner";
 import { api, formatDate, trackEvent, CATEGORIES, SITE_URL } from "@/lib/api";
+import { pillarAccent, withAlpha } from "@/lib/pillars";
 import { useAuth } from "@/context/AuthContext";
 
 const Paywall = ({ post }) => {
@@ -376,7 +377,7 @@ export default function ArticlePage() {
       <Helmet>
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
-      <ReadingProgress targetRef={bodyRef} readTime={post.read_time} slug={post.slug} />
+      <ReadingProgress targetRef={bodyRef} readTime={post.read_time} slug={post.slug} accent={pillarAccent(post.category)} />
 
       {selInfo && (
         <div
@@ -410,7 +411,15 @@ export default function ArticlePage() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <div className="flex items-center gap-2 flex-wrap">
               <Link to={`/topics/${post.category}`}>
-                <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-wider hover:bg-accent/10 hover:text-accent transition-colors" data-testid="article-category-badge">
+                <Badge
+                  className="font-mono text-[10px] uppercase tracking-wider border transition-opacity hover:opacity-80"
+                  style={{
+                    backgroundColor: withAlpha(pillarAccent(post.category), 0.12),
+                    color: pillarAccent(post.category),
+                    borderColor: withAlpha(pillarAccent(post.category), 0.3),
+                  }}
+                  data-testid="article-category-badge"
+                >
                   {post.category_label}
                 </Badge>
               </Link>

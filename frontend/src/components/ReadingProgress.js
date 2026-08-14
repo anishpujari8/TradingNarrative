@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export const ReadingProgress = ({ targetRef, readTime, slug }) => {
+export const ReadingProgress = ({ targetRef, readTime, slug, accent }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -53,14 +53,15 @@ export const ReadingProgress = ({ targetRef, readTime, slug }) => {
       <div className="fixed top-0 left-0 right-0 h-[3px] z-[70] pointer-events-none">
         <div
           className="h-full bg-accent transition-[width] duration-150 ease-out"
-          style={{ width: `${progress * 100}%` }}
+          style={{ width: `${progress * 100}%`, ...(accent ? { backgroundColor: accent } : {}) }}
           data-testid="reading-progress-bar"
         />
       </div>
       <div
-        className={`fixed bottom-5 right-5 z-40 bg-card border border-border rounded-full px-3.5 py-1.5 font-mono text-xs text-muted-foreground shadow-[var(--shadow-soft)] transition-opacity duration-300 ${showPill ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed bottom-5 right-5 z-40 bg-card border border-border rounded-full px-3.5 py-1.5 font-mono text-xs text-muted-foreground shadow-[var(--shadow-soft)] transition-opacity duration-300 flex items-center gap-1.5 ${showPill ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         data-testid="reading-time-left"
       >
+        {accent && <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent }} aria-hidden />}
         ≈ {minutesLeft} min left
       </div>
     </>
