@@ -19,7 +19,7 @@
 
 ### Reader experience & engagement
 - Bookmarks/reading list ✅
-- Reading progress indicators ✅ *(Phase 56 enhanced with pillar accents; Phase 56 also now includes pillar-coloured progress bar and dot)*
+- Reading progress indicators ✅ *(Phase 56 enhanced with pillar accents; includes pillar-coloured progress bar and dot)*
 - Continue-reading strips ✅
 - Notifications bell (incl. Lounge reply notifications + deep-link) ✅
 - **Reader Highlights** ✅
@@ -165,7 +165,7 @@
 - **Pillar mascots generated + integrated (UI)** ✅ *(Phase 57)*
 - **Quote-card sharing matches pillar accents + motifs** ✅ *(Phase 54 + Phase 55)*
 - **Navbar pillar dots** ✅ *(Phase 58)*
-- **OG cards upgraded with pillar mascots** ✅ *(Phase 58, v4)*
+- **OG share cards carry pillar mascot medallion** ✅ *(Phase 58, v4+)*
 - **OG cards updated for pillar rename** ✅ *(Phase 59, v5)*
 
 ### Branding + content readiness
@@ -179,6 +179,7 @@
   - Author strip on homepage
   - Byline + photo on post cards
   - Strong author byline on article page
+- **Book showcase on About page** ✅ *(Phase 61)*
 
 ### Stability
 - Modular backend ✅
@@ -403,7 +404,7 @@ User request: address external review feedback to reduce bounce + increase trust
 **60.5 Footer:**
 - LinkedIn icon points to real profile (`linkedin.com/in/anish-pujari-69174b6a`).
 - Added “Subscribe on LinkedIn →” (newsletter URL), book mention line, and social proof under newsletter form.
-- Instagram is still generic (`instagram.com`) — **blocked on user handle**.
+- Instagram was generic (`instagram.com`) — blocker cleared in Phase 61.
 
 **60.6 Social proof copy:**
 - “Join 500+ commodity trading professionals” under hero form, home newsletter block, and footer form.
@@ -415,6 +416,25 @@ User request: address external review feedback to reduce bounce + increase trust
 - Dark mode toggle already exists.
 
 **Verified:** screenshots for banners, author strip, free reads grid, footer links, and article byline; `esbuild` clean.
+
+### Phase 61 — Instagram Link + Book Showcase ✅ COMPLETED (PREVIEW)
+**61.1 Instagram link:**
+- Footer Instagram icon + About “Follow on Instagram” button now point to **https://www.instagram.com/anishpujari8** (user handle **@anishpujari8**).
+
+**61.2 Book showcase on About page:**
+- Added a book showcase section (`data-testid="about-book-section"`) inserted between the author section and The Pillars.
+- Optimized user-provided flat-lay image to `frontend/public/book-cover.webp` (~135KB).
+- Copy included:
+  - Title: **How Trading Can Make You Money**
+  - Subtitle: **An Honest Beginner's Roadmap: Strategies, AI Prompts & a 12-Month Plan**
+  - User blurb: SEBI F&O 90% stat + risk/process promise (dash-free phrasing)
+- CTAs:
+  - “Get the book” button currently points to an **Amazon.in search** for the title+author.
+  - “Subscribe on LinkedIn” points to the LinkedIn newsletter follow URL.
+
+**NOTE:** No direct retailer URL was provided. When you share the exact buy link (Amazon product page, Kindle, or your preferred store), we should swap the search link to the canonical product URL.
+
+**Verified:** screenshot confirms the section renders beautifully above The Pillars; Instagram hrefs correct; `esbuild` clean.
 
 ---
 
@@ -431,18 +451,19 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–60 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–61 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar category links show pillar dots
    - Home hero: inline email capture + social proof line
-   - Home: new author strip under hero
+   - Home: author strip under hero
    - Home: “Start here, free” section shows 3 free essays
    - `/topics/{pillar}` shows mascot + motif header
    - Article pages show pillar-tinted badge + progress bar and improved author byline
    - Post cards show author byline + photo
    - `/glossary` exists, is linked in footer, and is included in sitemap
-   - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention
+   - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention + real Instagram profile
+   - About page: book showcase section visible above The Pillars
    - `https://thetradingnarrative.com/api/og/{slug}.png` shows the new **v5** chips and mascot medallion
 3. Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
 
@@ -456,7 +477,7 @@ If you report any issue, confirm whether it is on:
 ### E) Still blocked
 - PayPal recurring subscriptions: needs credentials + final decision
 - Resend: needs API key + verified sender domain
-- Footer/brand Instagram: needs your real Instagram URL/handle
+- **Book retailer URL**: needs exact canonical purchase link to replace the Amazon search link
 
 ---
 
@@ -514,6 +535,10 @@ If you report any issue, confirm whether it is on:
 - Footer links corrected (LinkedIn + LinkedIn newsletter) and book mentioned
 - Social proof added under signup
 
+✅ Phase 61 content/links addressed (PREVIEW)
+- Instagram profile linked everywhere
+- About page includes book showcase with cover + promise
+
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.
 - Gemini usage consumes Emergent LLM credits.
@@ -521,4 +546,4 @@ If you report any issue, confirm whether it is on:
 ⛔ Blockers
 - PayPal: awaiting decisions + credentials.
 - Resend: awaiting decisions + API key + sender domain verification.
-- Instagram: awaiting actual profile URL/handle.
+- Book: awaiting canonical purchase link (currently using Amazon search).

@@ -54,7 +54,7 @@ export const Footer = () => (
             <a href="https://www.linkedin.com/in/anish-pujari-69174b6a" target="_blank" rel="noopener noreferrer" aria-label="Anish Pujari on LinkedIn" className="p-2 border border-border rounded-lg hover:border-accent hover:text-accent transition-colors" data-testid="footer-linkedin-link">
               <Linkedin className="h-4 w-4" />
             </a>
-            <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="p-2 border border-border rounded-lg hover:border-accent hover:text-accent transition-colors" data-testid="footer-instagram-link">
+            <a href="https://www.instagram.com/anishpujari8" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="p-2 border border-border rounded-lg hover:border-accent hover:text-accent transition-colors" data-testid="footer-instagram-link">
               <Instagram className="h-4 w-4" />
             </a>
           </div>

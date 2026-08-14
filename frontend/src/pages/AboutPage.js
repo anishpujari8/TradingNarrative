@@ -105,13 +105,65 @@ export default function AboutPage() {
               <a href="https://www.linkedin.com/in/anish-pujari-69174b6a" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" className="gap-2" data-testid="about-linkedin-button"><Linkedin className="h-4 w-4" /> Follow on LinkedIn</Button>
               </a>
-              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://www.instagram.com/anishpujari8" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" className="gap-2" data-testid="about-instagram-button"><Instagram className="h-4 w-4" /> Follow on Instagram</Button>
               </a>
             </div>
           </div>
         </div>
       </div>
+
+      <Separator className="my-14" />
+
+      <section data-testid="about-book-section">
+        <span className="section-label">The Book</span>
+        <div className="grid md:grid-cols-12 gap-8 md:gap-12 items-center mt-6">
+          <div className="md:col-span-4">
+            <img
+              src="/book-cover.webp"
+              alt="How Trading Can Make You Money by Anish Pujari, book cover"
+              className="rounded-2xl border border-border shadow-[var(--shadow-float)] w-full max-w-sm mx-auto"
+              loading="lazy"
+              data-testid="about-book-cover"
+            />
+          </div>
+          <div className="md:col-span-8">
+            <h2 className="font-serif text-3xl sm:text-4xl font-semibold">
+              How Trading Can Make You Money
+            </h2>
+            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground mt-2">
+              An Honest Beginner's Roadmap: Strategies, AI Prompts & a 12-Month Plan
+            </p>
+            <p className="text-muted-foreground mt-5 leading-relaxed max-w-2xl">
+              Trading can generate real income, but roughly 90% of retail traders lose money,
+              SEBI's own F&O data says so. Not because trading doesn't work, but because they
+              skip risk management, trade too big, and have no process. The book's promise:
+              teach the habits of the profitable 10% from day one.
+            </p>
+            <div className="flex items-center gap-4 mt-6 flex-wrap">
+              <a
+                href="https://www.amazon.in/s?k=How+Trading+Can+Make+You+Money+Anish+Pujari"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="about-book-buy-link"
+              >
+                <Button className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+                  Get the book <ArrowRight className="h-4 w-4" />
+                </Button>
+              </a>
+              <a
+                href="https://www.linkedin.com/build-relation/newsletter-follow?entityUrn=7490310794455306241"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-accent font-medium hover:underline"
+                data-testid="about-book-linkedin-newsletter-link"
+              >
+                Subscribe on LinkedIn →
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Separator className="my-14" />
 
