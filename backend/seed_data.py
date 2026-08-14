@@ -96,6 +96,7 @@ SAMPLE_POSTS = [
         "featured": False,
         "cover_image": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&q=80&auto=format&fit=crop",
         "content_blocks": [
+            "A yield curve inversion happens when short-term government bond yields rise above long-term yields, most commonly measured as the 2-year Treasury paying more than the 10-year. Markets watch it closely because an inversion has preceded every US recession of the past half-century, though it signals direction, not timing.",
             "Equity investors watch earnings. Bond investors watch everything. The rates market is the deepest, most information-dense market on Earth, and it publishes its collective judgment every single day in a curve that most retail investors have never learned to read.",
             "Start with the basics: the yield curve plots government bond yields across maturities, from 3-month bills to 30-year bonds. Its shape encodes expectations about growth, inflation, and central bank policy, the three variables that price every other asset you own.",
             "A steep upward slope says the market expects growth and is demanding compensation for future inflation. A flat curve says the cycle is aging. An inverted curve, short rates above long rates, says the market believes policy is restrictive enough to break something.",
@@ -323,7 +324,11 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
   'featured': False,
   'edition': None,
   'published_at': '2026-08-07T02:22:08.669944+00:00',
-  'content_blocks': ['“We had 47 vessels at sea, 12 carrying live crude positions, tracked on a spreadsheet '
+  'content_blocks': ['Freight visibility is the ability to know, in real time, where your cargo is, what '
+                     'condition it is in, and when it will actually arrive, not what a schedule claimed a '
+                     'week ago. In commodity logistics, the gap between claimed and actual is where the '
+                     'money leaks, and closing it is now a data problem more than a shipping problem.',
+                     '“We had 47 vessels at sea, 12 carrying live crude positions, tracked on a spreadsheet '
                      "refreshed twice a day by a port agent's WhatsApp message. When one vessel diverted, we "
                      'found out three hours later. The position had already moved against us by $800,000.”, '
                      'Head of Operations, Major Commodity Trading House',
@@ -474,7 +479,11 @@ REAL_POSTS += [{'slug': 'the-shipping-industry-is-sitting-on-a-15-billion-proble
   'featured': False,
   'edition': None,
   'published_at': '2026-08-07T06:06:16.569128+00:00',
-  'content_blocks': ['Let me say something that LNG traders, shipping desks, and commodity operations teams '
+  'content_blocks': ['Demurrage is the penalty a charterer pays when loading or discharging a vessel runs '
+                     'past the agreed laytime, and the fastest way to reduce demurrage charges is to fix '
+                     'the data problem underneath them: fragmented, delayed, manually reconciled port and '
+                     'vessel information. The industry pays roughly $15 billion a year for that failure.',
+                     'Let me say something that LNG traders, shipping desks, and commodity operations teams '
                      'already know but rarely say out loud:',
                      'Demurrage is not an operational inconvenience. It is a systemic failure of data.',
                      'Every year, the global shipping industry loses somewhere between $10 billion and $15 '
@@ -669,6 +678,10 @@ REAL_POSTS += [{'slug': 'delivering-a-power-trading-desk-system-compliance-lifec
   'featured': True,
   'edition': None,
   'content_blocks': [
+    'A power trading desk buys and sells electricity across day-ahead, intraday, and balancing markets, '
+    'managing generation, customer load, and grid constraints in a market that clears every hour and '
+    'sometimes every five minutes. Running one demands systems built for granularity, speed, and '
+    'compliance obligations that most trading software never has to face.',
     'Most articles about power trading explain the trade lifecycle. Far fewer explain how you actually '
     'build the systems that run it, and almost none address the thing that quietly determines whether a '
     'power desk implementation succeeds or drags into its third year: compliance is not a phase you add '
@@ -1113,3 +1126,136 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
     'Written by Anish Pujari, Senior ETRM/CTRM Product Manager, Pune. Views are my own. Nothing here is trading, '
     'investment, or legal advice, always verify prices and regulatory details against primary sources before '
     'acting.']}]
+
+# Phase 52 SEO gap essays: free-tier, answer-first explainers targeting researched
+# low-competition queries ("etrm vs ctrm", "demurrage vs detention"). Tags overlap
+# with existing essays so the related-posts engine cross-links them automatically.
+REAL_POSTS += [{'slug': 'etrm-vs-ctrm-whats-the-difference-and-which-one-do-you-actually-need',
+  'title': "ETRM vs CTRM: What's the Difference, and Which One Do You Actually Need?",
+  'excerpt': 'ETRM software manages energy trading — power, gas, oil — while CTRM covers the full physical '
+             'commodity lifecycle including metals, agriculture, and freight. A plain-English comparison '
+             'from twelve years of delivering both, with a practical checklist for choosing.',
+  'category': 'finance',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['ETRM', 'CTRM', 'Commodities', 'Trading Technology', 'Risk'],
+  'featured': False,
+  'content_blocks': [
+    'ETRM (Energy Trading and Risk Management) software manages the trading lifecycle for energy '
+    'commodities: power, natural gas, oil, and increasingly carbon and renewables certificates. CTRM '
+    '(Commodity Trading and Risk Management) is the broader category: everything ETRM does, extended '
+    'across physical commodities like metals, agriculture, and softs, with deeper logistics, inventory, '
+    'and processing functionality. The short answer to which you need: if your book is dominated by '
+    'scheduled energy flows, you are shopping for an ETRM; if you move physical cargoes with quality '
+    'specs, vessels, and warehouses, you need CTRM capabilities whether the vendor uses the acronym '
+    'or not.',
+    'The acronyms get used interchangeably in vendor marketing, which is exactly why buying teams get '
+    'burned. After twelve years delivering these programmes across Oil & Gas, LNG, Metals, Agro, and '
+    'Power, the pattern I see most often is a firm buying the wrong shape of system because the demo '
+    'looked similar. The differences live below the demo layer.',
+    '## Where ETRM and CTRM actually diverge',
+    'Energy trading is a scheduling problem. Power and gas move on grids and pipelines in standardised '
+    'units against delivery calendars that clear hourly or even sub-hourly. An ETRM lives and dies on '
+    'position granularity, curve management, nominations, and settlement against exchange and grid '
+    'operator data. Physical delivery is real but standardised: there is no such thing as a cargo of '
+    'electricity held up at a port.',
+    'Physical commodity trading is a logistics problem wearing a trading hat. A copper concentrate or '
+    'grain book carries quality assays, weight tolerances, treatment and refining charges, vessel '
+    'nominations, laytime, demurrage exposure, warehouse receipts, and financing attached to inventory. '
+    'A CTRM must model all of it, because the P&L of a physical trade is decided as much in execution '
+    'as at deal capture.',
+    '## The five capability differences that matter in selection',
+    '1. Position and curve granularity. ETRM systems handle hourly and half-hourly shapes natively. '
+    'Most CTRM systems think in daily or monthly buckets. If you trade power on a CTRM built for '
+    'cargoes, you will be exporting to spreadsheets within a quarter.',
+    '2. Logistics depth. CTRM systems model voyages, transport legs, storage, blending, and losses. '
+    'ETRM logistics is thinner because grids and pipelines standardise it away. If demurrage, laytime, '
+    'or quality claims appear anywhere in your operations, that is CTRM territory.',
+    '3. Quality and quantity handling. Physical books need assay-based pricing, weight franchise '
+    'tolerances, and premiums or penalties tied to specifications. That machinery simply does not '
+    'exist in most pure-play ETRM products.',
+    '4. Settlement complexity. Energy settlements reconcile against grid operators and exchanges on '
+    'strict calendars. Physical settlements involve provisional and final invoicing against assays and '
+    'final weights, often months apart. The two workflows are different enough that vendors rarely do '
+    'both well.',
+    '5. Regulatory surface. Power and gas desks carry REMIT, EMIR, and Dodd-Frank style reporting '
+    'obligations wired into the trade lifecycle. Physical desks carry sanctions screening, trade '
+    'finance documentation, and increasingly traceability requirements. Ask any vendor to show the '
+    'specific reports, not the compliance slide.',
+    '## The honest heuristic',
+    'Ask one question of your own book: what causes the most operational pain per month? If the answer '
+    'involves shapes, schedules, imbalances, or nominations, weight your selection toward ETRM depth. '
+    'If it involves vessels, assays, warehouses, or documentary credits, weight it toward CTRM depth. '
+    'Firms that trade both, and many do, usually end up with one system as the backbone and targeted '
+    'satellites around it. That is not an architecture failure; pretending one system covers everything '
+    'is how three-year implementations become five-year ones.',
+    '## A selection checklist you can steal',
+    'Demand a demo scripted on your own trades, not the vendor sample deck. Test the worst trade in '
+    'your book, the one with restructures, partial deliveries, or quality claims. Ask how the system '
+    'behaved during a real market dislocation. Count the spreadsheets the reference customer still '
+    'runs alongside the system, because that number is the honest gap report. And insist that '
+    'compliance reporting is demonstrated from trade entry to submitted report, since bolting it on '
+    'later is the single most expensive retrofit in this industry.',
+    'The acronym on the box matters far less than the shape of your physical exposure. Buy for the '
+    'book you have, stress test for the book you want, and treat every capability claim as unverified '
+    'until you have seen it run on your own worst trade.',
+  ]}]
+
+REAL_POSTS += [{'slug': 'what-is-demurrage-vs-detention-a-plain-english-guide-for-commodity-traders',
+  'title': 'What Is Demurrage vs Detention? A Plain-English Guide for Commodity Traders',
+  'excerpt': 'Demurrage is charged when cargo occupies a vessel or terminal beyond the agreed free time; '
+             'detention is charged when equipment is held outside the terminal past its return date. What '
+             'each one costs, why the invoices are so often wrong, and how desks reduce both.',
+  'category': 'finance',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['Demurrage', 'Shipping', 'Logistics', 'CTRM', 'Commodities'],
+  'featured': False,
+  'content_blocks': [
+    'Demurrage is the charge you pay when cargo operations exceed the agreed free time: a vessel held '
+    'at berth beyond laytime in bulk chartering, or a container sitting in the terminal past its free '
+    'days in liner shipping. Detention is the charge for holding the carrier\'s equipment outside the '
+    'terminal, typically a container that left the port but was not returned empty on time. Same '
+    'family of penalty, different clock, different location.',
+    'The two get confused constantly because both are billed by carriers, both are quoted per day, and '
+    'both escalate in tiers that get punishing fast. But if you work a commodity desk, the distinction '
+    'matters: demurrage exposure lives in your charterparty and terminal operations, while detention '
+    'exposure lives in your inland logistics and empty-return discipline.',
+    '## The clocks, precisely',
+    'In bulk and tanker chartering, the charterparty grants laytime: an agreed window to load or '
+    'discharge. When laytime is exhausted, demurrage accrues at the negotiated daily rate until cargo '
+    'operations complete. Laytime rules on when the clock starts (notice of readiness), pauses '
+    '(weather, strikes, berth congestion depending on terms), and resumes are some of the most '
+    'litigated language in shipping, which is exactly why demurrage claims are a specialist trade of '
+    'their own.',
+    'In container shipping, the free-time split is simpler: demurrage covers the container inside the '
+    'terminal after discharge, detention covers it outside the terminal until the empty is returned. '
+    'A box can incur demurrage and then detention on the same journey, and frequently does when a '
+    'consignee is slow twice.',
+    '## Why the invoices are so often wrong',
+    'Demurrage and detention calculations depend on timestamps scattered across terminal systems, '
+    'carrier systems, port agents, and emailed statements of fact. Every handoff is a chance for the '
+    'clock to be wrong in the carrier\'s favour. Industry estimates put global demurrage and detention '
+    'costs in the billions each year, and desks that audit systematically routinely recover a '
+    'meaningful share of what they are billed. The recovery is not clever negotiation; it is simply '
+    'having better timestamps than the invoice.',
+    '## How trading desks actually reduce both',
+    'First, instrument the clock. AIS vessel positions, terminal gate events, and electronic '
+    'statements of fact give you an independent record of when free time actually started and '
+    'stopped. Desks that reconcile invoices against their own event data instead of the carrier\'s '
+    'summary catch errors that pay for the tooling many times over.',
+    'Second, put exposure where traders can see it. Demurrage that surfaces as a quarterly logistics '
+    'cost is unmanageable; demurrage that appears as accruing exposure per voyage inside the CTRM '
+    'while the vessel is still at anchor changes decisions on berthing, documents, and even trade '
+    'routing. The best-run books treat demurrage as a live P&L line, not an after-the-fact invoice.',
+    'Third, fix the boring failure points: documents that arrive after the vessel, letters of credit '
+    'that block discharge, empty containers that wait on a customs broker who was never told the '
+    'clock was running. Most demurrage is not caused by bad luck at sea. It is caused by information '
+    'arriving later than cargo.',
+    '## The bigger picture',
+    'Demurrage and detention are symptoms of the same disease: commodity logistics still runs on '
+    'fragmented, manually reconciled data. I wrote a longer essay on the scale of that failure, "The '
+    'Shipping Industry Is Sitting on a $15 Billion Problem", which covers why the industry tolerates '
+    'it and what the desks solving it are doing differently. The short version applies here too: the '
+    'cheapest demurrage day is the one your systems saw coming a week early.',
+  ]}]

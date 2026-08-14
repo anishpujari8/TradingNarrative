@@ -1,6 +1,26 @@
 [
   {
-    "content": "Phase 50 complete: sitemap fix + OG cards + cookie auth, all tested (iteration_36: 15/15 backend, frontend pass)",
+    "content": "Explore post schema/seeding + SEO tracker schema",
+    "status": "completed"
+  },
+  {
+    "content": "Snippet-ready intros for 4 Tier 1 essays (answer-first openings)",
+    "status": "completed"
+  },
+  {
+    "content": "Write + publish 'ETRM vs CTRM' comparison essay (free tier)",
+    "status": "completed"
+  },
+  {
+    "content": "Write + publish 'Demurrage vs Detention' glossary essay (free tier, links to $15B piece)",
+    "status": "completed"
+  },
+  {
+    "content": "Seed Tier 1 + Tier 2 keywords into Search Rank Tracker",
+    "status": "completed"
+  },
+  {
+    "content": "Verify: API reads, meta descriptions, sitemap inclusion, admin tracker UI",
     "status": "completed"
   }
 ]

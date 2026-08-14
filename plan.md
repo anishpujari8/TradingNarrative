@@ -141,7 +141,7 @@
   - Missing-post sync ✅
   - Update-mode sync ✅ (safe allowlist)
 - Sync carries normalized author identity ✅
-- **Growth Suite** ✅ *(Phase 46, PREVIEW)*
+- **Growth Suite** ✅
   - Audio Sales Dashboard ✅
   - Manual Search Rank Tracker ✅
   - Early Bird Premium offer (first 50) ✅
@@ -207,13 +207,13 @@
 - **Sitemap** ✅ *(Phase 42, verified again in Phase 48; Phase 50 hardened)*
   - `/api/sitemap.xml` regenerates from MongoDB on each request (new essays/editions appear immediately)
   - Includes: homepage, archive, pricing, about, briefings, topic hubs, category pages, all published essays with `<lastmod>`
-  - **GSC compatibility (Phase 50):** `/sitemap.xml` is now a valid XML sitemap **index** pointing to `/api/sitemap.xml` to avoid SPA/ingress HTML routing issues.
+  - **GSC compatibility (Phase 50):** `/sitemap.xml` is a valid XML sitemap **index** pointing to `/api/sitemap.xml` (avoids SPA/ingress HTML routing issues)
 - **Robots** ✅ *(Phase 42 + Phase 48 additions)*
   - `frontend/public/robots.txt` disallows `/api/` while explicitly allowing:
     - `/api/sitemap.xml`, `/api/feed.xml`, `/api/share/`
-  - Production sitemap URL referenced.
-  - **AI crawler policy sections added (Phase 48)** and a note to consult `/llms.txt`.
-  - Note: Preview domain may inject a platform-level robots.txt; localhost/production serve the app’s file.
+  - Production sitemap URL referenced
+  - **AI crawler policy sections added (Phase 48)** and a note to consult `/llms.txt`
+  - Note: Preview domain may inject a platform-level robots.txt; localhost/production serve the app’s file
 - **RSS feed** ✅ *(Phase 42)*
   - `/api/feed.xml`: full text for open/free essays; preview + link for locked
   - RSS discovery link injected in `public/index.html`
@@ -221,22 +221,22 @@
   - `/topics/{pillar}` pages with 200–400 words of original intro copy
   - Chronological essay grids + archive links
   - Essay category badge links to hub
-- **Keyword targeting** ✅ *(Phase 45, PREVIEW)*
+- **Keyword targeting** ✅ *(Phase 45)*
   - Keyword-rich defaults for title/description/keywords
   - WebSite + Organization JSON-LD on homepage
   - Briefings + Archive tuned for “weekly briefing / newsletter / freight / trading”
   - Topic hubs already keyword-strong
   - Meta duplication fixed (static fallback tags removed on mount) so rendered pages have exactly one `description`, `keywords`, and `og:title`
-- **Site title + dynamic essay meta descriptions** ✅ *(Phase 47, PREVIEW)*
-  - Site title set to **exact string**: `The Trading Narrative | Commodity Trading & Tech Insights`
+- **Site title + dynamic essay meta descriptions** ✅ *(Phase 47)*
+  - Site title: `The Trading Narrative | Commodity Trading & Tech Insights`
   - Default keywords emphasize: commodity trading, energy markets, trading technology, ETRM, market risk
-  - Essay pages generate a dynamic meta description derived from the actual article content
+  - Essay pages generate a dynamic meta description derived from article content
 - **AI readiness** ✅ *(Phase 48)*
   - `/llms.txt` served with crawler-facing site overview
 - **Social Preview Cards** ✅ *(Phase 50 + Phase 51)*
-  - Every essay unfurls with a consistent, branded Open Graph image for LinkedIn/X.
+  - Every essay unfurls with a consistent, branded Open Graph image.
   - Implemented via backend-rendered OG images served at `GET /api/og/{slug}.png`.
-  - **Phase 51:** share cards are **pillar-coloured** and visually richer.
+  - **Phase 51:** cards are **pillar-coloured** and include distinct pillar signature motifs.
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -261,12 +261,10 @@
 
 ### Security hardening
 - **Cookie auth upgrade (httpOnly session cookies)** ✅ *(Phase 50)*
-  - Moved sign-in JWT storage from localStorage to secure **httpOnly** cookies for XSS resistance.
-  - Cookie: `ttn_session`, `Secure`, `SameSite=Lax`, 30-day expiry.
-  - Migration: legacy Bearer tokens supported temporarily + `/api/auth/cookie-sync` exchanges them for cookie and frontend deletes localStorage token.
-  - Logout: `/api/auth/logout` clears the cookie.
-  - **CORS compatibility for credentialed cookies:**
-    - Deployment configuration uses `CORS_ORIGINS="*"` (platform requirement) and has been re-verified to work with cookie auth.
+  - JWT stored in secure **httpOnly** cookie `ttn_session` (Secure, SameSite=Lax, 30d)
+  - Migration: legacy Bearer tokens supported + `/api/auth/cookie-sync`
+  - Logout: `/api/auth/logout`
+  - **CORS compatibility for credentialed cookies:** `CORS_ORIGINS="*"` (platform requirement) verified to work
 
 ---
 
@@ -404,18 +402,13 @@
 **Verified by testing agent iteration_32**: backend 64/64 (100%), frontend 100%.
 
 Delivered:
-- Metered anonymous access (3 free full essays) using cookie `fv_slugs` (90 days) + `meter_reads` fallback keyed sha256(IP+UA);
-  re-reads don’t consume quota.
-- 4th free essay locks with `lock_reason='meter'` and returns a ~250-word/2-block preview.
-- Premium essays + `lounge`-tagged posts + latest-3 premium editions are always preview-only for non-entitled.
-- Persistent meter banner (“N of 3 free essays remaining”) + subscribe CTA.
-- SEO: JSON-LD paywall schema, RSS `/api/feed.xml`, sitemap `/api/sitemap.xml`, robots.txt updated.
-- Topic hubs with original intro copy.
-- Hyphen cleanup.
+- Metered anonymous access (3 free full essays)
+- Locked previews + paywall structured data
+- RSS + sitemap + robots
+- Topic hubs with original intro copy
+- Hyphen cleanup
 
 ### Phase 43 — Per-Essay Audio Micro-Paywall (₹45 / $0.50) ✅ COMPLETED
-(As described in Objectives section above)
-
 Includes:
 - `GET /api/posts/{slug}/audio/access`
 - Stripe + Razorpay one-time unlock flows
@@ -428,276 +421,120 @@ Testing:
 
 ### Phase 44 — Premium Pillar Audio Exclusivity + Test Mode Decision ✅ COMPLETED (PREVIEW)
 - Test mode strip cannot be removed without switching to LIVE keys
-- Premium pillars audio is hidden for non-premium; non-premium requests get 403; unlock checkout blocked
+- Premium pillars audio is hidden for non-premium; unlock checkout blocked
 
-### Phase 45 — Keyword SEO Targeting ✅ COMPLETED (PREVIEW)
-**Goal:** Improve eligibility for head-term searches: Freight, Trading, Business and Finance, Narrative, Weekly briefing, Newsletter.
+### Phase 45 — Keyword SEO Targeting ✅ COMPLETED
+- Keyword-rich defaults (title/description/keywords)
+- WebSite + Organization JSON-LD on homepage
+- Briefings + Archive tuned for “weekly briefing / newsletter / freight / trading”
 
-Delivered:
-- `frontend/public/index.html`
-  - Keyword-rich homepage title and description
-  - Added `meta[name=keywords]`
-  - Static fallback tags marked `data-rh="true"`
-- `frontend/src/components/Seo.js`
-  - Keyword-tuned defaults for title/description/keywords
-  - Added `keywords` and `jsonLd` props
-  - Removes static fallback tags (`meta[data-rh]`) on mount so rendered pages have exactly one description/keywords/og:title
-- `frontend/src/pages/HomePage.js`
-  - Added WebSite + Organization JSON-LD `@graph`
-- `frontend/src/pages/BriefingsPage.js`
-  - Keyword-optimized title/description/keywords for “weekly briefing newsletter” + “freight” + “commodity trading”
-- `frontend/src/pages/ArchivePage.js`
-  - Keyword-optimized title/description
-- Topic hubs already optimized with long-form intro copy.
-- `SEO.md`
-  - Keyword → landing surface mapping
-  - Meta-tag ownership convention notes for `react-helmet-async` v3
+### Phase 46 — Growth Suite (Audio Sales + Manual Search Rank + Early Bird) ✅ COMPLETED
+- Audio Sales Dashboard
+- Manual Search Rank Tracker
+- Early Bird Premium offer + homepage banner
 
-Verification:
-- Headless Chromium verified single meta description + keywords + og:title on home/briefings/archive/topic pages.
-- Essay pages still emit `NewsArticle` JSON-LD; `/api/share/{slug}` provides crawler HTML.
+### Phase 47 — Site Title + Dynamic Essay Meta Descriptions ✅ COMPLETED
+- Site title set exactly
+- Meta keywords tuned
+- Essay meta description derived from article content
 
-### Phase 46 — Growth Suite (Audio Sales + Manual Search Rank + Early Bird) ✅ COMPLETED (PREVIEW)
+### Phase 48 — Deployment Fix + AI Assistant Readiness ✅ COMPLETED
+- `/health` endpoint for K8s probes
+- env fix for `EMERGENT_LLM_KEY`
+- `llms.txt` + robots enhancements
+- extra JSON-LD mapping (breadcrumbs, pricing offers, about person)
 
-#### 46.1 Audio Sales Dashboard (Admin) ✅
-Backend
-- `GET /api/admin/audio-sales` (admin-only)
-- Source: `payment_transactions` where `plan='audio_unlock'` and `payment_status='paid'`
+### Phase 49 — Code Review Fixes ✅ COMPLETED
+- Deleted hardcoded-credential test artifacts
+- Replaced `random` with `secrets`
+- Frontend loop keys fixed, memoization, catch logging
 
-Frontend
-- Admin → **Growth** tab
-- Stat cards + best sellers table + recent purchases table
+### Phase 50 — Cookie Auth Upgrade + Social Preview Cards + Sitemap GSC Fix ✅ COMPLETED
+- JWT moved to secure httpOnly cookie (`ttn_session`)
+- Added logout + cookie-sync migration
+- Branded OG cards endpoint `/api/og/{slug}.png`
+- `/sitemap.xml` sitemapindex → `/api/sitemap.xml`
+- Testing: `/app/test_reports/iteration_36.json`
 
-#### 46.2 Search Rank Tracker (Admin, Manual Entry) ✅
-User choice: **Skip Google Search Console connection** (manual entry).
+### Phase 51 — Distinct Pillar Share Cards (v3 motifs) ✅ COMPLETED
+- Pillar accent palette + signature motif illustration per pillar
+- Disk-cached, versioned cards auto-regenerate
 
-Backend
-- `seo_keyword_stats` collection
-- Endpoints (admin-only):
-  - `GET /api/admin/seo/keywords`
-  - `POST /api/admin/seo/keywords`
-  - `DELETE /api/admin/seo/keywords/{entry_id}`
-- Keyword normalization: lowercase
-- Validation: `noted_on` must be `YYYY-MM-DD`
+### Phase 52 — Keyword Gap Map (research) ✅ COMPLETED
+- Gap research documented in `SEO.md` (Phase 52)
+- Identified Tier 1 “snippet-ready” targets + Tier 2 new essays to win
 
-Frontend
-- Admin → Growth → Search rank tracker
-- Keyword chips + entry form + table with deltas
+### Phase 53 — SEO Gap Execution ✅ COMPLETED (PREVIEW)
+**Goal:** Convert keyword-gap research into on-page snippet wins + publish new high-intent SEO pages + seed tracker.
 
-#### 46.3 Early Bird Offer (first 50 premium subscribers) ✅
-User choices:
-- Eligibility: **first 50 premium subscribers**
-- Discounts:
-  - Monthly: **₹49 / $0.52** for first month
-  - Annual: **₹499 / $5.25** for first year
+#### 53.1 Snippet-ready intros (answer-first) ✅
+Prepended answer-first opening paragraphs to 4 Tier 1 essays:
+- Yield curve: targets **“what is a yield curve inversion”**
+- $15B shipping: targets **“how to reduce demurrage charges”**
+- Power trading: targets **“how do power trading desks work”**
+- Freight visibility: targets **“what is freight visibility in logistics”**
 
-Backend
-- `GET /api/billing/early-bird` public state (spots/claimed/remaining)
-- Stripe AUTO_RENEW: applies `duration='once'` coupon so renewals bill full price
-- Razorpay: early bird always one-time order at discounted price (never Autopay)
-- Founding plans never discounted
+Applied in BOTH:
+- `backend/seed_data.py` (source-of-truth for self-healing)
+- Preview database (refreshed `read_time` + `updated_at`)
 
-Frontend
-- PricingPage shows:
-  - Early bird badge (`remaining of 50`)
-  - Discounted price + strikethrough regular
-  - Note: “first month/year, then regular price”
+**Important production note:** seed restore does **not** overwrite existing production posts. To push these intro updates to production:
+- redeploy, then run **Admin → Content Sync → Update Mode** (Preview → Production), OR
+- manually edit the production posts in Admin Studio.
 
-#### 46.4 Early Bird Homepage Banner ✅ *(Phase 46 add-on)*
-Context: show the early-bird premium deal on the homepage so visitors see it before the pricing page.
+#### 53.2 New SEO essay: ETRM vs CTRM ✅
+- Added to `REAL_POSTS` (self-heals on fresh deployments)
+- Slug: `etrm-vs-ctrm-whats-the-difference-and-which-one-do-you-actually-need`
+- Tier: **free**, category: **finance**, ~16 blocks with `##` headings and a selection checklist
 
-Delivered:
-- `HomePage.js` fetches `GET /api/billing/early-bird` alongside `/early-supporters`.
-- New banner rendered **above** the existing early-supporter strip.
+#### 53.3 New SEO glossary essay: Demurrage vs Detention ✅
+- Added to `REAL_POSTS` (self-heals on fresh deployments)
+- Slug: `what-is-demurrage-vs-detention-a-plain-english-guide-for-commodity-traders`
+- Tier: **free**, category: **finance**, ~13 blocks with `##` headings
+- References and feeds internal linking into the existing “$15B demurrage” essay
 
-### Phase 47 — Site Title + Dynamic Essay Meta Descriptions ✅ COMPLETED (PREVIEW)
-User request:
-- Exact site title: **"The Trading Narrative | Commodity Trading & Tech Insights"**
-- Keywords: **commodity trading, energy markets, trading technology, ETRM, market risk**
-- Each essay page must generate a **dynamic meta description** based on article content
+#### 53.4 Tracker seeding ✅
+Seeded 9 baseline keywords (Tier 1 + Tier 2) into `seo_keyword_stats`:
+- impressions=0, clicks=0, position=None, noted_on=today
+- Visible in Admin → Growth → Search Rank Tracker
 
-Delivered:
-- `frontend/public/index.html`: exact title + updated keyword-rich description/keywords/og tags.
-- `frontend/src/components/Seo.js`:
-  - Defaults updated around the five requested terms.
-  - `metaDescription(post)` helper derives per-essay descriptions.
-- `frontend/src/pages/ArticlePage.js`: uses `metaDescription(post)` for the essay meta description and tag-derived keywords.
-- `backend/utils.py`: `meta_description(post)` mirror helper.
-- `backend/routers/posts.py`: `/api/share/{slug}` uses `meta_description(post)` for crawler HTML + JSON-LD.
-- `frontend/src/pages/HomePage.js`: WebSite/Organization JSON-LD updated for energy markets + market risk.
-- `SEO.md`: Phase 47 section.
-
-### Phase 48 — Deployment Fix + AI Assistant Readiness ✅ COMPLETED (PREVIEW)
-
-#### 48.1 Production deploy failure fixed (health probes) ✅
-- Root cause from logs: Kubernetes probes hit `GET /health` (no `/api` prefix) and got **404**, failing rollout.
-- Fix: added `GET /health` and `GET /` to `backend/server.py` returning 200 quickly **without DB access**.
-- Verified: `curl http://localhost:8001/health` returns 200; `/api/*` unaffected.
-
-#### 48.2 Deployment agent blocker fixed ✅
-- Blocker: malformed env value in `/app/backend/.env` for `EMERGENT_LLM_KEY`.
-- Fix: value is now quoted. Re-scan: PASS.
-
-#### 48.3 Dynamic sitemap request verified ✅
-- User request: sitemap includes homepage, archive, and all essays, updates when new edition published.
-- Verified: already satisfied by Phase 42 `/api/sitemap.xml` implementation.
-- No code changes needed.
-
-#### 48.4 AI assistant readiness ✅
-- `frontend/public/llms.txt`: llmstxt.org-style site overview with production URLs.
-- `frontend/public/robots.txt`: now includes explicit AI crawler user-agents plus a pointer to `/llms.txt`.
-  - NOTE: preview domain may inject platform robots.txt; localhost/production serve the app’s file.
-- Structured data additions (verified rendered via headless Chromium):
-  - Home: WebSite + Organization
-  - Essays: NewsArticle + BreadcrumbList (`@graph`), paywall signalling preserved
-  - Topic hubs: CollectionPage
-  - Pricing: Product with INR/USD Offers
-  - About: AboutPage + Person
-- Incident: `TopicPage.js` was corrupted by duplicated trailing JSX which broke webpack builds (esbuild still passed).
-  - Fixed by removing orphaned lines and re-applying the `jsonLd` edit.
-- `SEO.md`: Phase 48 AI readiness section added.
-
-### Phase 49 — Code Review Fixes ✅ COMPLETED (PREVIEW)
-Context: applied code-review recommendations that are safe/low-regression, focusing on deployment/security and removing test artifacts.
-
-**APPLIED**
-1. **Hardcoded secrets in test files**
-   - Deleted all 11 obsolete test-agent artifact scripts from `/app/backend`.
-2. **“Possibly undefined variables (17 instances)”**
-   - Verified production backend via pyflakes; issues were in deleted test files.
-   - Cleaned a few unused imports.
-3. **Insecure random usage**
-   - Replaced `random` with `secrets` for invoice-ish numbers.
-4. **Empty catch blocks (frontend)**
-   - Added lightweight debug logging.
-5. **Array index as key (frontend)**
-   - Fixed GrowthPanel table row keys.
-6. **Expensive JSX computation**
-   - Memoized AdminPage newsletter post picker.
-
-**DEFERRED (WITH RATIONALE)**
-- Missing hook dependencies (risk of loops)
-- Massive component splitting (AdminPage/CommunityPage/ArticlePage/PricingPage)
-
-### Phase 50 — Cookie Auth Upgrade + Social Preview Cards + Sitemap GSC Fix ✅ COMPLETED (PREVIEW)
-Context: Session priorities:
-- Strengthen auth against XSS by moving session tokens to secure httpOnly cookies.
-- Improve social sharing by generating branded OG images per essay (LinkedIn/X).
-- Resolve Google Search Console sitemap error: `/sitemap.xml` being detected as HTML.
-
-#### 50.A Google Sitemap Fix (GSC “Sitemap is HTML”) ✅ DONE
-Root cause:
-- Search Console was submitted `/sitemap.xml`, but the platform routes that path to the React app (HTML), while the real sitemap is served by the backend at `/api/sitemap.xml`.
-
-Delivered:
-- Static `frontend/public/sitemap.xml` is now a valid XML sitemap **index** pointing to:
-  - `https://thetradingnarrative.com/api/sitemap.xml`
-- Verified: `/sitemap.xml` returns `application/xml` (not React HTML).
-
-User action after Production redeploy:
-- Resubmit `https://thetradingnarrative.com/sitemap.xml` in Google Search Console.
-
-#### 50.B Social Preview Cards (Branded OG Images) ✅ DONE
-Delivered:
-- `backend/services/og_service.py` renders branded 1200×630 PNG (Pillow).
-- Fonts included at `backend/assets/fonts/`.
-- Disk cache at `backend/cache/og_cards/` keyed by slug+title+updated_at+cover (+ design version), auto-invalidates on edit.
-- New endpoint:
-  - `GET /api/og/{slug}.png` → `image/png` + `Cache-Control: public, max-age=86400`, 404 for unknown slug
-- Wired into:
-  - `/api/share/{slug}` meta tags (`og:image` + `twitter:image` + width/height/type)
-  - `ArticlePage` SEO image (so canonical `/post/{slug}` unfurls branded too)
-- JSON-LD preserves real cover photo for Google (prefers photos).
-
-#### 50.C Cookie Auth Upgrade (httpOnly cookies) ✅ DONE
-Delivered:
-- JWT moved from localStorage → secure httpOnly cookie `ttn_session` (30d, Secure, SameSite=Lax).
-- Backend:
-  - `security.py` reads JWT from cookie **or** legacy Authorization Bearer header (migration).
-  - `auth.py` endpoints set cookie and **no longer return `token`** in JSON.
-  - New endpoints:
-    - `POST /api/auth/logout` clears cookie
-    - `POST /api/auth/cookie-sync` exchanges legacy Bearer session for cookie
-- Frontend:
-  - axios uses `withCredentials: true`
-  - AuthContext:
-    - `login(user)` signature
-    - refreshUser migrates legacy localStorage token via `/auth/cookie-sync` then deletes it
-    - logout calls backend
-  - `aiStream.js` uses `credentials: 'include'`.
-
-**CORS hardening required for cookie auth:**
-- Final verified configuration: `CORS_ORIGINS="*"` works in this environment and satisfies platform deployment rules.
-
-#### 50.D Testing ✅ DONE
-- Testing agent report: `/app/test_reports/iteration_36.json`
-  - Backend: 15/15 passing
-  - Frontend: flows pass; cookie persistence verified
-- Manual/automated browser verification:
-  - httpOnly cookie set
-  - `localStorage.ttn_token` is `null`
-  - session persists across reload
-  - admin dashboard loads
-- Cleanups:
-  - Deleted temporary test artifact that contained credentials.
-  - Cleaned test users.
-
-### Phase 51 — Distinct Pillar Share Cards (v3 motifs) ✅ COMPLETED (PREVIEW)
-User request: **EVERY pillar must be distinct and attractive**.
-
-Delivered in `backend/services/og_service.py` (v3; cache version bumped so old cards auto-regenerate):
-- **Pillar accent palette** (retained):
-  - Tech & AI → violet
-  - Business & Finance → teal
-  - Personal Growth → amber
-  - Delivery & Systems → steel blue
-- **Distinct signature background motifs per pillar** (drawn 2× supersampled for smooth anti-aliased lines; composited at low alpha so headlines remain legible):
-  - **Tech & AI (violet):** circuit-board traces + solder-pad nodes and junction squares
-  - **Business & Finance (teal):** ascending market sparkline with data points + baseline ticks
-  - **Personal Growth (amber):** sunrise arcs radiating from the top-right corner + rising spark dots
-  - **Delivery & Systems (steel blue):** dashed Bezier shipping route with ringed waypoints + double-ring destination
-- **Chip upgrade:** pillar chip is now a **solid accent pill** with dark text for instant recognition.
-- **Visual polish:** accent glow strengthened; dot grid alpha tuned.
-- **QA:** verified all 4 pillars with cover images + no-cover variants; strengthened delivery route visibility; live endpoint returns 200 `image/png` 1200×630; frontend compiles; logs clean.
-- **Caching:** `_OG_VERSION` bumped to **`v3`** and included in cache signature; production will auto-generate the new style on demand after redeploy (no manual cache clearing).
-
-**Requires redeploy to reach Production.**
+#### 53.5 Verification ✅
+Verified:
+- Both new essays are free/unlocked via API
+- Both appear in dynamic sitemap
+- `/api/share/{slug}` emits keyword-rich meta descriptions
+- OG cards render correctly (pillar palette + motif)
+- Admin tracker returns 9 keywords
+- Frontend renders new essays; related-post cross-links appear via overlapping tags
+- Metered paywall behavior on anonymous identities is expected (not a bug)
 
 ---
 
 ## 3) Next Actions
 
-### A) Production deployment status and environment clarity
-If you are seeing an issue, confirm whether it is on:
-- **Preview** (this dev environment) or
+### A) Environment clarity
+If you report any issue, confirm whether it is on:
+- **Preview** (dev) or
 - **Production** (https://thetradingnarrative.com)
 
-### B) Production rollouts pending redeploy (Preview → Production)
-- Phase 44 (pillar audio exclusivity) requires a redeploy.
-- Phase 45 (keyword SEO targeting) requires a redeploy.
-- Phase 46 (growth suite + early bird + homepage banner) requires a redeploy.
-- Phase 47 (site title + dynamic essay meta descriptions) requires a redeploy.
-- Phase 48 (health probes + env fix + llms/robots/schema) requires a redeploy.
-- Phase 49 (code review fixes) requires a redeploy.
-- Phase 50 (sitemap index + OG images + cookie auth) requires a redeploy.
-- **Phase 51 (distinct pillar share cards v3 motifs)** requires a redeploy.
+### B) SEO execution (next 2 weeks)
+1. **Production push for snippet-ready intros**
+   - Run Admin Content Sync (Update Mode) to apply the 4 intro updates to production.
+2. **Resubmit sitemap**
+   - In Google Search Console: resubmit `https://thetradingnarrative.com/sitemap.xml`.
+3. **Seed tracker with real data weekly**
+   - Every week, add positions/clicks/impressions for the 9 keywords (new `noted_on`).
+4. **Next content targets (Tier 2 remaining gaps)**
+   - `what is laytime in shipping`
+   - `what does tc/rc mean in metals trading` (public explainer; Lounge take is premium)
 
-**After deploying Phase 50+51 to Production:**
-- Resubmit `https://thetradingnarrative.com/sitemap.xml` in GSC.
-- Validate social previews:
-  - LinkedIn Post Inspector: paste a `/post/{slug}` URL
-  - X (card validators) / WhatsApp share
-- Readers should auto-migrate sessions; some may need to sign in again once depending on browser state.
-
-### C) Payment gateways
+### C) Payments
 - “Test mode” banners cannot be removed with code.
 - To remove: switch to LIVE Stripe/Razorpay keys.
 
-### D) Upcoming (still blocked)
-- **PayPal Checkout** (recurring subscriptions) ⛔
-  - Need PayPal client ID + secret and final flow decisions
-- **Resend Integration** ⛔
-  - Need Resend API key + verified sender domain
+### D) Still blocked
+- PayPal recurring subscriptions: needs credentials + final decision
+- Resend: needs API key + verified sender domain
 
 ---
 
@@ -721,63 +558,15 @@ If you are seeing an issue, confirm whether it is on:
 - Topic hubs exist and support discovery
 - Sitemap/robots/RSS correct
 
-✅ Phase 43 success targets met
-- Business & Finance: newsletter editions + shipping essays have free full audio; other finance essays offer 20s preview + unlock.
-- Unlock persists in `purchased_audio_slugs`.
-- **My Audio Library** lists purchased narrations.
+✅ Phase 50–51 success targets met
+- Cookie auth: httpOnly cookie sessions, migration path, logout
+- `/sitemap.xml` is valid XML sitemapindex
+- Branded OG cards for every essay, with pillar-coloured + motif variants
 
-✅ Phase 44 success targets met (Preview)
-- Premium pillars audio is Premium-only.
-- Non-premium readers see no audio player on those pillar essays.
-
-✅ Phase 45 success targets met (Preview)
-- Keyword-rich defaults exist for title/description/keywords.
-- Homepage emits WebSite + Organization JSON-LD.
-- Briefings and Archive pages are tuned for “weekly briefing / newsletter / freight / trading”.
-- Single meta description + keywords + og:title on rendered pages.
-
-✅ Phase 46 success targets met (Preview)
-- Admin Growth tab shows:
-  - Audio narration unlock sales + revenue
-  - Manual keyword rank tracker with history + deltas
-  - Early bird claims remaining
-- Pricing page surfaces Early Bird discount correctly and enforces **first 50 premium subscribers** cap.
-- Homepage surfaces the early bird deal via banner above the hero.
-
-✅ Phase 47 success targets met (Preview)
-- Homepage site title is exactly: **The Trading Narrative | Commodity Trading & Tech Insights**
-- Default meta keywords include: commodity trading, energy markets, trading technology, ETRM, market risk
-- Each essay page generates a **dynamic meta description** derived from real essay content (excerpt or opening paragraphs)
-- `/api/share/{slug}` crawler HTML mirrors the same dynamic description
-
-✅ Phase 48 success targets met (Preview)
-- Kubernetes liveness/readiness probes succeed (`GET /health` returns 200)
-- Deployment agent scan passes (env fixed)
-- `/llms.txt` is served and accurately describes the site
-- robots policy exists for major AI crawlers and points to `/llms.txt`
-- Structured data enhanced: breadcrumbs, topic collection pages, pricing offers, about person
-- Sitemap verified dynamic and complete
-
-✅ Phase 49 success targets met (Preview)
-- No hardcoded secrets remain in backend test artifacts (deleted)
-- Crypto-safe randomness used for invoice numbers
-- Frontend silent catches now log debug info
-- GrowthPanel row keys fixed
-- AdminPage expensive filter memoized
-- Backend code linted (pyflakes) with only intentional side-effect import in db.py
-
-✅ Phase 50 success targets met (Preview)
-- `GET /sitemap.xml` returns valid XML sitemap index (not React HTML)
-- `GET /api/og/{slug}.png` returns branded OG image and is used by `/api/share/{slug}` and essay pages
-- Auth tokens are stored in secure httpOnly cookie `ttn_session` (Authorization header supported temporarily for migration)
-- Frontend uses `withCredentials` and removes localStorage token after migration
-- CORS is compatible with credentialed cookies under platform deployment rules
-
-✅ Phase 51 success targets met (Preview)
-- OG cards are pillar-coloured and visually richer
-- **Each pillar has a distinct, recognisable background motif** (tech circuits, finance sparkline, growth sunrise arcs, delivery route)
-- v3 auto-invalidates old cached cards via `_OG_VERSION='v3'`
-- No-cover and long-title layouts are stable (no byline overlap)
+✅ Phase 53 success targets met (PREVIEW)
+- Answer-first intros implemented for Tier 1 targets
+- Two new free SEO essays published via `REAL_POSTS` and verified in sitemap/share/OG
+- Baseline keyword tracker seeded and visible in Admin
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.
