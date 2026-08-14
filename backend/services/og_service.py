@@ -44,7 +44,7 @@ _FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cache', 'og_cards')
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-_OG_VERSION = 'v4'  # bump to invalidate previously cached card designs
+_OG_VERSION = 'v5'  # bump to invalidate previously cached card designs
 
 _MASCOT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets', 'mascots')
 

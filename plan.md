@@ -4,7 +4,7 @@
 - Ship a modern, subscription-based blog + newsletter platform (**The Trading Narrative**) with an editorial reading experience, a freemium → premium conversion model, and a **premium community destination (Lounge)**.
 - Support **four pillars/themes** with a unified, recognisable identity everywhere (site UI + share assets):
   - **Tech & AI** (`tech-business`)
-  - **Business & Finance** (`finance`)
+  - **Trading, Business & Finance** (`finance`) ✅ *(renamed from “Business & Finance”)*
   - **Personal Growth** (`lifestyle`) *(DB slug; displayed as Personal Growth)*
   - **Delivery & Systems** (`delivery`) ✅
 - Provide subscriptions via:
@@ -90,7 +90,7 @@
 - Premium members: **full narration** everywhere ✅
 - Free signed-in users:
   - **FREE full audio** for editions + Shipping-tag essays
-  - **Business & Finance** (non-exempt): 20-second clip + one-time unlock ₹45/$0.50 ✅
+  - **Trading, Business & Finance** (non-exempt): 20-second clip + one-time unlock ₹45/$0.50 ✅
   - **Premium pillars**: narration Premium-only; hide player for non-premium ✅
 
 **Pricing note:** Stripe minimum: **$0.50** → final micro-paywall: **₹45 / $0.50** ✅
@@ -147,19 +147,27 @@
 - Topic hubs ✅
 - Keyword targeting ✅
 - Dynamic essay meta descriptions ✅
+- **Glossary hub page** ✅ *(Phase 59)*
+  - `/glossary` (crawlable) + **DefinedTermSet JSON-LD**
+  - Linked in footer
+  - Included in sitemap
 
 ### Social sharing (unfurls + branded assets)
 - **Branded OG share cards** ✅ *(Phase 50)*
 - **Pillar-coloured OG cards with signature motifs (v3)** ✅ *(Phase 51)*
-- **OG cards upgraded with pillar mascots (v4)** ✅ *(Phase 58)*
+- **Pillar mascots generated + integrated (UI)** ✅ *(Phase 57)*
 - **Quote-card sharing matches pillar accents + motifs** ✅ *(Phase 54 + Phase 55)*
-- **Pillar mascots (emblems) integrated in hub headers + homepage** ✅ *(Phase 57)*
+- **Navbar pillar dots** ✅ *(Phase 58)*
+- **OG cards upgraded with pillar mascots** ✅ *(Phase 58, v4)*
+- **OG cards updated for pillar rename** ✅ *(Phase 59, v5)*
 
 ### Branding + content readiness
 - Official logo + favicon ✅
 - Author identity normalized ✅
 - Seed data self-healing ✅
 - Catalog publish ✅
+- **Pillar branding on About page** ✅ *(Phase 59)*
+  - Mascot medallions + lore names and story blurbs
 
 ### Stability
 - Modular backend ✅
@@ -314,7 +322,7 @@
 - Generated via `gemini-3.1-flash-image-preview` using `EMERGENT_LLM_KEY`.
 - Mascots:
   - Tech & AI: **violet circuit owl**
-  - Business & Finance: **teal sparkline bull**
+  - Trading, Business & Finance: **teal sparkline bull**
   - Personal Growth: **amber phoenix + sunrise rings**
   - Delivery & Systems: **steel-blue albatross + waypoint route**
 - Center-cropped to 560×560, optimized to WebP (16–38KB) at `frontend/public/pillars/{slug}.webp`.
@@ -327,8 +335,7 @@
 
 ### Phase 58 — Navbar Pillar Dots + Mascot Share Cards ✅ COMPLETED (PREVIEW)
 **58.1 Navbar pillar dots:**
-- `Navbar.js`: desktop nav links + mobile sheet links now show pillar-colour dots (`pillarAccent`) before each category label.
-- Verified via screenshot: violet/teal/amber/steel-blue dots visible.
+- `Navbar.js`: desktop nav links + mobile sheet links show pillar-colour dots (`pillarAccent`) before each category label.
 
 **58.2 OG share cards (v4):**
 - `services/og_service.py`: `_OG_VERSION` bumped to `v4` (cache auto-invalidates).
@@ -336,6 +343,34 @@
 - New `_mascot_medallion()` renders a circular mascot with an accent ring (2× supersampled mask).
 - Medallion is pasted top-right on every OG card.
 - Verified: all four pillar cards render beautifully with the correct mascot.
+
+### Phase 59 — Glossary Hub + Mascot Branding + Pillar Rename ✅ COMPLETED (PREVIEW)
+**59.1 Pillar rename (finance):**
+- `'finance'` label changed to **“Trading, Business & Finance”** in:
+  - `backend/config.py` CATEGORIES
+  - `frontend/src/lib/api.js` CATEGORIES
+  - `frontend/src/pages/TopicPage.js` intro copy
+  - `frontend/src/lib/pillars.js` mascot alt
+- OG cards: `_OG_VERSION` bumped to **v5** so chips regenerate with new label (verified chip fits).
+- RSS/JSON-LD escaping already safe (`_xml_escape` exists in `routers/posts.py`).
+
+**59.2 Glossary Hub at `/glossary`:**
+- `frontend/src/pages/GlossaryPage.js`
+  - 9 term cards (Demurrage, Detention, Laytime, TC/RC, ETRM, CTRM, Freight Visibility, Yield Curve Inversion, Power Trading Desk)
+  - one-breath definition + pillar dot/accent + motif background + link to essay
+  - DefinedTermSet JSON-LD, SEO meta
+- Routed in `App.js` and linked in `Footer.js` (“Trading Glossary”).
+- Included in sitemap (`backend/routers/posts.py`).
+
+**59.3 About page “Pillar Branding” section:**
+- Added “The Pillars” section with:
+  - mascot medallions
+  - lore names: The Circuit Owl / The Sparkline Bull / The Rising Phoenix / The Route Albatross
+  - story blurbs + links to the pillar hubs
+  - motif backgrounds for continuity
+
+**59.4 Build stability note:**
+- Two `App.js` edit anomalies occurred (duplicate tail + missing route line). Fixed via deterministic python patch. `esbuild` verified.
 
 ---
 
@@ -352,14 +387,15 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share changes (Phases 55–58 + Phase 56):**
+**Requires redeploy to ship UI/share changes (Phases 55–59 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
-   - Navbar category links show colour dots
-   - Home “Browse by pillar” banner shows mascot
+   - Navbar category links show pillar dots
+   - Home “Browse by pillar” banner shows mascot medallion
    - `/topics/{pillar}` shows mascot + motif header
    - Article pages show pillar-tinted badge + progress bar
-   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the new v4 mascot medallion
+   - `/glossary` exists, is linked in footer, and is included in sitemap
+   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the new **v5** chips and mascot medallion
 3. Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
 
 ### C) Payments
@@ -413,6 +449,11 @@ If you report any issue, confirm whether it is on:
 ✅ Phase 58 identity targets met (PREVIEW)
 - Navbar category links carry pillar dots
 - OG share cards carry pillar mascot medallion
+
+✅ Phase 59 SEO + branding targets met (PREVIEW)
+- Glossary hub page with DefinedTermSet JSON-LD
+- About page pillar branding section
+- Finance pillar renamed to “Trading, Business & Finance”
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

@@ -28,7 +28,7 @@ export const pillarMascot = (slug) =>
 
 export const PILLAR_MASCOT_ALTS = {
   "tech-business": "Tech & AI pillar mascot: an owl with circuit-trace wings",
-  finance: "Business & Finance pillar mascot: a bull with a rising market line",
+  finance: "Trading, Business & Finance pillar mascot: a bull with a rising market line",
   lifestyle: "Personal Growth pillar mascot: a phoenix inside sunrise rings",
   delivery: "Delivery & Systems pillar mascot: an albatross over a waypoint route",
 };

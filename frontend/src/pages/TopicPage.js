@@ -21,11 +21,11 @@ const TOPIC_INTROS = {
     ],
   },
   finance: {
-    title: "Business & Finance, from Markets to Mechanics",
+    title: "Trading, Business & Finance, from Markets to Mechanics",
     paragraphs: [
       "Markets are stories the money tells itself, and this hub is where The Trading Narrative reads them out loud. It gathers our essays on business and financial mechanics: how commodity prices actually move, how desks position around OPEC+ decisions and USDA reports, how freight rates and yield curves leak information about the real economy, and how the shipping industry quietly sits on billion-dollar inefficiencies.",
       "These essays favour mechanism over prediction. Instead of calling the next move in Brent, we unpack what a negative treatment charge means for smelter margins, why a 5% single-day slide in crude is really a stress test for intraday VaR, and what the first survey-based corn yield of the season does to grain volatility. The aim is that after each essay you understand one more gear in the machine, whether you run a book, build the systems behind one, or simply want to read markets with sharper eyes.",
-      "Business & Finance essays are the free backbone of the publication, and the weekly briefings live here too. Start with the latest edition, then work back through the archive.",
+      "Trading, Business & Finance essays are the free backbone of the publication, and the weekly briefings live here too. Start with the latest edition, then work back through the archive.",
     ],
   },
   delivery: {

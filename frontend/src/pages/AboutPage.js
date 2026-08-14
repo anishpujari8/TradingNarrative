@@ -3,9 +3,31 @@ import { SITE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Seo } from "@/components/Seo";
-import { Linkedin, Instagram } from "lucide-react";
+import { Linkedin, Instagram, ArrowRight } from "lucide-react";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { FoundingWall } from "@/components/FoundingWall";
+import { CATEGORIES } from "@/lib/api";
+import { pillarAccent, withAlpha, pillarMascot, PILLAR_MASCOT_ALTS, PILLAR_TAGLINES, PillarMotif } from "@/lib/pillars";
+
+// Mascot lore: how each pillar's emblem maps to what the essays actually cover.
+const MASCOT_LORE = {
+  "tech-business": {
+    name: "The Circuit Owl",
+    story: "Sees in the dark and reads the wiring underneath. Essays on ETRM, CTRM, and what AI actually changes on a trading desk.",
+  },
+  finance: {
+    name: "The Sparkline Bull",
+    story: "Built from the chart itself. Market mechanics from yield curves to treatment charges, explained like a desk would.",
+  },
+  lifestyle: {
+    name: "The Rising Phoenix",
+    story: "Every cycle ends in a better start. Life systems for operators: deep work, habits, and deliberate resets.",
+  },
+  delivery: {
+    name: "The Route Albatross",
+    story: "Flies the whole route and lands where it planned. How complex trading platforms actually get shipped and adopted.",
+  },
+};
 
 export default function AboutPage() {
   return (
@@ -90,6 +112,58 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
+
+      <Separator className="my-14" />
+
+      <section data-testid="about-pillars-section">
+        <span className="section-label">The Pillars</span>
+        <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-3">
+          Four pillars, four colours, four mascots
+        </h2>
+        <p className="text-muted-foreground mt-4 max-w-2xl leading-relaxed">
+          Everything published here belongs to one of four pillars, and each pillar carries its
+          own colour and emblem, on the site, on share cards, everywhere. Once you know the
+          mascots, you can tell what an essay is about before you read a word.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-5 mt-8">
+          {CATEGORIES.map((c) => {
+            const accent = pillarAccent(c.slug);
+            const lore = MASCOT_LORE[c.slug];
+            return (
+              <Link
+                key={c.slug}
+                to={`/topics/${c.slug}`}
+                className="group relative overflow-hidden bg-card border rounded-xl p-6 flex items-center gap-5 transition-[border-color] duration-200"
+                style={{ borderColor: withAlpha(accent, 0.32) }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = withAlpha(accent, 0.7); }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = withAlpha(accent, 0.32); }}
+                data-testid={`about-pillar-${c.slug}`}
+              >
+                <div className="absolute inset-y-0 right-0 w-1/2 pointer-events-none" style={{ color: accent, opacity: 0.07 }}>
+                  <PillarMotif category={c.slug} className="h-full w-full" />
+                </div>
+                <img
+                  src={pillarMascot(c.slug)}
+                  alt={PILLAR_MASCOT_ALTS[c.slug]}
+                  className="relative h-24 w-24 rounded-full object-cover shrink-0 shadow-md"
+                  style={{ border: `3px solid ${withAlpha(accent, 0.55)}` }}
+                  loading="lazy"
+                />
+                <div className="relative min-w-0">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: accent }}>
+                    {c.label}
+                  </span>
+                  <h3 className="font-serif text-xl font-semibold mt-0.5">{lore?.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{lore?.story}</p>
+                  <span className="inline-flex items-center gap-1 text-sm font-medium mt-2 group-hover:gap-2 transition-all" style={{ color: accent }}>
+                    Explore the pillar <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       <FoundingWall />
     </div>

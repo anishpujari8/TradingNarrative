@@ -53,7 +53,7 @@ AUDIO_UNLOCK_PRICE_INR = 45.00
 
 CATEGORIES = {
     'tech-business': 'Tech & AI',
-    'finance': 'Business & Finance',
+    'finance': 'Trading, Business & Finance',
     'lifestyle': 'Personal Growth',
     'delivery': 'Delivery & Systems',
 }

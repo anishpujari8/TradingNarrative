@@ -27,7 +27,7 @@ export const CATEGORIES = [
   },
   {
     slug: "finance",
-    label: "Business & Finance",
+    label: "Trading, Business & Finance",
     description:
       "Markets, investing, and business strategy, minus the noise. Portfolios, macro, and the psychology of money.",
   },
