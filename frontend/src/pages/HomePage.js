@@ -10,6 +10,7 @@ import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { api, CATEGORIES, formatDate, SITE_URL, SITE_NAME, getPreferredCurrency, formatINR } from "@/lib/api";
+import { pillarAccent, withAlpha, PillarMotif, PILLAR_TAGLINES } from "@/lib/pillars";
 import { useAuth } from "@/context/AuthContext";
 import { ContinueReading } from "@/components/ContinueReading";
 
@@ -227,8 +228,8 @@ export default function HomePage() {
                   <img src={p.cover_image} alt={p.title} loading="lazy" className="w-full h-full object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                    <span>{p.category_label}</span>
+                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
+                    <span style={{ color: pillarAccent(p.category) }}>{p.category_label}</span>
                     {p.tier === "premium" && <Lock className="h-3 w-3 text-accent" />}
                   </div>
                   <h3 className="font-serif text-lg sm:text-xl font-semibold leading-snug mt-1 group-hover:text-accent transition-colors line-clamp-2">
@@ -271,12 +272,47 @@ export default function HomePage() {
           <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/60 p-1 mb-8 justify-start">
             <TabsTrigger value="all" data-testid="filter-tab-all">All</TabsTrigger>
             {CATEGORIES.map((c) => (
-              <TabsTrigger key={c.slug} value={c.slug} data-testid={`filter-tab-${c.slug}`}>
+              <TabsTrigger key={c.slug} value={c.slug} data-testid={`filter-tab-${c.slug}`} className="gap-1.5">
+                <span
+                  className="inline-block h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: pillarAccent(c.slug) }}
+                  aria-hidden
+                />
                 {c.label}
               </TabsTrigger>
             ))}
           </TabsList>
         </Tabs>
+        {filter !== "all" && (() => {
+          const c = CATEGORIES.find((x) => x.slug === filter);
+          const accent = pillarAccent(filter);
+          return (
+            <div
+              className="relative overflow-hidden rounded-2xl border px-6 sm:px-8 py-6 mb-8"
+              style={{ borderColor: withAlpha(accent, 0.35), backgroundColor: withAlpha(accent, 0.07) }}
+              data-testid={`pillar-header-${filter}`}
+            >
+              <div className="absolute inset-y-0 right-0 w-2/3 sm:w-1/2 pointer-events-none" style={{ color: accent, opacity: 0.18 }}>
+                <PillarMotif category={filter} className="h-full w-full" />
+              </div>
+              <div className="relative">
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: accent }}>
+                  Pillar
+                </span>
+                <h3 className="font-serif text-2xl sm:text-3xl font-semibold mt-1">{c?.label}</h3>
+                <p className="text-sm text-muted-foreground mt-1.5 max-w-md">{PILLAR_TAGLINES[filter]}</p>
+                <Link
+                  to={`/topics/${filter}`}
+                  className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
+                  style={{ color: accent }}
+                  data-testid={`pillar-header-hub-link-${filter}`}
+                >
+                  Visit the {c?.label} hub <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          );
+        })()}
         {posts === null ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-80 rounded-xl" />)}</div>
         ) : (

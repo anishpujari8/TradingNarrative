@@ -494,26 +494,24 @@ Applied in BOTH:
 - References and feeds internal linking into the existing “$15B demurrage” essay
 
 #### 53.4 Tracker seeding ✅
-Seeded 9 baseline keywords (Tier 1 + Tier 2) into `seo_keyword_stats`:
-- impressions=0, clicks=0, position=None, noted_on=today
-- Visible in Admin → Growth → Search Rank Tracker
+Seeded baseline keywords (Tier 1 + Tier 2) into `seo_keyword_stats`.
 
 #### 53.5 Verification ✅
 Verified:
-- Both new essays are free/unlocked via API
-- Both appear in dynamic sitemap
+- New essays are free/unlocked via API
+- New essays appear in dynamic sitemap
 - `/api/share/{slug}` emits keyword-rich meta descriptions
 - OG cards render correctly (pillar palette + motif)
 - Admin tracker returns seeded keywords
 - Frontend renders new essays; related-post cross-links appear via overlapping tags
-- Metered paywall behavior on anonymous identities is expected (not a bug)
+- Metered paywall behavior on anonymous identities is expected
 
 ### Phase 54 — Pillar Identity + Dash Cleanup + New SEO Essays + Quote Card Motifs ✅ COMPLETED (PREVIEW)
 
 #### 54.1 “Pillar color not showing on live site” investigation ✅
 - Confirmed **NOT a CSS issue**: pillar cards are server-rendered PNGs at `GET /api/og/{slug}.png`.
-- Verified production is serving the v3 pillar cards (byte-identical to preview; direct URL checks confirm).
-- Root cause of user perception: LinkedIn/X/WhatsApp cache old previews. Recommended LinkedIn Post Inspector to force re-scrape.
+- Verified production is serving the v3 pillar cards.
+- Root cause of perceived mismatch: social platforms cache previews. Recommended LinkedIn Post Inspector to force re-scrape.
 
 #### 54.2 Dash cleanup ✅
 - Removed remaining mid-paragraph em/en dashes from essays (e.g., `60–90` → `60 to 90`).
@@ -525,26 +523,72 @@ Verified:
 #### 54.3 New SEO glossary: Laytime ✅
 - New free essay added to `REAL_POSTS`:
   - `what-is-laytime-in-shipping-the-clock-that-decides-demurrage`
-  - Answer-first, includes NOR, berth vs port, exceptions/pauses, despatch, “once on demurrage always on demurrage” framing, and internal links to demurrage cluster.
+  - Answer-first, includes NOR, berth vs port, exceptions/pauses, despatch, “once on demurrage always on demurrage”.
 - Verified: renders, appears in sitemap.
 
 #### 54.4 New SEO glossary: TC/RC ✅
 - New free essay added to `REAL_POSTS`:
   - `what-does-tc-rc-mean-in-metals-trading-treatment-and-refining-charges-explained`
-  - Expanded from Lounge TC/RC sign-flip take; includes negative TC/RC explanation and CTRM modelling warning.
-- Verified: full content for signed-in users; appears in sitemap.
+  - Expanded from Lounge take; includes negative TC/RC explanation and CTRM sign-flip modelling warning.
+- Verified: renders, appears in sitemap.
 
 #### 54.5 Quote card accents + motifs ✅
 - `QuoteCardDialog.js` updated to mirror pillar identity:
-  - Pillar accent palette (violet/teal/amber/steel blue)
-  - Signature background motifs per pillar (circuits / sparkline / sunrise arcs / route)
-  - Motifs drawn at low opacity behind quotes to preserve legibility
-- `ArticlePage` now passes `post.category` into quote share payload.
-- Verified visually: all 4 pillar variants captured in browser; motifs + accents correct.
+  - Pillar accent palette + signature motifs (circuits / sparkline / sunrise arcs / route)
+- `ArticlePage` now passes `post.category` into quote-share payload.
+- Verified visually: all 4 pillar variants render correctly.
 
 **Important production note (Phase 54):**
 - New essays + quote card changes require a redeploy to appear in production.
-- Dash cleanup for already-published production posts requires **Admin → Content Sync → Update Mode** (same as Phase 53 intro updates).
+- Dash cleanup for already-published production posts requires **Admin → Content Sync → Update Mode**.
+
+### Phase 55 — Site-wide Pillar Identity + Essay Recategorization ✅ COMPLETED (PREVIEW)
+
+#### 55.1 Shared pillar identity module ✅
+- Added `frontend/src/lib/pillars.js` with:
+  - `PILLAR_ACCENTS` (v3 palette): violet `#7a73e8`, teal `#1c8570`, amber `#c4872e`, steel blue `#3f7cc4`
+  - `PILLAR_TAGLINES`
+  - `withAlpha()` helper
+  - `PillarMotif` SVG component (currentColor-stroked motifs: circuits / sparkline / arcs / route)
+
+#### 55.2 PostCard styling ✅
+- `PostCard.js` updated:
+  - pillar-tinted card border (alpha 0.32; hover alpha 0.7)
+  - 3px accent strip under the cover image
+  - category badge coloured by pillar
+- This affects all grids that use `PostCard`: homepage, topic hubs, archive, recommendations.
+
+#### 55.3 Home page pillar identity ✅
+- `HomePage.js` updated:
+  - latest-list category labels coloured by pillar
+  - Browse-by-pillar tabs include accent dots
+  - selecting a pillar shows an accent-tinted header banner with motif background + tagline + hub link
+
+#### 55.4 Topic hub headers ✅
+- `TopicPage.js` updated:
+  - header rebuilt as accent-tinted banner with motif background + accent underline bar
+  - coloured marker on the essays heading
+- **Bug fixed:** initial runtime error (`withAlpha is not defined`) due to missing import after edit anomaly; fixed + verified.
+
+#### 55.5 Essay recategorization ✅
+- Moved 3 essays from **Delivery** → **Personal Growth** in **DB + `seed_data.py`**:
+  - `slow-travel-the-month-long-stay-changes-everything`
+  - `the-shoulder-season-playbook-same-trip-half-the-price`
+  - `working-from-anywhere-a-field-tested-remote-setup`
+- Delivery pillar now contains only **“Delivering a Power Trading Desk”**.
+- OG cards auto-regenerated with amber identity for moved essays (verified).
+
+#### 55.6 Verification ✅
+- Verified via screenshots:
+  - homepage All/Tech/Personal Growth/Delivery views
+  - topic hubs (Delivery + Personal Growth)
+  - dark mode
+  - moved essays appear under Personal Growth
+- Frontend build passes (`esbuild`).
+
+**Important production note (Phase 55):**
+- Requires redeploy for the site-wide UI changes to ship.
+- Recategorization on production requires **Admin → Content Sync (Update Mode)** *if* `category` is in the sync allowlist; otherwise the move only applies on fresh DBs via seeding.
 
 ---
 
@@ -555,22 +599,18 @@ If you report any issue, confirm whether it is on:
 - **Preview** (dev) or
 - **Production** (https://thetradingnarrative.com)
 
-### B) SEO execution (next 2 weeks)
-1. **Production push for snippet-ready intros + dash cleanup**
-   - Run **Admin → Content Sync (Update Mode)** to apply:
-     - Phase 53 answer-first intro updates
-     - Phase 54 dash cleanup updates
-2. **Redeploy to ship new SEO pages + quote-card motifs**
-   - Redeploy to get:
-     - Laytime essay
-     - TC/RC explainer
-     - Quote card pillar accents + motifs
-3. **Resubmit sitemap**
-   - In Google Search Console: resubmit `https://thetradingnarrative.com/sitemap.xml`.
-4. **Seed tracker with real data weekly**
-   - Every week, add positions/clicks/impressions for seeded keywords (new `noted_on`).
-5. **Social preview cache refresh**
-   - Use LinkedIn Post Inspector to re-scrape key URLs (platform cache can mask changes).
+### B) Production rollout checklist (recommended order)
+1. **Redeploy** to ship Phase 55 UI updates (site-wide pillar identity) + new SEO essays.
+2. Run **Admin → Content Sync (Update Mode)** to apply to production:
+   - Phase 53 snippet-ready intros
+   - Phase 54 dash cleanup
+   - Phase 55 recategorization (if allowed)
+3. **Resubmit sitemap** in Google Search Console:
+   - `https://thetradingnarrative.com/sitemap.xml`
+4. **Force refresh social previews** for key URLs:
+   - Use LinkedIn Post Inspector to re-scrape; platform caches may mask changes.
+5. **Seed tracker with real data weekly**
+   - Add positions/clicks/impressions for seeded keywords each week (new `noted_on`).
 
 ### C) Payments
 - “Test mode” banners cannot be removed with code.
@@ -609,7 +649,7 @@ If you report any issue, confirm whether it is on:
 
 ✅ Phase 53 success targets met (PREVIEW)
 - Answer-first intros implemented for Tier 1 targets
-- Two new free SEO essays published via `REAL_POSTS` and verified in sitemap/share/OG
+- New free SEO essays published via `REAL_POSTS` and verified in sitemap/share/OG
 - Baseline keyword tracker seeded and visible in Admin
 
 ✅ Phase 54 success targets met (PREVIEW)
@@ -617,6 +657,11 @@ If you report any issue, confirm whether it is on:
 - All mid-paragraph em/en dashes removed from excerpts/bodies (DB + seed)
 - Laytime + TC/RC public SEO essays added and verified
 - Quote cards updated to match pillar colour + motif identity and verified visually
+
+✅ Phase 55 success targets met (PREVIEW)
+- Site-wide pillar identity applied via shared module (accents + motifs)
+- Post cards, homepage browse-by-pillar UI, and topic hub headers all use pillar styling
+- Delivery pillar now contains only the Power Trading Desk essay; other three moved to Personal Growth
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { api, CATEGORIES, SITE_URL } from "@/lib/api";
+import { pillarAccent, withAlpha, PillarMotif } from "@/lib/pillars";
 
 // Topic hubs: original intro copy (200-400 words) per pillar. These pages are the
 // SEO landing surfaces for head terms; each hub links every essay under the theme
@@ -83,11 +84,32 @@ export default function TopicPage() {
           isPartOf: { "@id": `${SITE_URL}/#website` },
         }}
       />
-      <span className="section-label">Topic hub</span>
-      <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 max-w-3xl" data-testid="topic-title">
-        {intro.title}
-      </h1>
-      <div className="max-w-3xl mt-6 space-y-4">
+      <div
+        className="relative overflow-hidden rounded-2xl border px-6 sm:px-10 py-8 sm:py-10"
+        style={{ borderColor: withAlpha(pillarAccent(slug), 0.35), backgroundColor: withAlpha(pillarAccent(slug), 0.07) }}
+        data-testid="topic-header-banner"
+      >
+        <div
+          className="absolute inset-y-0 right-0 w-3/4 sm:w-1/2 pointer-events-none"
+          style={{ color: pillarAccent(slug), opacity: 0.16 }}
+        >
+          <PillarMotif category={slug} className="h-full w-full" />
+        </div>
+        <div className="relative">
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: pillarAccent(slug) }}>
+            Topic hub
+          </span>
+          <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 max-w-3xl" data-testid="topic-title">
+            {intro.title}
+          </h1>
+          <div
+            className="h-1 w-16 rounded-full mt-5"
+            style={{ backgroundColor: pillarAccent(slug) }}
+            aria-hidden
+          />
+        </div>
+      </div>
+      <div className="max-w-3xl mt-8 space-y-4">
         {intro.paragraphs.map((p, i) => (
           <p key={i} className="text-muted-foreground leading-relaxed" data-testid={`topic-intro-p${i + 1}`}>{p}</p>
         ))}
@@ -99,7 +121,8 @@ export default function TopicPage() {
       </div>
 
       <Separator className="my-10" />
-      <h2 className="font-serif text-2xl font-semibold mb-6" data-testid="topic-essays-heading">
+      <h2 className="font-serif text-2xl font-semibold mb-6 flex items-center gap-2.5" data-testid="topic-essays-heading">
+        <span className="inline-block h-5 w-1.5 rounded-full" style={{ backgroundColor: pillarAccent(slug) }} aria-hidden />
         All essays in {category.label}
       </h2>
       {posts === null ? (

@@ -2,16 +2,23 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Clock } from "lucide-react";
 import { formatDate } from "@/lib/api";
+import { pillarAccent, withAlpha } from "@/lib/pillars";
 import { BookmarkButton } from "@/components/BookmarkButton";
 
 export const PostCard = ({ post, large = false }) => {
+  const accent = pillarAccent(post.category);
   return (
     <Link
       to={`/post/${post.slug}`}
       className="group block"
       data-testid="article-card"
     >
-      <article className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col transition-colors duration-200 hover:border-foreground/25">
+      <article
+        className="bg-card border rounded-xl overflow-hidden h-full flex flex-col transition-[border-color,box-shadow] duration-200"
+        style={{ borderColor: withAlpha(accent, 0.32), "--pillar-accent": accent }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = withAlpha(accent, 0.7); }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = withAlpha(accent, 0.32); }}
+      >
         <div className={`relative card-img-zoom overflow-hidden ${large ? "aspect-[16/9]" : "aspect-[3/2]"}`}>
           <BookmarkButton postId={post.id} variant="overlay" />
           <img
@@ -20,10 +27,15 @@ export const PostCard = ({ post, large = false }) => {
             loading="lazy"
             className="w-full h-full object-cover"
           />
+          <div className="absolute inset-x-0 bottom-0 h-[3px]" style={{ backgroundColor: accent }} aria-hidden />
         </div>
         <div className="p-5 flex flex-col flex-1">
           <div className="flex items-center gap-2 mb-3">
-            <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-wider rounded-md">
+            <Badge
+              className="font-mono text-[10px] uppercase tracking-wider rounded-md border"
+              style={{ backgroundColor: withAlpha(accent, 0.12), color: accent, borderColor: withAlpha(accent, 0.3) }}
+              data-testid="post-category-badge"
+            >
               {post.category_label}
             </Badge>
             {post.edition && (
