@@ -1,26 +1,6 @@
 [
   {
-    "content": "Verify pillar-coloured cards on production + explain (no CSS involved)",
-    "status": "completed"
-  },
-  {
-    "content": "Remove mid-paragraph dashes from all essays (DB + seed_data.py)",
-    "status": "completed"
-  },
-  {
-    "content": "Publish 'What Is Laytime in Shipping' essay (free, REAL_POSTS)",
-    "status": "completed"
-  },
-  {
-    "content": "Publish public TC/RC explainer from Lounge take (free, REAL_POSTS)",
-    "status": "completed"
-  },
-  {
-    "content": "Quote card accents: pillar colours + motifs in highlight quote cards",
-    "status": "completed"
-  },
-  {
-    "content": "Verify everything + screenshots",
+    "content": "Conversion feedback batch: free reads sampler, bylines, author strip, scarcity reframe, footer links, social proof — all implemented + verified",
     "status": "completed"
   }
 ]

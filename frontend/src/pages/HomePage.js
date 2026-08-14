@@ -115,8 +115,14 @@ export default function HomePage() {
               <Crown className="h-3.5 w-3.5 shrink-0 text-accent" />
               <span className="truncate">
                 Early bird: go Premium for <strong>{monthly}</strong> first month or{" "}
-                <strong>{annualP}</strong> first year <span className="opacity-70 line-through">{annualReg}</span> ·{" "}
-                <strong data-testid="early-bird-banner-count">{earlyBird.remaining} of {earlyBird.spots}</strong> spots left
+                <strong>{annualP}</strong> first year <span className="opacity-70 line-through">{annualReg}</span>
+                {earlyBird.remaining < earlyBird.spots ? (
+                  <>
+                    {" "}· <strong data-testid="early-bird-banner-count">{earlyBird.remaining} of {earlyBird.spots}</strong> spots left
+                  </>
+                ) : (
+                  <> · early-bird pricing for the first {earlyBird.spots} members</>
+                )}
               </span>
               <span className="hidden sm:inline-flex items-center gap-1 font-medium underline underline-offset-4 shrink-0">
                 Lock in the deal <ArrowRight className="h-3.5 w-3.5" />
@@ -136,8 +142,16 @@ export default function HomePage() {
           >
             <Zap className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">
-              Early supporter offer, <strong data-testid="early-supporter-count">{promo.left} of {promo.limit}</strong> spots
-              left · first 5 essays free for early readers
+              {promo.taken > 0 ? (
+                <>
+                  Early supporter offer, <strong data-testid="early-supporter-count">{promo.left} of {promo.limit}</strong> spots
+                  left · first 5 essays free for early readers
+                </>
+              ) : (
+                <>
+                  Be one of the first <strong data-testid="early-supporter-count">{promo.limit}</strong> early readers · first 5 essays free
+                </>
+              )}
             </span>
             <span className="hidden sm:inline-flex items-center gap-1 font-medium underline underline-offset-4 shrink-0">
               Claim yours <ArrowRight className="h-3.5 w-3.5" />
@@ -168,8 +182,8 @@ export default function HomePage() {
             </p>
             <div className="mt-7 max-w-md">
               <NewsletterForm source="hero" testId="hero-newsletter-form" />
-              <p className="text-xs text-muted-foreground mt-2 font-mono">
-                Free forever. Premium if you want everything.
+              <p className="text-xs text-muted-foreground mt-2 font-mono" data-testid="hero-social-proof">
+                Join 500+ commodity trading professionals · Free forever. Premium if you want everything.
               </p>
             </div>
           </motion.div>
@@ -205,6 +219,38 @@ export default function HomePage() {
           )}
         </div>
         <div className="container-editorial"><Separator /></div>
+      </section>
+
+      {/* AUTHOR STRIP, credibility above the fold */}
+      <section className="container-editorial" data-testid="home-author-strip">
+        <div className="flex items-center gap-4 py-5 border-b border-border flex-wrap">
+          <img
+            src="/anish.jpg"
+            alt="Anish Pujari, author of The Trading Narrative"
+            className="h-12 w-12 rounded-full object-cover border-2 border-accent/40 shrink-0"
+            loading="lazy"
+            data-testid="home-author-photo"
+          />
+          <p className="text-sm text-muted-foreground flex-1 min-w-[240px]">
+            <span className="text-foreground font-medium">By Anish Pujari</span> — ETRM product leader
+            with 12 years delivering commodity trading systems, author of{" "}
+            <em className="text-foreground">How Trading Can Make You Money</em>.
+          </p>
+          <div className="flex items-center gap-4 shrink-0">
+            <Link to="/about" className="text-sm text-accent font-medium hover:underline" data-testid="home-author-about-link">
+              About the author
+            </Link>
+            <a
+              href="https://www.linkedin.com/build-relation/newsletter-follow?entityUrn=7490310794455306241"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-accent font-medium hover:underline"
+              data-testid="home-author-linkedin-newsletter-link"
+            >
+              Subscribe on LinkedIn
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* LATEST LIST */}
@@ -247,6 +293,40 @@ export default function HomePage() {
 
       {/* CONTINUE READING */}
       <ContinueReading />
+
+      {/* START HERE, FREE, sample the quality before the paywall */}
+      {posts?.some((p) => p.tier === "free") && (() => {
+        const preferred = [
+          "etrm-vs-ctrm-whats-the-difference-and-which-one-do-you-actually-need",
+          "the-shipping-industry-is-sitting-on-a-15-billion-problem-and-nobody-is-talking-a",
+          "the-boring-portfolio-that-beats-your-broker",
+        ];
+        const freePosts = posts.filter((p) => p.tier === "free");
+        const picks = [
+          ...preferred.map((s) => freePosts.find((p) => p.slug === s)).filter(Boolean),
+          ...freePosts.filter((p) => !preferred.includes(p.slug)),
+        ].slice(0, 3);
+        if (!picks.length) return null;
+        return (
+          <section className="container-editorial py-6 sm:py-10" data-testid="home-free-reads-section">
+            <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+              <div>
+                <span className="section-label">Start here, free</span>
+                <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-2">
+                  Sample the quality, no sign-up needed
+                </h2>
+                <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+                  Three full essays, free for everyone. If they earn your trust, the rest of the
+                  library is one step away.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" data-testid="home-free-reads-grid">
+              {picks.map((p) => <PostCard key={p.id} post={p} />)}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* FOR YOU */}
       {recs?.posts?.length > 0 && (
@@ -349,6 +429,9 @@ export default function HomePage() {
             </p>
             <div className="max-w-md mx-auto">
               <NewsletterForm source="home-block" testId="home-block-newsletter-form" />
+              <p className="text-xs text-muted-foreground mt-3 font-mono" data-testid="home-block-social-proof">
+                Join 500+ commodity trading professionals reading every week.
+              </p>
             </div>
           </div>
         </div>

@@ -57,6 +57,10 @@ export const PostCard = ({ post, large = false }) => {
           </h3>
           <p className="text-muted-foreground text-sm mt-2 line-clamp-2 flex-1">{post.excerpt}</p>
           <div className="flex items-center gap-3 mt-4 text-xs text-muted-foreground font-mono">
+            <span className="inline-flex items-center gap-1.5" data-testid="post-card-byline">
+              <img src="/anish.jpg" alt="Anish Pujari" className="h-4 w-4 rounded-full object-cover" loading="lazy" />
+              Anish Pujari
+            </span>
             <span>{formatDate(post.published_at)}</span>
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3" /> {post.read_time} min read

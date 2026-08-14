@@ -19,7 +19,7 @@
 
 ### Reader experience & engagement
 - Bookmarks/reading list ✅
-- Reading progress indicators ✅ *(Phase 56 enhanced with pillar accents)*
+- Reading progress indicators ✅ *(Phase 56 enhanced with pillar accents; Phase 56 also now includes pillar-coloured progress bar and dot)*
 - Continue-reading strips ✅
 - Notifications bell (incl. Lounge reply notifications + deep-link) ✅
 - **Reader Highlights** ✅
@@ -50,10 +50,14 @@
   - Early supporters can read the first 5 published essays fully
   - Badge shown on Account page
 - **Early supporter promo counter** ✅ *(Phase 39)*
-  - Public counter endpoint + homepage urgency banner (“X of 50 spots left”) linking to /auth
+  - Public counter endpoint + homepage urgency banner
   - Hidden for premium members / already early supporters / when spots exhausted
+  - **Reframed when 0 claimed** ✅ *(Phase 60)* to avoid negative social proof
 - **Early bird premium offer (homepage surfaced)** ✅ *(Phase 46 add-on)*
   - Homepage banner links to `/pricing`
+  - **Reframed when 0 claimed** ✅ *(Phase 60)* to avoid “50 of 50” negative social proof
+- **Free sampling to reduce bounce** ✅ *(Phase 60)*
+  - Homepage “Start here, free” strip shows 2–3 strong free essays prominently
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -69,6 +73,9 @@
 - **Streak reminder emails** ✅ *(Phase 41)*
   - 19:00–22:00 IST
   - Guardrails + toggle `streak_reminder`
+- **Email capture conversion improvements** ✅ *(Phase 60)*
+  - Inline hero email capture already present
+  - Added on-page social proof copy under key forms
 
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
@@ -164,10 +171,14 @@
 ### Branding + content readiness
 - Official logo + favicon ✅
 - Author identity normalized ✅
-- Seed data self-healing ✅
 - Catalog publish ✅
+- Seed data self-healing ✅
 - **Pillar branding on About page** ✅ *(Phase 59)*
   - Mascot medallions + lore names and story blurbs
+- **Credibility surfaces throughout site** ✅ *(Phase 60)*
+  - Author strip on homepage
+  - Byline + photo on post cards
+  - Strong author byline on article page
 
 ### Stability
 - Modular backend ✅
@@ -314,7 +325,7 @@
 **57.1 PRODUCTION FIX (live, no redeploy needed):**
 - Root cause of repeated request: preview was fixed but production DB wasn’t synced.
 - Also fixed a cookie-auth regression: `sync.py` expected `token` in production login response.
-- Sync now uses `resp.json().get('token')` OR `resp.cookies.get('ttn_session')` in both `sync_push` and `sync_narrations`.
+- Sync now uses `resp.json().get('token')` OR resp.cookies.get('ttn_session') in both `sync_push` and `sync_narrations`.
 - Ran sync push: **22 production posts updated** (category moves + Phase 53 intros + Phase 54 dash cleanup + ETRM excerpt).
 - Verified via production API: the 3 essays are now `category=lifestyle` (Personal Growth) live.
 
@@ -370,7 +381,40 @@
   - motif backgrounds for continuity
 
 **59.4 Build stability note:**
-- Two `App.js` edit anomalies occurred (duplicate tail + missing route line). Fixed via deterministic python patch. `esbuild` verified.
+- `App.js` edit anomalies occurred (duplicate tail + missing route line). Fixed via deterministic patch. `esbuild` verified.
+
+### Phase 60 — Conversion Feedback Batch ✅ COMPLETED (PREVIEW)
+User request: address external review feedback to reduce bounce + increase trust/conversions.
+
+**60.1 Free reads sampler:**
+- Homepage “Start here, free” section (`home-free-reads-section`) showing 3 strong free essays (preferred order: **ETRM vs CTRM**, **$15B Shipping**, **Boring Portfolio**; falls back to any free tier).
+
+**60.2 Author credibility:**
+- ArticlePage byline upgraded: “By Anish Pujari · 12 years delivering ETRM & trading systems” with avatar fallback to `/anish.jpg`.
+- PostCard meta row: tiny author photo + “Anish Pujari” on every card.
+
+**60.3 Homepage author strip:**
+- Added under hero: photo + credibility line (“ETRM product leader … author of How Trading Can Make You Money”), About link, and LinkedIn newsletter subscribe link.
+
+**60.4 Scarcity reframe:**
+- Early-bird banner hides the counter when 0 claimed (shows “early-bird pricing for the first 50 members” instead of “50 of 50”).
+- Early supporter banner shows counter only when taken > 0 (currently genuine 49/50). Counters reappear automatically once sales/claims exist.
+
+**60.5 Footer:**
+- LinkedIn icon points to real profile (`linkedin.com/in/anish-pujari-69174b6a`).
+- Added “Subscribe on LinkedIn →” (newsletter URL), book mention line, and social proof under newsletter form.
+- Instagram is still generic (`instagram.com`) — **blocked on user handle**.
+
+**60.6 Social proof copy:**
+- “Join 500+ commodity trading professionals” under hero form, home newsletter block, and footer form.
+
+**Already satisfied pre-review:**
+- Inline hero email capture already present.
+- Featured article has a strong visual (cover image + gradient card).
+- Pillar colour coding on cards already implemented.
+- Dark mode toggle already exists.
+
+**Verified:** screenshots for banners, author strip, free reads grid, footer links, and article byline; `esbuild` clean.
 
 ---
 
@@ -387,24 +431,32 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share changes (Phases 55–59 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–60 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar category links show pillar dots
-   - Home “Browse by pillar” banner shows mascot medallion
+   - Home hero: inline email capture + social proof line
+   - Home: new author strip under hero
+   - Home: “Start here, free” section shows 3 free essays
    - `/topics/{pillar}` shows mascot + motif header
-   - Article pages show pillar-tinted badge + progress bar
+   - Article pages show pillar-tinted badge + progress bar and improved author byline
+   - Post cards show author byline + photo
    - `/glossary` exists, is linked in footer, and is included in sitemap
+   - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention
    - `https://thetradingnarrative.com/api/og/{slug}.png` shows the new **v5** chips and mascot medallion
 3. Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
 
-### C) Payments
+### C) Marketing copy accuracy
+- Replace “Join 500+ commodity trading professionals” with a true number as soon as you have it.
+
+### D) Payments
 - “Test mode” strips cannot be removed with code.
 - To remove: switch to LIVE Stripe/Razorpay keys.
 
-### D) Still blocked
+### E) Still blocked
 - PayPal recurring subscriptions: needs credentials + final decision
 - Resend: needs API key + verified sender domain
+- Footer/brand Instagram: needs your real Instagram URL/handle
 
 ---
 
@@ -455,6 +507,13 @@ If you report any issue, confirm whether it is on:
 - About page pillar branding section
 - Finance pillar renamed to “Trading, Business & Finance”
 
+✅ Phase 60 conversion targets addressed (PREVIEW)
+- Free reads prominently shown
+- Author credibility surfaced on cards + article pages + homepage
+- Scarcity copy avoids negative “50 of 50”
+- Footer links corrected (LinkedIn + LinkedIn newsletter) and book mentioned
+- Social proof added under signup
+
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.
 - Gemini usage consumes Emergent LLM credits.
@@ -462,3 +521,4 @@ If you report any issue, confirm whether it is on:
 ⛔ Blockers
 - PayPal: awaiting decisions + credentials.
 - Resend: awaiting decisions + API key + sender domain verification.
+- Instagram: awaiting actual profile URL/handle.

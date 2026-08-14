@@ -452,11 +452,14 @@ export default function ArticlePage() {
             <div className="flex items-center justify-between gap-3 mt-6 flex-wrap">
               <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 border border-border">
-                <AvatarImage src={post.author?.avatar} alt={post.author?.name} />
+                <AvatarImage src={post.author?.avatar || "/anish.jpg"} alt={post.author?.name} />
                 <AvatarFallback>{post.author?.name?.slice(0, 2)}</AvatarFallback>
               </Avatar>
               <div className="text-sm">
-                <div className="font-medium" data-testid="article-author-name">{post.author?.name}</div>
+                <div className="font-medium" data-testid="article-author-name">
+                  By {post.author?.name}
+                  <span className="text-muted-foreground font-normal" data-testid="article-author-credential"> · 12 years delivering ETRM & trading systems</span>
+                </div>
                 <div className="text-muted-foreground text-xs font-mono flex items-center gap-2">
                   <span>{formatDate(post.published_at)}</span>·
                   <span className="inline-flex items-center gap-1" data-testid="article-read-time"><Clock className="h-3 w-3" /> {post.read_time} min read</span>
