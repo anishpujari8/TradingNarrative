@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { api, CATEGORIES, SITE_URL } from "@/lib/api";
-import { pillarAccent, withAlpha, PillarMotif } from "@/lib/pillars";
+import { pillarAccent, withAlpha, PillarMotif, pillarMascot, PILLAR_MASCOT_ALTS } from "@/lib/pillars";
 
 // Topic hubs: original intro copy (200-400 words) per pillar. These pages are the
 // SEO landing surfaces for head terms; each hub links every essay under the theme
@@ -95,17 +95,27 @@ export default function TopicPage() {
         >
           <PillarMotif category={slug} className="h-full w-full" />
         </div>
-        <div className="relative">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: pillarAccent(slug) }}>
-            Topic hub
-          </span>
-          <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 max-w-3xl" data-testid="topic-title">
-            {intro.title}
-          </h1>
-          <div
-            className="h-1 w-16 rounded-full mt-5"
-            style={{ backgroundColor: pillarAccent(slug) }}
-            aria-hidden
+        <div className="relative flex items-center gap-6 sm:gap-10">
+          <div className="min-w-0 flex-1">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: pillarAccent(slug) }}>
+              Topic hub
+            </span>
+            <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 max-w-3xl" data-testid="topic-title">
+              {intro.title}
+            </h1>
+            <div
+              className="h-1 w-16 rounded-full mt-5"
+              style={{ backgroundColor: pillarAccent(slug) }}
+              aria-hidden
+            />
+          </div>
+          <img
+            src={pillarMascot(slug)}
+            alt={PILLAR_MASCOT_ALTS[slug]}
+            className="hidden sm:block h-32 w-32 lg:h-44 lg:w-44 rounded-full object-cover shrink-0 shadow-lg"
+            style={{ border: `3px solid ${withAlpha(pillarAccent(slug), 0.55)}` }}
+            loading="lazy"
+            data-testid={`pillar-mascot-${slug}`}
           />
         </div>
       </div>

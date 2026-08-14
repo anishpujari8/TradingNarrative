@@ -21,6 +21,18 @@ export const PILLAR_TAGLINES = {
 
 export const pillarAccent = (slug) => PILLAR_ACCENTS[slug] || "#1c8570";
 
+// Mascot emblem images generated per pillar (frontend/public/pillars/*.webp):
+// violet circuit owl / teal sparkline bull / amber phoenix / steel-blue albatross
+export const pillarMascot = (slug) =>
+  PILLAR_ACCENTS[slug] ? `/pillars/${slug}.webp` : null;
+
+export const PILLAR_MASCOT_ALTS = {
+  "tech-business": "Tech & AI pillar mascot: an owl with circuit-trace wings",
+  finance: "Business & Finance pillar mascot: a bull with a rising market line",
+  lifestyle: "Personal Growth pillar mascot: a phoenix inside sunrise rings",
+  delivery: "Delivery & Systems pillar mascot: an albatross over a waypoint route",
+};
+
 // hex -> rgba() so components can tint borders/backgrounds at any opacity
 export const withAlpha = (hex, a) => {
   const n = parseInt(hex.slice(1), 16);

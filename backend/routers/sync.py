@@ -90,7 +90,10 @@ async def sync_push(body: SyncPushIn, admin=Depends(get_admin_user)):
     resp = await asyncio.to_thread(_login)
     if resp.status_code != 200:
         raise HTTPException(status_code=401, detail='Production sign-in failed — check the production admin password.')
-    token = resp.json()['token']
+    # cookie-auth era: the session JWT arrives as the httpOnly cookie; older builds returned it in the body
+    token = resp.json().get('token') or resp.cookies.get('ttn_session')
+    if not token:
+        raise HTTPException(status_code=502, detail='Production sign-in succeeded but returned no session.')
     headers = {'Authorization': f'Bearer {token}'}
 
     def _payload(p):
@@ -173,7 +176,10 @@ async def sync_narrations(body: SyncPushIn, admin=Depends(get_admin_user)):
     resp = await asyncio.to_thread(_login)
     if resp.status_code != 200:
         raise HTTPException(status_code=401, detail='Production sign-in failed — check the production admin password.')
-    headers = {'Authorization': f"Bearer {resp.json()['token']}"}
+    token = resp.json().get('token') or resp.cookies.get('ttn_session')
+    if not token:
+        raise HTTPException(status_code=502, detail='Production sign-in succeeded but returned no session.')
+    headers = {'Authorization': f'Bearer {token}'}
 
     # what does production already have cached, and which posts exist there?
     def _prod_narrations():

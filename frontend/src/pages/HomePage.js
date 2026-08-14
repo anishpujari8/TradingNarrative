@@ -10,7 +10,7 @@ import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { api, CATEGORIES, formatDate, SITE_URL, SITE_NAME, getPreferredCurrency, formatINR } from "@/lib/api";
-import { pillarAccent, withAlpha, PillarMotif, PILLAR_TAGLINES } from "@/lib/pillars";
+import { pillarAccent, withAlpha, PillarMotif, PILLAR_TAGLINES, pillarMascot, PILLAR_MASCOT_ALTS } from "@/lib/pillars";
 import { useAuth } from "@/context/AuthContext";
 import { ContinueReading } from "@/components/ContinueReading";
 
@@ -295,20 +295,30 @@ export default function HomePage() {
               <div className="absolute inset-y-0 right-0 w-2/3 sm:w-1/2 pointer-events-none" style={{ color: accent, opacity: 0.18 }}>
                 <PillarMotif category={filter} className="h-full w-full" />
               </div>
-              <div className="relative">
-                <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: accent }}>
-                  Pillar
-                </span>
-                <h3 className="font-serif text-2xl sm:text-3xl font-semibold mt-1">{c?.label}</h3>
-                <p className="text-sm text-muted-foreground mt-1.5 max-w-md">{PILLAR_TAGLINES[filter]}</p>
-                <Link
-                  to={`/topics/${filter}`}
-                  className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
-                  style={{ color: accent }}
-                  data-testid={`pillar-header-hub-link-${filter}`}
-                >
-                  Visit the {c?.label} hub <ArrowRight className="h-4 w-4" />
-                </Link>
+              <div className="relative flex items-center gap-5 sm:gap-8">
+                <div className="min-w-0 flex-1">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: accent }}>
+                    Pillar
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-3xl font-semibold mt-1">{c?.label}</h3>
+                  <p className="text-sm text-muted-foreground mt-1.5 max-w-md">{PILLAR_TAGLINES[filter]}</p>
+                  <Link
+                    to={`/topics/${filter}`}
+                    className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
+                    style={{ color: accent }}
+                    data-testid={`pillar-header-hub-link-${filter}`}
+                  >
+                    Visit the {c?.label} hub <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+                <img
+                  src={pillarMascot(filter)}
+                  alt={PILLAR_MASCOT_ALTS[filter]}
+                  className="hidden sm:block h-24 w-24 lg:h-28 lg:w-28 rounded-full object-cover shrink-0 shadow-md"
+                  style={{ border: `3px solid ${withAlpha(accent, 0.55)}` }}
+                  loading="lazy"
+                  data-testid={`pillar-mascot-home-${filter}`}
+                />
               </div>
             </div>
           );
