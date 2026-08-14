@@ -201,7 +201,7 @@ export default function ArticlePage() {
     const { text } = selInfo;
     setSelInfo(null);
     try { window.getSelection()?.removeAllRanges(); } catch (e) { console.debug("selection clear failed", e); }
-    setShareSel({ text, post_title: post.title, category_label: post.category_label });
+    setShareSel({ text, post_title: post.title, category_label: post.category_label, category: post.category });
   };
 
   const renderWithHighlights = (text, blockIndex) => {

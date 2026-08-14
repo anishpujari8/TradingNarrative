@@ -504,9 +504,47 @@ Verified:
 - Both appear in dynamic sitemap
 - `/api/share/{slug}` emits keyword-rich meta descriptions
 - OG cards render correctly (pillar palette + motif)
-- Admin tracker returns 9 keywords
+- Admin tracker returns seeded keywords
 - Frontend renders new essays; related-post cross-links appear via overlapping tags
 - Metered paywall behavior on anonymous identities is expected (not a bug)
+
+### Phase 54 — Pillar Identity + Dash Cleanup + New SEO Essays + Quote Card Motifs ✅ COMPLETED (PREVIEW)
+
+#### 54.1 “Pillar color not showing on live site” investigation ✅
+- Confirmed **NOT a CSS issue**: pillar cards are server-rendered PNGs at `GET /api/og/{slug}.png`.
+- Verified production is serving the v3 pillar cards (byte-identical to preview; direct URL checks confirm).
+- Root cause of user perception: LinkedIn/X/WhatsApp cache old previews. Recommended LinkedIn Post Inspector to force re-scrape.
+
+#### 54.2 Dash cleanup ✅
+- Removed remaining mid-paragraph em/en dashes from essays (e.g., `60–90` → `60 to 90`).
+- Rephrased one em-dash excerpt line in the ETRM essay.
+- Applied in **DB + `seed_data.py`**.
+- Verified: **zero em/en dashes remain** in excerpts and bodies.
+- Intentionally kept correct compound-word hyphens (e.g., “day-ahead”, “plain-English”).
+
+#### 54.3 New SEO glossary: Laytime ✅
+- New free essay added to `REAL_POSTS`:
+  - `what-is-laytime-in-shipping-the-clock-that-decides-demurrage`
+  - Answer-first, includes NOR, berth vs port, exceptions/pauses, despatch, “once on demurrage always on demurrage” framing, and internal links to demurrage cluster.
+- Verified: renders, appears in sitemap.
+
+#### 54.4 New SEO glossary: TC/RC ✅
+- New free essay added to `REAL_POSTS`:
+  - `what-does-tc-rc-mean-in-metals-trading-treatment-and-refining-charges-explained`
+  - Expanded from Lounge TC/RC sign-flip take; includes negative TC/RC explanation and CTRM modelling warning.
+- Verified: full content for signed-in users; appears in sitemap.
+
+#### 54.5 Quote card accents + motifs ✅
+- `QuoteCardDialog.js` updated to mirror pillar identity:
+  - Pillar accent palette (violet/teal/amber/steel blue)
+  - Signature background motifs per pillar (circuits / sparkline / sunrise arcs / route)
+  - Motifs drawn at low opacity behind quotes to preserve legibility
+- `ArticlePage` now passes `post.category` into quote share payload.
+- Verified visually: all 4 pillar variants captured in browser; motifs + accents correct.
+
+**Important production note (Phase 54):**
+- New essays + quote card changes require a redeploy to appear in production.
+- Dash cleanup for already-published production posts requires **Admin → Content Sync → Update Mode** (same as Phase 53 intro updates).
 
 ---
 
@@ -518,15 +556,21 @@ If you report any issue, confirm whether it is on:
 - **Production** (https://thetradingnarrative.com)
 
 ### B) SEO execution (next 2 weeks)
-1. **Production push for snippet-ready intros**
-   - Run Admin Content Sync (Update Mode) to apply the 4 intro updates to production.
-2. **Resubmit sitemap**
+1. **Production push for snippet-ready intros + dash cleanup**
+   - Run **Admin → Content Sync (Update Mode)** to apply:
+     - Phase 53 answer-first intro updates
+     - Phase 54 dash cleanup updates
+2. **Redeploy to ship new SEO pages + quote-card motifs**
+   - Redeploy to get:
+     - Laytime essay
+     - TC/RC explainer
+     - Quote card pillar accents + motifs
+3. **Resubmit sitemap**
    - In Google Search Console: resubmit `https://thetradingnarrative.com/sitemap.xml`.
-3. **Seed tracker with real data weekly**
-   - Every week, add positions/clicks/impressions for the 9 keywords (new `noted_on`).
-4. **Next content targets (Tier 2 remaining gaps)**
-   - `what is laytime in shipping`
-   - `what does tc/rc mean in metals trading` (public explainer; Lounge take is premium)
+4. **Seed tracker with real data weekly**
+   - Every week, add positions/clicks/impressions for seeded keywords (new `noted_on`).
+5. **Social preview cache refresh**
+   - Use LinkedIn Post Inspector to re-scrape key URLs (platform cache can mask changes).
 
 ### C) Payments
 - “Test mode” banners cannot be removed with code.
@@ -543,7 +587,7 @@ If you report any issue, confirm whether it is on:
 ✅ Stripe checkout works.
 ✅ Razorpay checkout works.
 ✅ Email sending is LIVE with unsubscribe + digest systems.
-✅ Highlights system complete.
+✅ Highlights system complete (including shareable quote cards).
 ✅ Admin analytics complete.
 ✅ Narration ops are self-serve and hardened.
 ✅ AI features work (writing assistant + ask-essay).
@@ -567,6 +611,12 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros implemented for Tier 1 targets
 - Two new free SEO essays published via `REAL_POSTS` and verified in sitemap/share/OG
 - Baseline keyword tracker seeded and visible in Admin
+
+✅ Phase 54 success targets met (PREVIEW)
+- Live pillar-card “missing CSS” concern debunked (cards are server PNGs; production verified)
+- All mid-paragraph em/en dashes removed from excerpts/bodies (DB + seed)
+- Laytime + TC/RC public SEO essays added and verified
+- Quote cards updated to match pillar colour + motif identity and verified visually
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

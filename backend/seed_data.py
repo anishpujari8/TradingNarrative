@@ -342,7 +342,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'Demurrage surprises. Global demurrage costs exceed $15 billion annually. The majority '
                      'of demurrage disputes arise not because the detention happened but because the trading '
                      'firm did not know it was accruing in real time. By the time the invoice arrives, '
-                     '60–90 days after the event, facts are disputed, documentation is missing, and '
+                     '60 to 90 days after the event, facts are disputed, documentation is missing, and '
                      'settlement drags for months.',
                      'Position miscalculation. Traders hold physical positions against paper hedges. If a '
                      'vessel is delayed by three days and the operations team does not know until Day 2, the '
@@ -379,7 +379,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'A vessel loading 50,000 MT of crude at a terminal running behind rate accrues '
                      'demurrage at $35,000 per day. Knowing this in real time changes what the operations '
                      'team does next. Finding out on the invoice 60 days later does not.',
-                     'Layer 4, Document Management and AI Extraction. A single bulk cargo generates 40–80 '
+                     'Layer 4, Document Management and AI Extraction. A single bulk cargo generates 40 to 80 '
                      'documents across the voyage lifecycle. AI-enhanced OCR and large language models '
                      'extract structured data from these documents automatically, reading a statement of '
                      'facts in any port agent format, pulling the NOR tendering time, loading commencement, '
@@ -400,20 +400,20 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'pilot, not theoretical.',
                      'AI ETA Prediction. Vessel-reported ETAs are consistently inaccurate. AI models trained '
                      'on historical AIS tracks, port congestion data, weather routing, canal wait times, and '
-                     'vessel-specific performance produce ETAs that are 30–50% more accurate than what the '
+                     'vessel-specific performance produce ETAs that are 30 to 50% more accurate than what the '
                      'crew reports. For hedge roll decisions and terminal planning, that accuracy difference '
                      'is material.',
                      'Demurrage Prediction. AI models trained on historical demurrage claims, port '
                      'congestion patterns, and charter party terms score every shipment for demurrage '
                      'probability before the voyage begins. In a portfolio of 50 active shipments, the model '
-                     'identifies the 8–10 voyages above 70% probability, allowing the team to intervene '
+                     'identifies the 8 to 10 voyages above 70% probability, allowing the team to intervene '
                      'specifically rather than monitoring all 50 equally.',
                      'LLM Document Extraction. Traditional OCR extracts text. Large language models '
                      'understand context. An LLM trained on commodity trade documents reads a statement of '
                      'facts from any port agent in any format, extracts the laytime events with their '
                      'timestamps, identifies the relevant charter party clauses, and generates a first-draft '
                      'demurrage claim ready for human review. Time from voyage completion to demurrage claim '
-                     'submission: from 4–6 weeks to 3–5 days. The cash flow impact is direct, claims '
+                     'submission: from 4 to 6 weeks to 3 to 5 days. The cash flow impact is direct, claims '
                      'submitted earlier have higher acceptance rates.',
                      'Vessel Risk and Sanctions Intelligence. AI-powered vessel risk scoring analyses '
                      'complete AIS history, port call patterns, beneficial ownership chains, flag state '
@@ -430,7 +430,7 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'feed auto-updating CTRM in real time.',
                      'Laytime calculation, most firms today: post-voyage, Excel, manual. What is required: '
                      'real-time engine from the NOR timestamp.',
-                     'Demurrage accrual, most firms today: 60–90 day invoice lag. What is required: live '
+                     'Demurrage accrual, most firms today: 60 to 90 day invoice lag. What is required: live '
                      'accrual on daily P&L.',
                      'Document management, most firms today: email filing, manual entry. What is required: '
                      'OCR/LLM extraction, auto-reconciled.',
@@ -444,15 +444,15 @@ REAL_POSTS = [{'slug': 'five-things-commodity-desks-need-to-know-this-week',
                      'between two systems remains the most common point of failure.',
                      '## Where to Start',
                      'Do not try to implement all five layers at once. The sequence matters.',
-                     'Months 1–3: Subscribe to an AIS provider. Connect vessel position data to your CTRM '
+                     'Months 1 to 3: Subscribe to an AIS provider. Connect vessel position data to your CTRM '
                      'shipment records. Automatic ETA updates. This single step eliminates the most basic '
                      'visibility gap at relatively low cost and effort.',
-                     'Months 3–6: Implement a digital laytime calculation engine. Real-time demurrage '
+                     'Months 3 to 6: Implement a digital laytime calculation engine. Real-time demurrage '
                      'accrual visible on P&L daily. This is where the largest immediate financial return '
                      'sits.',
-                     'Months 6–12: Implement OCR document extraction for statements of facts and bills of '
+                     'Months 6 to 12: Implement OCR document extraction for statements of facts and bills of '
                      'lading. AI enhancement for ETA prediction and demurrage probability scoring.',
-                     'Months 12–24: Close the full loop, outturn feedback to position, automated settlement '
+                     'Months 12 to 24: Close the full loop, outturn feedback to position, automated settlement '
                      'instructions, regulatory data auto-population, vessel risk screening at deal booking.',
                      'The most important principle: AI on top of clean, structured freight data delivers '
                      'transformation. AI on top of a spreadsheet delivers a more sophisticated spreadsheet. '
@@ -1041,7 +1041,7 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
     "futures should trade 24/7. If your ETRM's end-of-day batch assumes markets close, that question just got "
     "personal. Let's get into it.",
     '## 🛢️ Oil & Gas: geopolitical premium deflates fast: Brent tracks toward a roughly 8% weekly loss',
-    'Brent slid to the $83–84/bbl area early this week, dropping about 5% on Monday alone after President Trump '
+    'Brent slid to the $83 to 84/bbl area early this week, dropping about 5% on Monday alone after President Trump '
     'announced that peace talks with Iran would resume following a cancelled military strike. That unwinds much '
     "of July's 20%+ surge, though residual Strait of Hormuz and Red Sea disruption risk is still putting a floor "
     'under prices.',
@@ -1057,7 +1057,7 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
     'Sources: Reuters via Trading Economics; Bloomberg; Rigzone; Egypt Oil & Gas; EIA Natural Gas Weekly Update; '
     'Forbes Advisor.',
     "## ⛏️ Metals: copper's split personality: record-tight concentrates, firm exchange prices",
-    'Copper finished last week up about 2% (and roughly 4% on the month), trading around $6.45–6.52/lb on COMEX, '
+    'Copper finished last week up about 2% (and roughly 4% on the month), trading around $6.45 to 6.52/lb on COMEX, '
     'supported by the Fed holding rates steady. But the real story is upstream: spot copper concentrate TC/RCs '
     'have fallen so far that some deals have turned negative, smelters effectively paying miners for the right '
     'to process ore. Chinese-led smelting capacity is expanding faster than mine supply, handing miners '
@@ -1102,7 +1102,7 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
     'Sources: RegTech Analyst; FinTech Global; A-Team Insight; openPR/ResearchAndMarkets.',
     '## 🌾 Ags: grains firm into the August 12 USDA report; wheat leads on Black Sea risk',
     'CBOT September wheat settled around 651¢/bu Monday, up from ~639¢ at Friday\'s close, with September corn '
-    'near 449¢ (up ~8–9¢) and August soybeans easing slightly to ~1,169¢. Wheat is drawing support from strong '
+    'near 449¢ (up ~8 to 9¢) and August soybeans easing slightly to ~1,169¢. Wheat is drawing support from strong '
     'export demand and renewed Black Sea disruption, Ukrainian strikes have kept Russian shipments out of the '
     'Azov Sea, while the US harvest is roughly three-quarters complete after rain delays in Texas. Soybeans '
     'found support from a 9.3-million-bushel flash sale to unknown destinations for 2026-27 delivery, widely '
@@ -1132,7 +1132,7 @@ REAL_POSTS += [{'slug': 'oil-s-sharp-slide-opec-completes-the-rollback-and-smelt
 # with existing essays so the related-posts engine cross-links them automatically.
 REAL_POSTS += [{'slug': 'etrm-vs-ctrm-whats-the-difference-and-which-one-do-you-actually-need',
   'title': "ETRM vs CTRM: What's the Difference, and Which One Do You Actually Need?",
-  'excerpt': 'ETRM software manages energy trading — power, gas, oil — while CTRM covers the full physical '
+  'excerpt': 'ETRM software manages energy trading across power, gas, and oil, while CTRM covers the full physical '
              'commodity lifecycle including metals, agriculture, and freight. A plain-English comparison '
              'from twelve years of delivering both, with a practical checklist for choosing.',
   'category': 'finance',
@@ -1258,4 +1258,111 @@ REAL_POSTS += [{'slug': 'what-is-demurrage-vs-detention-a-plain-english-guide-fo
     'Shipping Industry Is Sitting on a $15 Billion Problem", which covers why the industry tolerates '
     'it and what the desks solving it are doing differently. The short version applies here too: the '
     'cheapest demurrage day is the one your systems saw coming a week early.',
+  ]}]
+
+# Phase 54 SEO essays: laytime glossary (completes the demurrage cluster) and a public
+# TC/RC explainer expanded from the premium Lounge take so the query can actually rank.
+REAL_POSTS += [{'slug': 'what-is-laytime-in-shipping-the-clock-that-decides-demurrage',
+  'title': 'What Is Laytime in Shipping? The Clock That Decides Demurrage',
+  'excerpt': 'Laytime is the amount of time a charterparty allows for loading or discharging cargo before '
+             'demurrage starts to accrue. How the clock starts, what pauses it, and why the wording of a '
+             'laytime clause decides more P&L than most desks realise.',
+  'category': 'finance',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1605745341112-85968b19335b?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['Laytime', 'Shipping', 'Demurrage', 'Logistics', 'Commodities'],
+  'featured': False,
+  'content_blocks': [
+    'Laytime is the period of time a charterparty grants the charterer to load or discharge cargo '
+    'before demurrage begins to accrue. It is negotiated up front, expressed in days, hours, or as a '
+    'loading rate per day, and it is the single clause that decides whether a voyage ends with a '
+    'demurrage invoice or a despatch credit. If demurrage is the penalty, laytime is the clock the '
+    'penalty runs on.',
+    'Most people meet laytime backwards: an invoice arrives claiming the vessel sat beyond its allowed '
+    'time, and someone in operations is asked to check whether the claim is right. Checking it means '
+    'answering three questions. When did the clock start? What paused it? When did it stop? Each '
+    'question has a precise contractual answer, and each answer is worth money.',
+    '## When the clock starts',
+    'Laytime does not start when the vessel arrives. It usually starts after three conditions are met: '
+    'the vessel has become an arrived ship at the agreed destination, she is physically ready to load '
+    'or discharge, and the master has tendered a valid Notice of Readiness. Charterparties then add a '
+    'notice period, for example laytime commencing a fixed number of hours after the notice is '
+    'tendered or at the next working period. A Notice of Readiness tendered prematurely, from the '
+    'wrong location, or when the vessel is not truly ready can be invalid, and an invalid notice can '
+    'mean the clock never legally started. Entire demurrage claims collapse on this point.',
+    '## What pauses the clock',
+    'This is where charterparty wording earns its keep. Weather working days exclude periods when '
+    'weather prevents cargo operations. Shore strikes, port congestion, shifting between berths, and '
+    'time waiting for documents may or may not count depending on the exact exceptions negotiated. '
+    'The famous distinction between a berth charterparty and a port charterparty decides who owns '
+    'congestion risk: under a berth charter the clock generally waits for the berth, under a port '
+    'charter the waiting time is usually the charterer\'s problem.',
+    '## When the clock stops',
+    'Laytime ends when cargo operations complete, and what happens next depends on which side of the '
+    'line you land. If operations finished inside the allowed time, many charterparties pay the '
+    'charterer despatch, commonly at half the demurrage rate, for the time saved. If operations ran '
+    'over, demurrage accrues at the negotiated daily rate, and under the once on demurrage, always on '
+    'demurrage principle, most exceptions that would have paused laytime no longer help you.',
+    '## Why this matters to a commodity desk',
+    'Laytime terms are P&L, not paperwork. A desk that fixes vessels on terms mismatched to its '
+    'terminals, or that cannot produce clean timestamps for notice, berthing, and completion, is '
+    'donating margin to counterparties with better records. The desks that treat statements of fact '
+    'as data to be captured and reconciled, rather than PDFs to be filed, consistently settle claims '
+    'faster and closer to the true number.',
+    'I cover the wider cost of weak logistics data in two related essays: the demurrage and detention '
+    'guide, and the essay on the shipping industry\'s $15 billion demurrage problem. The thread '
+    'connecting all three is the same: in shipping, the party with the better timeline wins the '
+    'argument, and the timeline is built long before anyone disputes it.',
+  ]}]
+
+REAL_POSTS += [{'slug': 'what-does-tc-rc-mean-in-metals-trading-treatment-and-refining-charges-explained',
+  'title': 'What Does TC/RC Mean in Metals Trading? Treatment and Refining Charges Explained',
+  'excerpt': 'TC/RC stands for treatment and refining charges: the fees a smelter charges a miner to convert '
+             'concentrate into refined metal. Why the benchmark moves, what negative TC/RCs mean, and why '
+             'trading systems get the sign flip wrong.',
+  'category': 'finance',
+  'tier': 'free',
+  'cover_image': 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1600&q=80&auto=format&fit=crop',
+  'tags': ['TC/RC', 'Metals', 'Copper', 'Commodities', 'CTRM'],
+  'featured': False,
+  'content_blocks': [
+    'TC/RC stands for treatment charge and refining charge: the fees a smelter charges a miner or '
+    'trader for converting raw concentrate into refined metal. The treatment charge is quoted per '
+    'tonne of concentrate and the refining charge per pound or ounce of contained metal, and together '
+    'they are the price of smelting capacity. In a concentrates deal, the miner is paid the metal '
+    'value of the shipment minus the TC/RC, which makes these two numbers some of the most fought '
+    'over lines in any offtake negotiation.',
+    'TC/RCs matter beyond individual deals because they are a barometer for the balance of power '
+    'between mines and smelters. When concentrate is plentiful and smelting capacity is tight, '
+    'smelters charge more and TC/RCs rise. When mines underdeliver and smelters are hungry for feed, '
+    'TC/RCs fall. Annual benchmark negotiations between major miners and large smelters set a '
+    'reference the rest of the market trades around, while the spot market shows where the balance '
+    'sits right now.',
+    '## How the mechanics work in a deal',
+    'Take a copper concentrate cargo. The buyer, usually a smelter or a trader selling on to one, '
+    'pays for the copper contained in the concentrate at the market price, applies payable metal '
+    'terms since not every unit of metal is recoverable, and then deducts the treatment charge and '
+    'the refining charge. Byproduct credits for gold and silver, and penalties for impurities like '
+    'arsenic, adjust the final number. The TC/RC deduction is how the smelter earns its margin '
+    'without taking a view on the metal price itself.',
+    '## What negative TC/RCs mean',
+    'Normally TC/RCs are a deduction from the miner\'s proceeds. But when concentrate becomes scarce '
+    'enough, spot TC/RCs can go negative, which means smelters are effectively paying miners for the '
+    'right to process their ore just to keep furnaces running. It sounds impossible until you '
+    'remember a smelter\'s worst outcome is idle capacity: fixed costs run whether or not feed '
+    'arrives. Negative spot TC/RCs signal severe concentrate tightness and squeeze smelter margins '
+    'hard, which is exactly why the market watches the number so closely.',
+    '## The system problem nobody tests until it bites',
+    'Here is the operational trap I flagged to premium readers when spot copper TC/RCs first flipped '
+    'negative: many CTRM systems hard-code TC/RC as a deduction. The formula assumes the number is '
+    'always subtracted from the miner\'s payable. Feed a negative TC/RC into a system built on that '
+    'assumption and it will quietly subtract a negative, doubling the error instead of flipping the '
+    'direction of payment. Settlement, provisional invoicing, and mark to market can all inherit the '
+    'mistake. If your desk touches concentrates, test the sign flip in your trading system before '
+    'your next deal prices, not after.',
+    '## The takeaway',
+    'TC/RC is three things at once: a fee in a contract, a market signal about the mine and smelter '
+    'balance, and a modelling assumption buried in your trading system. Desks that treat it only as '
+    'the first regularly get surprised by the second and burned by the third. The number is small '
+    'relative to the metal price, but concentrates books live and die on exactly these terms.',
   ]}]

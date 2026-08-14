@@ -1,26 +1,26 @@
 [
   {
-    "content": "Explore post schema/seeding + SEO tracker schema",
+    "content": "Verify pillar-coloured cards on production + explain (no CSS involved)",
     "status": "completed"
   },
   {
-    "content": "Snippet-ready intros for 4 Tier 1 essays (answer-first openings)",
+    "content": "Remove mid-paragraph dashes from all essays (DB + seed_data.py)",
     "status": "completed"
   },
   {
-    "content": "Write + publish 'ETRM vs CTRM' comparison essay (free tier)",
+    "content": "Publish 'What Is Laytime in Shipping' essay (free, REAL_POSTS)",
     "status": "completed"
   },
   {
-    "content": "Write + publish 'Demurrage vs Detention' glossary essay (free tier, links to $15B piece)",
+    "content": "Publish public TC/RC explainer from Lounge take (free, REAL_POSTS)",
     "status": "completed"
   },
   {
-    "content": "Seed Tier 1 + Tier 2 keywords into Search Rank Tracker",
+    "content": "Quote card accents: pillar colours + motifs in highlight quote cards",
     "status": "completed"
   },
   {
-    "content": "Verify: API reads, meta descriptions, sitemap inclusion, admin tracker UI",
+    "content": "Verify everything + screenshots",
     "status": "completed"
   }
 ]

@@ -7,6 +7,95 @@ import { toast } from "sonner";
 const CARD_W = 1200;
 const CARD_H = 630;
 
+// Pillar accents + signature motifs, mirroring the backend OG share cards
+// (services/og_service.py) so every shared artifact carries the pillar identity.
+const PILLAR_ACCENTS = {
+  "tech-business": "#7a73e8", // violet — Tech & AI
+  finance: "#1c8570", // brand teal — Business & Finance
+  lifestyle: "#c4872e", // warm amber — Personal Growth
+  delivery: "#3f7cc4", // steel blue — Delivery & Systems
+};
+
+const bezier = (p0, p1, p2, n = 120) => {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    pts.push([
+      (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t ** 2 * p2[0],
+      (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t ** 2 * p2[1],
+    ]);
+  }
+  return pts;
+};
+
+// Each motif is drawn in the pillar accent at low opacity so the quote stays king.
+const drawMotif = (ctx, category, accent) => {
+  ctx.save();
+  ctx.strokeStyle = accent;
+  ctx.fillStyle = accent;
+  ctx.lineWidth = 2;
+  if (category === "finance") {
+    // ascending sparkline along the lower canvas
+    const pts = [[70, 588], [200, 548], [330, 566], [460, 500], [590, 524], [720, 456], [850, 478], [980, 404], [1130, 430]];
+    ctx.globalAlpha = 0.16;
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+    ctx.globalAlpha = 0.22;
+    pts.forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill(); });
+  } else if (category === "tech-business") {
+    // circuit traces with solder pads (top-right + bottom-left)
+    const traces = [
+      [[880, 84], [1030, 84], [1064, 118], [1064, 240]],
+      [[1128, 300], [1128, 430], [1094, 464], [960, 464]],
+      [[70, 566], [300, 566], [334, 532], [520, 532]],
+    ];
+    ctx.globalAlpha = 0.18;
+    for (const tr of traces) {
+      ctx.beginPath();
+      tr.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.stroke();
+      const [sx, sy] = tr[0];
+      const [ex, ey] = tr[tr.length - 1];
+      for (const [x, y] of [[sx, sy], [ex, ey]]) {
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  } else if (category === "lifestyle") {
+    // sunrise arcs radiating from the top-right corner
+    ctx.globalAlpha = 0.15;
+    for (let r = 90; r <= 420; r += 66) {
+      ctx.beginPath();
+      ctx.arc(1180, -40, r, Math.PI * 0.48, Math.PI * 1.02);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.3;
+    for (const [x, y] of [[1000, 300], [1090, 386], [906, 224]]) {
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (category === "delivery") {
+    // dashed route with ringed waypoints and destination
+    const path = bezier([80, 580], [620, 660], [1130, 140], 140);
+    ctx.globalAlpha = 0.2;
+    ctx.setLineDash([14, 12]);
+    ctx.beginPath();
+    path.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.28;
+    for (const t of [0, 0.35, 0.7]) {
+      const [x, y] = path[Math.round(t * (path.length - 1))];
+      ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+    const [dx, dy] = path[path.length - 1];
+    ctx.beginPath(); ctx.arc(dx, dy, 10, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(dx, dy, 3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+};
+
 const wrapText = (ctx, text, maxWidth) => {
   const words = text.split(" ");
   const lines = [];
@@ -34,11 +123,12 @@ const drawCard = (canvas, highlight) => {
   const paper = "#f7f5f0";
   const ink = "#14181f";
   const muted = "#6b7280";
-  const accent = "#1c8570";
+  const accent = PILLAR_ACCENTS[highlight.category] || "#1c8570";
 
   // background + frame
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
+  drawMotif(ctx, highlight.category, accent);
   ctx.strokeStyle = "rgba(20,24,31,0.12)";
   ctx.lineWidth = 2;
   ctx.strokeRect(28, 28, CARD_W - 56, CARD_H - 56);
