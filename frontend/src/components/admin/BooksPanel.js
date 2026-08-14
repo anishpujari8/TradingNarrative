@@ -5,21 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, Trash2, Plus, BookOpen } from "lucide-react";
 import { api } from "@/lib/api";
 
-const EMPTY = { title: "", author: "Anish Pujari", description: "", cover_image: "", buy_url: "", featured: false, sort: 0 };
+const EMPTY = { title: "", author: "Anish Pujari", description: "", cover_image: "", buy_url: "", featured: false, sort: 0, related_slug: "", related_title: "" };
 
 // Admin bookshelf manager: add/edit/delete the recommendations shown at /books.
 export const BooksPanel = () => {
   const [books, setBooks] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const load = () => api.get("/books").then((r) => setBooks(r.data.books)).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    api.get("/posts?limit=100").then((r) => setPosts(r.data.posts || [])).catch(() => {});
+  }, []);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e?.target ? e.target.value : e });
 
@@ -49,7 +54,7 @@ export const BooksPanel = () => {
 
   const edit = (b) => {
     setEditingId(b.id);
-    setForm({ title: b.title, author: b.author, description: b.description || "", cover_image: b.cover_image || "", buy_url: b.buy_url, featured: !!b.featured, sort: b.sort || 0 });
+    setForm({ title: b.title, author: b.author, description: b.description || "", cover_image: b.cover_image || "", buy_url: b.buy_url, featured: !!b.featured, sort: b.sort || 0, related_slug: b.related_slug || "", related_title: b.related_title || "" });
   };
 
   const remove = async (b) => {
@@ -93,6 +98,31 @@ export const BooksPanel = () => {
             <Label>Buy link (Amazon)</Label>
             <Input value={form.buy_url} onChange={set("buy_url")} placeholder="https://www.amazon.in/dp/..." data-testid="admin-book-buyurl-input" />
           </div>
+          <div className="space-y-1.5">
+            <Label>Reading Notes essay (optional)</Label>
+            <Select
+              value={form.related_slug || "none"}
+              onValueChange={(v) => {
+                if (v === "none") {
+                  setForm({ ...form, related_slug: "", related_title: "" });
+                } else {
+                  const p = posts.find((x) => x.slug === v);
+                  setForm({ ...form, related_slug: v, related_title: p?.title || "" });
+                }
+              }}
+            >
+              <SelectTrigger data-testid="admin-book-related-select">
+                <SelectValue placeholder="Link a related essay" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="none">No linked essay</SelectItem>
+                {posts.map((p) => (
+                  <SelectItem key={p.slug} value={p.slug}>{p.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Adds a "Reading Notes" link on the book card pointing to your essay.</p>
+          </div>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Switch checked={form.featured} onCheckedChange={(v) => setForm({ ...form, featured: v })} data-testid="admin-book-featured-switch" />
@@ -134,6 +164,9 @@ export const BooksPanel = () => {
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-medium truncate">{b.title}{b.featured ? " ★" : ""}</div>
                 <div className="text-xs text-muted-foreground truncate">by {b.author}</div>
+                {b.related_title && (
+                  <div className="text-xs text-accent truncate" data-testid={`admin-book-related-${b.id}`}>Notes: {b.related_title}</div>
+                )}
               </div>
               <Button size="icon" variant="ghost" onClick={() => edit(b)} aria-label={`Edit ${b.title}`} data-testid={`admin-book-edit-${b.id}`}>
                 <Pencil className="h-4 w-4" />

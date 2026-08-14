@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ExternalLink, BookOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -91,6 +92,16 @@ export default function BooksPage() {
                     Buy on Amazon <ExternalLink className="h-4 w-4" />
                   </Button>
                 </a>
+                {b.related_slug && (
+                  <Link
+                    to={`/post/${b.related_slug}`}
+                    className="mt-3 inline-flex items-center justify-center gap-1.5 text-sm text-accent hover:text-accent/80 font-medium transition-colors duration-150"
+                    title={b.related_title ? `Read: ${b.related_title}` : "Read the related essay"}
+                    data-testid={`book-reading-notes-${b.id}`}
+                  >
+                    Reading Notes <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                )}
               </div>
             </article>
           ))}

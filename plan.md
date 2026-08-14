@@ -58,6 +58,8 @@
   - **Reframed when 0 claimed** ✅ *(Phase 60)* to avoid “50 of 50” negative social proof
 - **Free sampling to reduce bounce** ✅ *(Phase 60)*
   - Homepage “Start here, free” strip shows 2–3 strong free essays prominently
+- **Bookshelf → Archive linking (“Reading Notes”)** ✅ *(Phase 63)*
+  - Each book can optionally link to a related essay in the archive.
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -128,6 +130,7 @@
   - Early Bird Premium offer ✅
 - **Bookshelf Admin Panel** ✅ *(Phase 62)*
   - Manage `/books` recommendations (add/edit/delete)
+  - Link a book to an essay via the “Reading Notes” picker ✅ *(Phase 63)*
 
 ### Community (Premium Lounge)
 - Private Community Lounge ✅
@@ -186,6 +189,16 @@
   - Strong author byline on article page
 - **Book showcase on About page** ✅ *(Phase 61)*
 - **Dedicated Books page + Admin bookshelf** ✅ *(Phase 62)*
+
+### Navigation + information architecture
+- Navbar includes primary site sections ✅
+- **Pillars nav dropdown (desktop)** ✅ *(Phase 63)*
+  - Replaced the 4 pillar links with a single **“Pillars”** trigger.
+  - Opens on **hover** (with 150ms close grace) and remains click/keyboard accessible.
+  - Dropdown items show pillar color dot + pillar label + tagline.
+  - Trigger highlights when on `/category/*` pages.
+  - All other nav links remain **single-line** via `whitespace-nowrap` and are vertically centered (no wrapping).
+- Mobile sheet nav groups pillars under a **“Pillars”** label ✅ *(Phase 63)*
 
 ### Stability
 - Modular backend ✅
@@ -483,6 +496,54 @@ User request: dedicated `/books` page with scalable recommendations managed from
 
 **Requires redeploy:** to ship live (seed will self-heal into production on startup).
 
+### Phase 63 — Pillars Dropdown Nav + Books “Reading Notes” Links ✅ COMPLETED (PREVIEW)
+User request: streamline navbar + make book shelf feed the archive.
+
+**63.1 Pillars dropdown (Navbar desktop):**
+- Replaced the four desktop pillar links with a single **“Pillars”** trigger (`data-testid="nav-pillars-trigger"`).
+- Implemented with shadcn **DropdownMenu** using controlled open state:
+  - Opens on **hover**.
+  - Closes with a **150ms grace** (prevents accidental close when moving into menu).
+  - Remains click/keyboard accessible.
+- Dropdown entries show:
+  - Pillar colour dot (`pillarAccent`)
+  - Pillar label (`CATEGORIES`)
+  - Tagline (from `PILLAR_TAGLINES`)
+- Trigger highlights automatically when on `/category/*` pages.
+- All other nav links remain **single-line** and vertically centered (no more wrapping) via `whitespace-nowrap`.
+
+**63.2 Pillars in mobile Sheet nav:**
+- Pillars remain a list but are grouped under a **“Pillars”** label.
+- All other mobile links unchanged.
+
+**63.3 Book “Reading Notes →” links (Books → related essay):**
+- Backend `books.py`:
+  - Added optional fields: `related_slug`, `related_title` to `BookIn`.
+  - Included fields in public serializer `_public()`.
+  - Seed book updated to include:
+    - `related_slug`: `the-boring-portfolio-that-beats-your-broker`
+    - `related_title`: `The Boring Portfolio That Beats Your Broker`
+- Admin `BooksPanel.js`:
+  - Added “Reading Notes essay (optional)” **Select** fed from `GET /posts?limit=100`.
+  - Persisted into book record: `related_slug` + `related_title`.
+  - Shelf rows show `Notes: {related_title}` when set.
+- Frontend `BooksPage.js`:
+  - Renders “Reading Notes →” link to `/post/{related_slug}` under the Buy button when configured.
+
+**63.4 Verification / QA:**
+- Frontend build: `esbuild` clean.
+- Backend API smoke:
+  - Authenticated PUT/GET with new fields: **200**
+  - Unauthenticated PUT: **401**
+- Playwright verification:
+  - Hover open/close + click navigation works for Pillars dropdown.
+  - Admin picker saves and persists.
+  - Mobile sheet layout verified.
+- Seeded book’s **Preview DB record** now links to the essay.
+
+**Requires redeploy:** to ship UI changes to production.
+**Optional:** books DB data can be synced Preview → Production using the existing sync tool/endpoint (content-only), without redeploy.
+
 ---
 
 ## 3) Next Actions
@@ -498,10 +559,11 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–62 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–63 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
-   - Navbar category links show pillar dots; navbar includes “Books”.
+   - Navbar: “Pillars” dropdown works; items don’t wrap; hover-open works on desktop.
+   - Navbar: still includes “Books”, “Archive”, “Briefings”, “Lounge”, “About”.
    - Home hero: inline email capture + social proof line.
    - Home: author strip under hero.
    - Home: “Start here, free” section shows 3 free essays.
@@ -510,6 +572,7 @@ If you report any issue, confirm whether it is on:
    - Post cards show author byline + photo.
    - `/glossary` exists, is linked in footer, and is included in sitemap.
    - `/books` exists, is linked in navbar, and is included in sitemap.
+   - `/books`: each configured book shows “Reading Notes →” linking into the archive.
    - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention + real Instagram profile.
    - About page: book showcase section visible above The Pillars; “Get the book” goes to https://www.amazon.in/dp/B0HBR9THSX.
    - `https://thetradingnarrative.com/api/og/{slug}.png` shows the latest share cards (v5 chips + mascot medallion).
@@ -592,6 +655,11 @@ If you report any issue, confirm whether it is on:
 - Admin-managed bookshelf (CRUD)
 - Navbar includes Books link
 - Seeded first book (B0HBR9THSX)
+
+✅ Phase 63 targets met (PREVIEW)
+- Desktop navbar: “Pillars” hover dropdown replaces the 4 pillar links; nav items remain single-line and centered.
+- Books page: optional “Reading Notes →” links each book to a related essay.
+- Admin: can attach a related essay to a book via picker.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

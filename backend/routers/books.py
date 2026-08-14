@@ -28,6 +28,8 @@ SEED_BOOKS = [{
     'cover_image': '/book-cover.webp',
     'buy_url': 'https://www.amazon.in/dp/B0HBR9THSX',
     'featured': True,
+    'related_slug': 'the-boring-portfolio-that-beats-your-broker',
+    'related_title': 'The Boring Portfolio That Beats Your Broker',
 }]
 
 
@@ -50,11 +52,15 @@ class BookIn(BaseModel):
     buy_url: str = Field(min_length=4, max_length=600)
     featured: bool = False
     sort: int = 0
+    # Optional "Reading Notes" link: ties a book to a related essay in the archive
+    related_slug: str = Field(default='', max_length=300)
+    related_title: str = Field(default='', max_length=300)
 
 
 def _public(b: dict) -> dict:
     return {k: b.get(k) for k in
-            ('id', 'title', 'author', 'description', 'cover_image', 'buy_url', 'featured', 'sort', 'created_at')}
+            ('id', 'title', 'author', 'description', 'cover_image', 'buy_url', 'featured', 'sort',
+             'related_slug', 'related_title', 'created_at')}
 
 
 @router.get('/books')

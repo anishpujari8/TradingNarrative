@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -12,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { pillarAccent } from "@/lib/pillars";
-import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark, Highlighter, Flame } from "lucide-react";
+import { pillarAccent, PILLAR_TAGLINES } from "@/lib/pillars";
+import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark, Highlighter, Flame, ChevronDown, Columns3 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { useTheme } from "@/context/ThemeContext";
@@ -23,10 +23,24 @@ export const Navbar = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [pillarsOpen, setPillarsOpen] = useState(false);
+  const closeTimer = useRef(null);
+
+  const openPillars = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setPillarsOpen(true);
+  };
+  const closePillarsSoon = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setPillarsOpen(false), 150);
+  };
+
+  const onPillarPage = location.pathname.startsWith("/category/");
 
   const navLinkCls = ({ isActive }) =>
-    `text-sm transition-colors duration-150 ${isActive ? "text-accent font-medium" : "text-muted-foreground hover:text-foreground"}`;
+    `text-sm whitespace-nowrap transition-colors duration-150 ${isActive ? "text-accent font-medium" : "text-muted-foreground hover:text-foreground"}`;
 
   return (
     <header className="sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b border-border">
@@ -44,6 +58,9 @@ export const Navbar = () => {
                 <span className="font-serif text-xl font-semibold">The Trading Narrative</span>
               </div>
               <nav className="flex flex-col gap-4">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1.5">
+                  <Columns3 className="h-3 w-3" /> Pillars
+                </span>
                 {CATEGORIES.map((c) => (
                   <Link
                     key={c.slug}
@@ -78,14 +95,48 @@ export const Navbar = () => {
         </div>
 
         <nav className="hidden lg:flex items-center gap-6">
-          {CATEGORIES.map((c) => (
-            <NavLink key={c.slug} to={`/category/${c.slug}`} className={navLinkCls} data-testid={`nav-category-${c.slug}`}>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: pillarAccent(c.slug) }} aria-hidden />
-                {c.label}
-              </span>
-            </NavLink>
-          ))}
+          <DropdownMenu open={pillarsOpen} onOpenChange={setPillarsOpen} modal={false}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onMouseEnter={openPillars}
+                onMouseLeave={closePillarsSoon}
+                className={`inline-flex items-center gap-1 text-sm whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm ${
+                  onPillarPage ? "text-accent font-medium" : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="nav-pillars-trigger"
+                aria-label="Browse pillars"
+              >
+                Pillars
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-150 ${pillarsOpen ? "rotate-180" : ""}`} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              sideOffset={10}
+              className="w-80"
+              onMouseEnter={openPillars}
+              onMouseLeave={closePillarsSoon}
+              data-testid="nav-pillars-dropdown"
+            >
+              {CATEGORIES.map((c) => (
+                <DropdownMenuItem
+                  key={c.slug}
+                  className="py-2.5 cursor-pointer"
+                  onClick={() => { setPillarsOpen(false); navigate(`/category/${c.slug}`); }}
+                  data-testid={`nav-category-${c.slug}`}
+                >
+                  <span className="mt-1 inline-block h-2 w-2 rounded-full shrink-0 self-start" style={{ backgroundColor: pillarAccent(c.slug) }} aria-hidden />
+                  <span className="ml-2.5 min-w-0">
+                    <span className="block text-sm font-medium text-foreground">{c.label}</span>
+                    {PILLAR_TAGLINES[c.slug] && (
+                      <span className="block text-xs text-muted-foreground leading-snug mt-0.5">{PILLAR_TAGLINES[c.slug]}</span>
+                    )}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <NavLink to="/archive" className={navLinkCls} data-testid="nav-archive-link">
             Archive
           </NavLink>

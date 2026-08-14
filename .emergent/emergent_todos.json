@@ -1,6 +1,22 @@
 [
   {
-    "content": "Conversion feedback batch: free reads sampler, bylines, author strip, scarcity reframe, footer links, social proof — all implemented + verified",
+    "content": "Backend: add related_slug/related_title to books.py model + public serializer",
+    "status": "completed"
+  },
+  {
+    "content": "Admin BooksPanel: essay picker dropdown to link a related essay",
+    "status": "completed"
+  },
+  {
+    "content": "BooksPage: show 'Reading Notes →' link on cards with related essay",
+    "status": "completed"
+  },
+  {
+    "content": "Navbar: Pillars hover dropdown + single-line centered nav links",
+    "status": "completed"
+  },
+  {
+    "content": "Verify: esbuild, curl books API, screenshots of nav + books page",
     "status": "completed"
   }
 ]
