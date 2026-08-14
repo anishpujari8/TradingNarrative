@@ -2,7 +2,7 @@
 
 ## 1) Objectives
 - Ship a modern, subscription-based blog + newsletter platform (**The Trading Narrative**) with an editorial reading experience, a freemium → premium conversion model, and a **premium community destination (Lounge)**.
-- Support **four pillars/themes** with distinct identity:
+- Support **four pillars/themes** with a unified, recognisable identity everywhere (site UI + share assets):
   - **Tech & AI** (`tech-business`)
   - **Business & Finance** (`finance`)
   - **Personal Growth** (`lifestyle`) *(DB slug; displayed as Personal Growth)*
@@ -151,6 +151,7 @@
 ### Social sharing (unfurls + branded assets)
 - **Branded OG share cards** ✅ *(Phase 50)*
 - **Pillar-coloured OG cards with signature motifs (v3)** ✅ *(Phase 51)*
+- **OG cards upgraded with pillar mascots (v4)** ✅ *(Phase 58)*
 - **Quote-card sharing matches pillar accents + motifs** ✅ *(Phase 54 + Phase 55)*
 - **Pillar mascots (emblems) integrated in hub headers + homepage** ✅ *(Phase 57)*
 
@@ -324,6 +325,18 @@
 - Fixed HomePage edit anomaly (duplicated tail + dropped mascot img block) caught by `esbuild`.
 - Verified: all 4 hubs + homepage show mascots.
 
+### Phase 58 — Navbar Pillar Dots + Mascot Share Cards ✅ COMPLETED (PREVIEW)
+**58.1 Navbar pillar dots:**
+- `Navbar.js`: desktop nav links + mobile sheet links now show pillar-colour dots (`pillarAccent`) before each category label.
+- Verified via screenshot: violet/teal/amber/steel-blue dots visible.
+
+**58.2 OG share cards (v4):**
+- `services/og_service.py`: `_OG_VERSION` bumped to `v4` (cache auto-invalidates).
+- Mascots copied to `backend/assets/mascots/*.webp`.
+- New `_mascot_medallion()` renders a circular mascot with an accent ring (2× supersampled mask).
+- Medallion is pasted top-right on every OG card.
+- Verified: all four pillar cards render beautifully with the correct mascot.
+
 ---
 
 ## 3) Next Actions
@@ -339,12 +352,14 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI changes (Phases 55–57 mascot UI + Phase 56 article accents):**
+**Requires redeploy to ship UI/share changes (Phases 55–58 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
+   - Navbar category links show colour dots
    - Home “Browse by pillar” banner shows mascot
    - `/topics/{pillar}` shows mascot + motif header
    - Article pages show pillar-tinted badge + progress bar
+   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the new v4 mascot medallion
 3. Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
 
 ### C) Payments
@@ -394,6 +409,10 @@ If you report any issue, confirm whether it is on:
 - Production content synced (category moves + intros + dash cleanup) ✅ LIVE
 - Sync tool compatible with cookie auth ✅
 - Pillar mascots generated + integrated (preview; deploy to ship UI) ✅
+
+✅ Phase 58 identity targets met (PREVIEW)
+- Navbar category links carry pillar dots
+- OG share cards carry pillar mascot medallion
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

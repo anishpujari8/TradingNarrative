@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { pillarAccent } from "@/lib/pillars";
 import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark, Highlighter, Flame } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
@@ -51,7 +52,10 @@ export const Navbar = () => {
                     className="text-base text-foreground hover:text-accent transition-colors"
                     data-testid={`nav-mobile-category-${c.slug}`}
                   >
-                    {c.label}
+                    <span className="inline-flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: pillarAccent(c.slug) }} aria-hidden />
+                      {c.label}
+                    </span>
                   </Link>
                 ))}
                 <div className="h-px bg-border my-1" />
@@ -75,7 +79,10 @@ export const Navbar = () => {
         <nav className="hidden lg:flex items-center gap-6">
           {CATEGORIES.map((c) => (
             <NavLink key={c.slug} to={`/category/${c.slug}`} className={navLinkCls} data-testid={`nav-category-${c.slug}`}>
-              {c.label}
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: pillarAccent(c.slug) }} aria-hidden />
+                {c.label}
+              </span>
             </NavLink>
           ))}
           <NavLink to="/archive" className={navLinkCls} data-testid="nav-archive-link">

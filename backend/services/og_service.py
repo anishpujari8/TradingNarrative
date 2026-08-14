@@ -44,7 +44,30 @@ _FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cache', 'og_cards')
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-_OG_VERSION = 'v3'  # bump to invalidate previously cached card designs
+_OG_VERSION = 'v4'  # bump to invalidate previously cached card designs
+
+_MASCOT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets', 'mascots')
+
+
+def _mascot_medallion(category: str, accent: tuple, size: int = 148) -> Image.Image | None:
+    """Circular pillar mascot medallion with an accent ring, or None if unavailable."""
+    path = os.path.join(_MASCOT_DIR, f'{category}.webp')
+    if not os.path.exists(path):
+        return None
+    try:
+        s = 2  # supersample so the circle mask + ring stay crisp
+        d = size * s
+        m = Image.open(path).convert('RGB').resize((d, d), Image.LANCZOS)
+        mask = Image.new('L', (d, d), 0)
+        ImageDraw.Draw(mask).ellipse([0, 0, d - 1, d - 1], fill=255)
+        out = Image.new('RGBA', (d, d), (0, 0, 0, 0))
+        out.paste(m, (0, 0), mask)
+        ring = ImageDraw.Draw(out)
+        ring.ellipse([2, 2, d - 3, d - 3], outline=accent + (230,), width=3 * s)
+        return out.resize((size, size), Image.LANCZOS)
+    except Exception as e:
+        logger.debug(f'OG card: mascot medallion skipped: {e}')
+        return None
 
 
 def _font(file: str, size: int, weight: int | None = None) -> ImageFont.FreeTypeFont:
@@ -298,6 +321,11 @@ def render_card(post: dict, cover_bytes: bytes | None = None) -> bytes:
     read_time = post.get('read_time')
     byline = 'Anish Pujari' + (f'  \u00b7  {read_time} min read' if read_time else '')
     draw.text((PAD + 56, fy - 8), byline, font=sans, fill=MUTED)
+
+    # pillar mascot medallion (top-right)
+    medallion = _mascot_medallion(post.get('category', ''), accent)
+    if medallion:
+        img.paste(medallion, (W - PAD - medallion.width, 56), medallion)
 
     # bottom accent strip: solid accent easing into the canvas on the right
     strip_h = 10
