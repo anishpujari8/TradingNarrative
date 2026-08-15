@@ -43,6 +43,7 @@ export const Footer = () => (
           <ul className="space-y-2.5">
             <li><Link to="/archive" className="text-sm hover:text-accent transition-colors">Archive</Link></li>
             <li><Link to="/glossary" className="text-sm hover:text-accent transition-colors" data-testid="footer-glossary-link">Trading Glossary</Link></li>
+            <li><Link to="/pillars" className="text-sm hover:text-accent transition-colors" data-testid="footer-mascots-link">Meet the Mascots</Link></li>
             <li><Link to="/pricing" className="text-sm hover:text-accent transition-colors">Pricing</Link></li>
             <li><Link to="/about" className="text-sm hover:text-accent transition-colors">About</Link></li>
             <li><Link to="/auth" className="text-sm hover:text-accent transition-colors">Sign in</Link></li>

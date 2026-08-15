@@ -13,6 +13,7 @@ export const PILLAR_ACCENTS = {
   // Section identities: non-pillar destinations that share the same visual system
   briefings: "#c14953", // signal crimson (The Weekly Briefing)
   books: "#9a6b3f", // leather bronze (The Bookshelf)
+  lounge: "#a04f86", // plum magenta (The Lounge)
 };
 
 export const PILLAR_TAGLINES = {
@@ -22,6 +23,7 @@ export const PILLAR_TAGLINES = {
   delivery: "How complex platforms actually get shipped and adopted.",
   briefings: "Five things that change how desks work, every Wednesday.",
   books: "A short, honest shelf that feeds the essay archive.",
+  lounge: "Live takes and desk talk with the Premium pack.",
 };
 
 export const pillarAccent = (slug) => PILLAR_ACCENTS[slug] || "#1c8570";
@@ -57,6 +59,10 @@ export const PILLAR_LORE = {
     name: "The Ledger Tortoise",
     story: "Slow reader, long memory. Carries a shelf of books that earned their spot, each one feeding the essay archive.",
   },
+  lounge: {
+    name: "The Signal Wolf",
+    story: "Howls only when it matters. Leads a private pack of Premium readers trading live takes, early drafts, and honest desk talk.",
+  },
 };
 
 export const PILLAR_MASCOT_ALTS = {
@@ -64,6 +70,9 @@ export const PILLAR_MASCOT_ALTS = {
   finance: "Trading, Business & Finance pillar mascot: a bull with a rising market line",
   lifestyle: "Personal Growth pillar mascot: a phoenix inside sunrise rings",
   delivery: "Delivery & Systems pillar mascot: an albatross over a waypoint route",
+  briefings: "Weekly Briefing mascot: a falcon carrying a rolled briefing over signal lines",
+  books: "Bookshelf mascot: a tortoise whose shell is a stack of book spines",
+  lounge: "Lounge mascot: a wolf howling a signal to the pack",
 };
 
 // hex -> rgba() so components can tint borders/backgrounds at any opacity
@@ -164,6 +173,18 @@ export const PillarMotif = ({ category, className = "", strokeWidth = 2 }) => {
         {[375, 417, 459].map((x, i) => (
           <line key={i} x1={x} y1={112 + (i % 2) * 12} x2={x} y2={122 + (i % 2) * 12} />
         ))}
+      </svg>
+    );
+  }
+  if (category === "lounge") {
+    // Howl arcs: a signal broadcast to the pack.
+    return (
+      <svg {...common}>
+        <path d="M 400 230 A 70 70 0 0 1 470 160" />
+        <path d="M 378 252 A 110 110 0 0 1 492 138" />
+        <path d="M 356 274 A 150 150 0 0 1 514 116" strokeDasharray="12 10" opacity="0.7" />
+        <circle cx="400" cy="230" r="4.5" fill="currentColor" stroke="none" />
+        <circle cx="470" cy="160" r="3" fill="currentColor" stroke="none" />
       </svg>
     );
   }

@@ -8,12 +8,14 @@
     - **Trading, Business & Finance** (`finance`) ✅ *(renamed from “Business & Finance”)*
     - **Personal Growth** (`lifestyle`) *(DB slug; displayed as Personal Growth)*
     - **Delivery & Systems** (`delivery`) ✅
-  - **Two section identities** (non-category destinations, styled like pillars):
+  - **Three section identities** (non-category destinations, styled like pillars):
     - **The Weekly Briefing** (`briefings`) ✅ *(Phase 64)*
     - **Bookshelf** (`books`) ✅ *(Phase 64)*
+    - **The Lounge** (`lounge`) ✅ *(Phase 66)*
   - **Mascot showcase hub**:
-    - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65)*
-      - Presents the 4 pillars + the 2 section identities with mascots, lore, and motif branding.
+    - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65; enhanced Phase 66)*
+      - Presents the 4 pillars + section identities with mascots, motif branding, and lore.
+      - Each pillar includes an extended **“Lore” tooltip** (Phase 66).
 
 - Provide subscriptions via:
   - **Stripe (international recurring payments)** ✅
@@ -150,6 +152,8 @@
   - Member discussions
 - **Welcome Market Narrative take** ✅ *(Phase 41)*
   - Copper concentrate TC/RC sign flip
+- **Lounge mascot + identity** ✅ *(Phase 66)*
+  - Mascot added to locked and member views
 
 ### Access model (METERED + PAYWALL, SEO-friendly)
 - Archive index fully public ✅
@@ -169,14 +173,14 @@
 - Dynamic essay meta descriptions ✅
 - **Glossary hub page** ✅ *(Phase 59)*
   - `/glossary` (crawlable) + **DefinedTermSet JSON-LD**
-  - Linked in footer
-  - Included in sitemap
+  - Linked in footer ✅
+  - Included in sitemap ✅
 - **Books page** ✅ *(Phase 62)*
   - `/books` (crawlable) + ItemList/Book JSON-LD
-  - Included in sitemap
+  - Included in sitemap ✅
 - **Pillars showcase page** ✅ *(Phase 65)*
   - `/pillars` (crawlable) + CollectionPage JSON-LD
-  - Included in sitemap
+  - Included in sitemap ✅
 
 ### Social sharing (unfurls + branded assets)
 - **Branded OG share cards** ✅ *(Phase 50)*
@@ -203,8 +207,9 @@
 - **Briefings + Books mascots + palettes (styled like pillars)** ✅ *(Phase 64)*
   - Dedicated mascots, accents, motifs
   - Pillar-style header banners on `/briefings` and `/books`
-- **Dedicated Pillars mascot page** ✅ *(Phase 65)*
-  - `/pillars` hub consolidating mascots + lore and linking into topic hubs / sections
+- **Dedicated Pillars mascot page** ✅ *(Phase 65; enhanced Phase 66)*
+  - `/pillars` hub consolidating mascots + motif branding
+  - **Lore tooltips** on each pillar card ✅ *(Phase 66)*
 
 ### Navigation + information architecture
 - Navbar includes primary site sections ✅
@@ -224,6 +229,8 @@
   - Clicking “Pillars” navigates to `/pillars`.
   - Dropdown includes a footer CTA: “Meet all the mascots →”.
   - Mobile nav includes a “Pillars →” link to `/pillars`.
+- **Footer discoverability for mascot hub** ✅ *(Phase 66)*
+  - Added “Meet the Mascots” link in footer (under Site).
 
 ### Stability
 - Modular backend ✅
@@ -412,8 +419,7 @@
 
 **59.2 Glossary Hub at `/glossary`:**
 - `frontend/src/pages/GlossaryPage.js`
-  - 9 term cards (Demurrage, Detention, Laytime, TC/RC, ETRM, CTRM, Freight Visibility, Yield Curve Inversion, Power Trading Desk)
-  - one-breath definition + pillar dot/accent + motif background + link to essay
+  - 9 term cards
   - DefinedTermSet JSON-LD, SEO meta
 - Routed in `App.js` and linked in `Footer.js` (“Trading Glossary”).
 - Included in sitemap (`backend/routers/posts.py`).
@@ -421,8 +427,7 @@
 **59.3 About page “Pillar Branding” section:**
 - Added “The Pillars” section with:
   - mascot medallions
-  - lore names: The Circuit Owl / The Sparkline Bull / The Rising Phoenix / The Route Albatross
-  - story blurbs + links to the pillar hubs
+  - lore names + story blurbs + links to the pillar hubs
   - motif backgrounds for continuity
 
 **59.4 Build stability note:**
@@ -431,241 +436,57 @@
 ### Phase 60 — Conversion Feedback Batch ✅ COMPLETED (PREVIEW)
 User request: address external review feedback to reduce bounce + increase trust/conversions.
 
-**60.1 Free reads sampler:**
-- Homepage “Start here, free” section (`home-free-reads-section`) showing 3 strong free essays (preferred order: **ETRM vs CTRM**, **$15B Shipping**, **Boring Portfolio**; falls back to any free tier).
-
-**60.2 Author credibility:**
-- ArticlePage byline upgraded: “By Anish Pujari · 12 years delivering ETRM & trading systems” with avatar fallback to `/anish.jpg`.
-- PostCard meta row: tiny author photo + “Anish Pujari” on every card.
-
-**60.3 Homepage author strip:**
-- Added under hero: photo + credibility line (“ETRM product leader … author of How Trading Can Make You Money”), About link, and LinkedIn newsletter subscribe link.
-
-**60.4 Scarcity reframe:**
-- Early-bird banner hides the counter when 0 claimed (shows “early-bird pricing for the first 50 members” instead of “50 of 50”).
-- Early supporter banner shows counter only when taken > 0 (currently genuine 49/50). Counters reappear automatically once sales/claims exist.
-
-**60.5 Footer:**
-- LinkedIn icon points to real profile (`linkedin.com/in/anish-pujari-69174b6a`).
-- Added “Subscribe on LinkedIn →” (newsletter URL), book mention line, and social proof under newsletter form.
-- Instagram was generic (`instagram.com`) — blocker cleared in Phase 61.
-
-**60.6 Social proof copy:**
-- “Join 500+ commodity trading professionals” under hero form, home newsletter block, and footer form.
-
-**Already satisfied pre-review:**
-- Inline hero email capture already present.
-- Featured article has a strong visual (cover image + gradient card).
-- Pillar colour coding on cards already implemented.
-- Dark mode toggle already exists.
-
-**Verified:** screenshots for banners, author strip, free reads grid, footer links, and article byline; `esbuild` clean.
-
 ### Phase 61 — Instagram Link + Book Showcase ✅ COMPLETED (PREVIEW)
-**61.1 Instagram link:**
-- Footer Instagram icon + About “Follow on Instagram” button now point to **https://www.instagram.com/anishpujari8** (user handle **@anishpujari8**).
-
-**61.2 Book showcase on About page:**
-- Added a book showcase section (`data-testid="about-book-section"`) inserted between the author section and The Pillars.
-- Optimized user-provided flat-lay image to `frontend/public/book-cover.webp` (~135KB).
-- Copy included:
-  - Title: **How Trading Can Make You Money**
-  - Subtitle: **An Honest Beginner's Roadmap: Strategies, AI Prompts & a 12-Month Plan**
-  - User blurb: SEBI F&O 90% stat + risk/process promise (dash-free phrasing)
-- CTAs:
-  - “Get the book” button now points to canonical Amazon dp URL: **https://www.amazon.in/dp/B0HBR9THSX** ✅ *(blocker cleared in Phase 62)*
-  - “Subscribe on LinkedIn” points to the LinkedIn newsletter follow URL.
-
-**Verified:** screenshot confirms the section renders beautifully above The Pillars; Instagram hrefs correct; `esbuild` clean.
 
 ### Phase 62 — Books Page + Admin Bookshelf ✅ COMPLETED (PREVIEW)
-User request: dedicated `/books` page with scalable recommendations managed from admin.
-
-**62.1 Backend (routers/books.py):**
-- Public: `GET /api/books`.
-- Admin CRUD (guarded by `get_admin_user`):
-  - `POST /api/admin/books`
-  - `PUT /api/admin/books/{id}`
-  - `DELETE /api/admin/books/{id}`
-- Sorting: featured-first → sort → created_at.
-- Seed-on-startup via `ensure_seed_books()`:
-  - `seed_key`: `how-trading-can-make-you-money-v1`
-  - Title: **How Trading Can Make You Money**
-  - Author: **Anish Pujari**
-  - Cover: `/book-cover.webp`
-  - Buy link: **https://www.amazon.in/dp/B0HBR9THSX**
-  - `featured=True` (shows “By the author” badge)
-- Router registered in `server.py` and seeded in the startup hook.
-
-**62.2 Frontend `/books` page (BooksPage.js):**
-- Grid layout of book cards (cover, title, author, description, “Buy on Amazon” button).
-- Loading skeletons + empty state.
-- SEO meta + ItemList/Book JSON-LD.
-- Routed in `App.js`.
-
-**62.3 Navbar:**
-- Desktop: “Books” link (`nav-books-link`).
-- Mobile: “Books” link (`nav-mobile-books-link`).
-
-**62.4 Admin:**
-- New “Books” tab (`admin-tab-books`) in `AdminPage` rendering `components/admin/BooksPanel.js`:
-  - Add/edit form: title, author, description, cover URL, buy URL, featured switch, sort.
-  - Shelf list with edit + delete (confirm).
-
-**62.5 SEO plumbing:**
-- `/books` added to dynamic sitemap.
-
-**Verification:**
-- API seed + CRUD smoke test (create/update/delete 200, unauthed 401).
-- `/books` page + navbar link + admin panel verified visually; `esbuild` clean.
-
-**Requires redeploy:** to ship live (seed will self-heal into production on startup).
 
 ### Phase 63 — Pillars Dropdown Nav + Books “Reading Notes” Links ✅ COMPLETED (PREVIEW)
-User request: streamline navbar + make book shelf feed the archive.
-
-**63.1 Pillars dropdown (Navbar desktop):**
-- Replaced the four desktop pillar links with a single **“Pillars”** trigger (`data-testid="nav-pillars-trigger"`).
-- Implemented with shadcn **DropdownMenu** using controlled open state:
-  - Opens on **hover**.
-  - Closes with a **150ms grace** (prevents accidental close when moving into menu).
-  - Remains click/keyboard accessible.
-- Dropdown entries show:
-  - Pillar colour dot (`pillarAccent`)
-  - Pillar label (`CATEGORIES`)
-  - Tagline (from `PILLAR_TAGLINES`)
-- Trigger highlights automatically when on `/category/*` pages.
-- All other nav links remain **single-line** and vertically centered (no more wrapping) via `whitespace-nowrap`.
-
-**63.2 Pillars in mobile Sheet nav:**
-- Pillars remain a list but are grouped under a **“Pillars”** label.
-- All other mobile links unchanged.
-
-**63.3 Book “Reading Notes →” links (Books → related essay):**
-- Backend `books.py`:
-  - Added optional fields: `related_slug`, `related_title` to `BookIn`.
-  - Included fields in public serializer `_public()`.
-  - Seed book updated to include:
-    - `related_slug`: `the-boring-portfolio-that-beats-your-broker`
-    - `related_title`: `The Boring Portfolio That Beats Your Broker`
-- Admin `BooksPanel.js`:
-  - Added “Reading Notes essay (optional)” **Select** fed from `GET /posts?limit=100`.
-  - Persisted into book record: `related_slug` + `related_title`.
-  - Shelf rows show `Notes: {related_title}` when set.
-- Frontend `BooksPage.js`:
-  - Renders “Reading Notes →” link to `/post/{related_slug}` under the Buy button when configured.
-
-**63.4 Verification / QA:**
-- Frontend build: `esbuild` clean.
-- Backend API smoke:
-  - Authenticated PUT/GET with new fields: **200**
-  - Unauthenticated PUT: **401**
-- Playwright verification:
-  - Hover open/close + click navigation works for Pillars dropdown.
-  - Admin picker saves and persists.
-  - Mobile sheet layout verified.
-- Seeded book’s **Preview DB record** links to the essay.
-
-**Requires redeploy:** to ship UI changes to production.
-**Optional:** books DB data can be synced Preview → Production using the existing sync tool/endpoint (content-only), without redeploy.
 
 ### Phase 64 — Briefings + Books Mascots & Palettes + Themed Pillars Dropdown ✅ COMPLETED (PREVIEW)
-User request: add mascots and distinct colour identities for Weekly Briefing + Books, and colour the pillar dropdown per pillar in both light and dark mode.
-
-**64.1 New section mascots (Gemini image gen):**
-- Generated via `gemini-3.1-flash-image-preview` using `EMERGENT_LLM_KEY`.
-- Style-matched against the existing pillar emblems using the **finance bull** as the reference.
-- New mascots:
-  - **Weekly Briefing** (`briefings`): *The Wire Falcon* — crimson accent **#c14953**, falcon carrying a rolled briefing over signal lines.
-  - **Bookshelf** (`books`): *The Ledger Tortoise* — bronze accent **#9a6b3f**, tortoise with book-spine shell.
-- Optimized to 560×560 WebP (~20–22KB) at:
-  - `frontend/public/pillars/briefings.webp`
-  - `frontend/public/pillars/books.webp`
-
-**64.2 Section palettes + motifs in the pillar identity engine:**
-- `frontend/src/lib/pillars.js`:
-  - Added `briefings` and `books` to:
-    - `PILLAR_ACCENTS`
-    - `PILLAR_TAGLINES`
-    - `PILLAR_MASCOT_ALTS`
-  - Added new motif variants to `PillarMotif`:
-    - `briefings`: telegraph pulses
-    - `books`: book spines/shelf
-  - `pillarAccent()` + `pillarMascot()` now support these section slugs.
-
-**64.3 Pillar-style banners on /briefings and /books:**
-- `BriefingsPage.js`:
-  - Added pillar-style header banner:
-    - accent border + background tint
-    - motif background
-    - accent underline bar
-    - mascot medallion
-  - Test IDs: `briefings-header-banner`, `briefings-mascot`
-- `BooksPage.js`:
-  - Added matching pillar-style header banner
-  - Test IDs: `books-header-banner`, `books-mascot`
-
-**64.4 Per-pillar themed dropdown styling (light + dark):**
-- `Navbar.js`:
-  - Each dropdown item sets a CSS var `--pillar-accent` for its own accent.
-  - Added classes `pillar-dd-item` + `pillar-dd-title`.
-- `index.css`:
-  - Added theme-aware rules:
-    - Title colour uses pillar accent (slightly brightened in dark mode)
-    - Hover/focus background tint uses `color-mix()` (12% light / 22% dark)
-    - Accent left border
-
-**64.5 Verification / QA:**
-- `esbuild` clean.
-- Screenshots verified for:
-  - `/briefings` banner + mascot
-  - `/books` banner + mascot
-  - Pillars dropdown hover styling in both light and dark mode (Playwright)
-
-**Requires redeploy:** to ship Phase 64 UI changes to production.
 
 ### Phase 65 — Dedicated `/pillars` Page + Pillars Trigger Click Navigation ✅ COMPLETED (PREVIEW)
-User request: when user clicks on Pillars, take them to the mascot page.
 
-**65.1 Dedicated Pillars page (`/pillars`):**
-- New `frontend/src/pages/PillarsPage.js`:
-  - Hero: “Four pillars, four colours, four mascots”
-  - 4 large pillar cards (accent-tinted bg/border, motif backdrop, mascot medallion, lore name + story + tagline)
-  - CTA: “Explore the pillar →” links to `/topics/{slug}`
-  - “Also flying the flag” section with 2 cards:
-    - Wire Falcon → `/briefings`
-    - Ledger Tortoise → `/books`
-  - SEO meta via `Seo` + **CollectionPage JSON-LD**
-  - Test IDs: `pillars-page`, `pillars-title`, `pillars-card-{slug}`, `pillars-section-{slug}`
+### Phase 66 — Footer Mascot Link + Lore Tooltips + Lounge Mascot ✅ COMPLETED (PREVIEW)
+User request: strengthen discoverability of the mascot hub, add pillar “Lore” tooltips with provided copy, and create a Lounge mascot.
 
-**65.2 Pillar lore exported:**
-- `frontend/src/lib/pillars.js`: added `PILLAR_LORE` export for 6 identities (4 pillars + briefings + books).
-  - Note: AboutPage retains its local lore constant (not refactored to use `PILLAR_LORE` to preserve stability).
+**66.1 Footer “Meet the Mascots” link:**
+- `Footer.js`: added “Meet the Mascots” link → `/pillars` (`footer-mascots-link`) under **Site** after Trading Glossary.
 
-**65.3 Routing + SEO plumbing:**
-- `frontend/src/App.js`: route added: `/pillars` → `PillarsPage`.
-- `backend/routers/posts.py`: added `/pillars` to sitemap entries.
+**66.2 Pillars page lore tooltips:**
+- `PillarsPage.js`: each of the 4 pillar cards includes a **Lore badge** (ScrollText icon) with accent-tinted chip.
+- Tooltip (shadcn Tooltip) on hover shows the exact extended lore copy provided by the user (em-dashes preserved verbatim).
+- Badge click uses `preventDefault()` + `stopPropagation()` so it never triggers the card navigation.
+- Test IDs:
+  - `pillars-lore-badge-{slug}`
+  - `pillars-lore-tooltip-{slug}`
 
-**65.4 Navbar behavior updated (desktop + mobile):**
-- Desktop:
-  - Clicking the **Pillars trigger** navigates to `/pillars`.
-  - Hover still opens the dropdown (150ms close grace preserved).
-  - Added dropdown footer item: “Meet all the mascots →” (`nav-pillars-all-link`) linking to `/pillars`.
-  - Active state includes `/pillars`.
-- Mobile sheet:
-  - Added a “Pillars →” link to `/pillars` (`nav-mobile-pillars-link`).
+**66.3 Lounge mascot (“The Signal Wolf”):**
+- Generated via `gemini-3.1-flash-image-preview` style-matched to existing emblems.
+- Accent colour: plum magenta **#a04f86**.
+- Optimized to `frontend/public/pillars/lounge.webp` (560×560 WebP).
+- `lib/pillars.js`: added `lounge` to:
+  - `PILLAR_ACCENTS`, `PILLAR_TAGLINES`, `PILLAR_MASCOT_ALTS`, `PILLAR_LORE`
+  - `PillarMotif` (new howl-arc motif)
+- Restored missing `briefings` and `books` entries in `PILLAR_MASCOT_ALTS` (previous edit regression).
 
-**65.5 Verification / QA:**
+**66.4 Pillars page section strip expanded:**
+- “Also flying the flag” section changed to **3 cards** (Briefings, Books, Lounge) in a responsive grid.
+
+**66.5 Lounge UI updated to show mascot:**
+- `CommunityPage.js`:
+  - Locked view: replaces generic Crown/Lock icon box with centered wolf medallion (`lounge-locked-mascot`).
+  - Member lounge header: shows wolf medallion beside title (`lounge-mascot`).
+
+**66.6 Verification / QA:**
 - Playwright verified:
-  - Hover dropdown open/close still works
-  - Clicking a dropdown item still navigates to `/category/{slug}`
-  - Clicking Pillars trigger navigates to `/pillars`
-  - Pillars page renders 4 pillar cards + 2 section cards
-  - Clicking a pillar card navigates to `/topics/{slug}`
-  - Mobile nav Pillars link navigates to `/pillars`
-- `esbuild` clean; sitemap contains `/pillars`.
+  - 4 Lore badges render and tooltips show correct copy
+  - Badge click does not navigate away
+  - 3 section cards render (includes lounge)
+  - Footer link navigates to `/pillars`
+  - Lounge mascot visible in locked and member views (admin login)
+- `esbuild` clean.
 
-**Requires redeploy:** to ship Phase 65 UI changes to production.
+**Requires redeploy:** to ship Phase 66 UI changes to production.
 
 ---
 
@@ -682,16 +503,18 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–65 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–66 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
    - Navbar: Clicking Pillars navigates to `/pillars`.
    - Navbar: per-pillar colour highlight works in both light and dark mode.
    - Navbar: dropdown contains “Meet all the mascots →”.
-   - `/pillars`: page renders 4 pillar cards + 2 section cards.
+   - `/pillars`: page renders 4 pillar cards + 3 section cards (Briefings, Books, Lounge).
+   - `/pillars`: Lore tooltips open and show the correct extended lore copy.
    - `/briefings`: banner shows crimson motif + falcon mascot.
    - `/books`: banner shows bronze motif + tortoise mascot.
+   - `/lounge`: locked view shows wolf medallion; member view header shows wolf medallion.
    - Home hero: inline email capture + social proof line.
    - Home: author strip under hero.
    - Home: “Start here, free” section shows 3 free essays.
@@ -699,6 +522,7 @@ If you report any issue, confirm whether it is on:
    - Article pages show pillar-tinted badge + progress bar and improved author byline.
    - Post cards show author byline + photo.
    - `/glossary` exists, is linked in footer, and is included in sitemap.
+   - Footer under Site includes “Meet the Mascots”.
    - `/books`: each configured book shows “Reading Notes →” linking into the archive.
    - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention + real Instagram profile.
    - About page: book showcase section visible above The Pillars; “Get the book” goes to https://www.amazon.in/dp/B0HBR9THSX.
@@ -798,6 +622,11 @@ If you report any issue, confirm whether it is on:
 - Clicking “Pillars” navigates to `/pillars`.
 - Hover dropdown still works and includes “Meet all the mascots →”.
 - Sitemap includes `/pillars`.
+
+✅ Phase 66 targets met (PREVIEW)
+- Footer includes “Meet the Mascots” link to `/pillars`.
+- Pillars cards show “Lore” tooltip badges with provided copy.
+- Lounge has a dedicated mascot (Signal Wolf) shown in locked + member views.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

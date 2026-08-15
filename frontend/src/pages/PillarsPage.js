@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ScrollText } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CATEGORIES, SITE_URL, SITE_NAME } from "@/lib/api";
 import {
   pillarAccent,
@@ -15,7 +16,20 @@ import {
 const SECTIONS = [
   { slug: "briefings", label: "The Weekly Briefing", to: "/briefings" },
   { slug: "books", label: "Bookshelf", to: "/books" },
+  { slug: "lounge", label: "The Lounge", to: "/lounge" },
 ];
+
+// Extended lore shown in the "Lore" tooltip on each pillar card.
+const LORE_TOOLTIPS = {
+  "tech-business":
+    "The map of what's coming. How AI and emerging tech are rewiring trading systems, streamlining operations, and redrawing the competitive landscape — before most desks even realise it's happening.",
+  finance:
+    "Where commodities meet consequence. From crude to clean energy, the forces reshaping global trade — the markets, the money, and the transition that no desk can afford to ignore.",
+  lifestyle:
+    "The person behind the desk. Daily habits, hard lessons, and the quiet discipline that separates good traders from great ones — because markets test character before they test skill.",
+  delivery:
+    "The unglamorous engine room of every trade. From system implementation battles to the quiet wins of a workflow that finally works — this is where the real change happens.",
+};
 
 // Dedicated mascot showcase: the four pillars plus the two section identities.
 export default function PillarsPage() {
@@ -83,7 +97,34 @@ export default function PillarsPage() {
                   <span className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: accent }}>
                     {c.label}
                   </span>
-                  <h2 className="font-serif text-2xl font-semibold mt-1">{lore?.name}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <h2 className="font-serif text-2xl font-semibold">{lore?.name}</h2>
+                    <TooltipProvider delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest cursor-help transition-colors duration-150"
+                            style={{ color: accent, borderColor: withAlpha(accent, 0.45), backgroundColor: withAlpha(accent, 0.08) }}
+                            data-testid={`pillars-lore-badge-${c.slug}`}
+                            aria-label={`${c.label} lore`}
+                          >
+                            <ScrollText className="h-3 w-3" /> Lore
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="bottom"
+                          className="max-w-xs text-sm leading-relaxed"
+                          style={{ borderColor: withAlpha(accent, 0.5) }}
+                          data-testid={`pillars-lore-tooltip-${c.slug}`}
+                        >
+                          {LORE_TOOLTIPS[c.slug]}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{lore?.story}</p>
                   <p className="text-xs text-muted-foreground mt-2 italic">{PILLAR_TAGLINES[c.slug]}</p>
                   <span
@@ -101,8 +142,8 @@ export default function PillarsPage() {
 
       <div className="mt-14" data-testid="pillars-sections">
         <span className="section-label">Also flying the flag</span>
-        <h2 className="font-serif text-2xl sm:text-3xl font-semibold mt-3">Two more mascots on duty</h2>
-        <div className="grid sm:grid-cols-2 gap-5 mt-6">
+        <h2 className="font-serif text-2xl sm:text-3xl font-semibold mt-3">Three more mascots on duty</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
           {SECTIONS.map((s) => {
             const accent = pillarAccent(s.slug);
             const lore = PILLAR_LORE[s.slug];
