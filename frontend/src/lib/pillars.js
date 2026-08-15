@@ -31,6 +31,34 @@ export const pillarAccent = (slug) => PILLAR_ACCENTS[slug] || "#1c8570";
 export const pillarMascot = (slug) =>
   PILLAR_ACCENTS[slug] ? `/pillars/${slug}.webp` : null;
 
+// Mascot lore: names + stories for the pillar showcase page and About section.
+export const PILLAR_LORE = {
+  "tech-business": {
+    name: "The Circuit Owl",
+    story: "Sees in the dark and reads the wiring underneath. Essays on ETRM, CTRM, and what AI actually changes on a trading desk.",
+  },
+  finance: {
+    name: "The Sparkline Bull",
+    story: "Built from the chart itself. Market mechanics from yield curves to treatment charges, explained like a desk would.",
+  },
+  lifestyle: {
+    name: "The Rising Phoenix",
+    story: "Every cycle ends in a better start. Life systems for operators: deep work, habits, and deliberate resets.",
+  },
+  delivery: {
+    name: "The Route Albatross",
+    story: "Flies the whole route and lands where it planned. How complex trading platforms actually get shipped and adopted.",
+  },
+  briefings: {
+    name: "The Wire Falcon",
+    story: "Fastest bird on the wire. Delivers five things that change how desks work, every single week.",
+  },
+  books: {
+    name: "The Ledger Tortoise",
+    story: "Slow reader, long memory. Carries a shelf of books that earned their spot, each one feeding the essay archive.",
+  },
+};
+
 export const PILLAR_MASCOT_ALTS = {
   "tech-business": "Tech & AI pillar mascot: an owl with circuit-trace wings",
   finance: "Trading, Business & Finance pillar mascot: a bull with a rising market line",

@@ -11,6 +11,9 @@
   - **Two section identities** (non-category destinations, styled like pillars):
     - **The Weekly Briefing** (`briefings`) ✅ *(Phase 64)*
     - **Bookshelf** (`books`) ✅ *(Phase 64)*
+  - **Mascot showcase hub**:
+    - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65)*
+      - Presents the 4 pillars + the 2 section identities with mascots, lore, and motif branding.
 
 - Provide subscriptions via:
   - **Stripe (international recurring payments)** ✅
@@ -171,6 +174,9 @@
 - **Books page** ✅ *(Phase 62)*
   - `/books` (crawlable) + ItemList/Book JSON-LD
   - Included in sitemap
+- **Pillars showcase page** ✅ *(Phase 65)*
+  - `/pillars` (crawlable) + CollectionPage JSON-LD
+  - Included in sitemap
 
 ### Social sharing (unfurls + branded assets)
 - **Branded OG share cards** ✅ *(Phase 50)*
@@ -197,6 +203,8 @@
 - **Briefings + Books mascots + palettes (styled like pillars)** ✅ *(Phase 64)*
   - Dedicated mascots, accents, motifs
   - Pillar-style header banners on `/briefings` and `/books`
+- **Dedicated Pillars mascot page** ✅ *(Phase 65)*
+  - `/pillars` hub consolidating mascots + lore and linking into topic hubs / sections
 
 ### Navigation + information architecture
 - Navbar includes primary site sections ✅
@@ -206,12 +214,16 @@
   - Dropdown items show pillar color dot + pillar label + tagline.
   - Trigger highlights when on `/category/*` pages.
   - All other nav links remain **single-line** via `whitespace-nowrap` and are vertically centered (no wrapping).
-- Mobile sheet nav groups pillars under a **“Pillars”** label ✅ *(Phase 63)*
+- Mobile sheet nav groups pillars under a **“Pillars”** label ✅ *(Phase 63; refined in Phase 65)*
 - **Per-pillar themed dropdown styling (light + dark)** ✅ *(Phase 64)*
   - Dropdown titles use pillar accent colours.
   - Hover/focus tint + left border adapt by theme:
     - Light mode ~12% accent tint
     - Dark mode ~22% accent tint
+- **Pillars trigger navigation to mascot hub** ✅ *(Phase 65)*
+  - Clicking “Pillars” navigates to `/pillars`.
+  - Dropdown includes a footer CTA: “Meet all the mascots →”.
+  - Mobile nav includes a “Pillars →” link to `/pillars`.
 
 ### Stability
 - Modular backend ✅
@@ -612,6 +624,49 @@ User request: add mascots and distinct colour identities for Weekly Briefing + B
 
 **Requires redeploy:** to ship Phase 64 UI changes to production.
 
+### Phase 65 — Dedicated `/pillars` Page + Pillars Trigger Click Navigation ✅ COMPLETED (PREVIEW)
+User request: when user clicks on Pillars, take them to the mascot page.
+
+**65.1 Dedicated Pillars page (`/pillars`):**
+- New `frontend/src/pages/PillarsPage.js`:
+  - Hero: “Four pillars, four colours, four mascots”
+  - 4 large pillar cards (accent-tinted bg/border, motif backdrop, mascot medallion, lore name + story + tagline)
+  - CTA: “Explore the pillar →” links to `/topics/{slug}`
+  - “Also flying the flag” section with 2 cards:
+    - Wire Falcon → `/briefings`
+    - Ledger Tortoise → `/books`
+  - SEO meta via `Seo` + **CollectionPage JSON-LD**
+  - Test IDs: `pillars-page`, `pillars-title`, `pillars-card-{slug}`, `pillars-section-{slug}`
+
+**65.2 Pillar lore exported:**
+- `frontend/src/lib/pillars.js`: added `PILLAR_LORE` export for 6 identities (4 pillars + briefings + books).
+  - Note: AboutPage retains its local lore constant (not refactored to use `PILLAR_LORE` to preserve stability).
+
+**65.3 Routing + SEO plumbing:**
+- `frontend/src/App.js`: route added: `/pillars` → `PillarsPage`.
+- `backend/routers/posts.py`: added `/pillars` to sitemap entries.
+
+**65.4 Navbar behavior updated (desktop + mobile):**
+- Desktop:
+  - Clicking the **Pillars trigger** navigates to `/pillars`.
+  - Hover still opens the dropdown (150ms close grace preserved).
+  - Added dropdown footer item: “Meet all the mascots →” (`nav-pillars-all-link`) linking to `/pillars`.
+  - Active state includes `/pillars`.
+- Mobile sheet:
+  - Added a “Pillars →” link to `/pillars` (`nav-mobile-pillars-link`).
+
+**65.5 Verification / QA:**
+- Playwright verified:
+  - Hover dropdown open/close still works
+  - Clicking a dropdown item still navigates to `/category/{slug}`
+  - Clicking Pillars trigger navigates to `/pillars`
+  - Pillars page renders 4 pillar cards + 2 section cards
+  - Clicking a pillar card navigates to `/topics/{slug}`
+  - Mobile nav Pillars link navigates to `/pillars`
+- `esbuild` clean; sitemap contains `/pillars`.
+
+**Requires redeploy:** to ship Phase 65 UI changes to production.
+
 ---
 
 ## 3) Next Actions
@@ -627,12 +682,14 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–64 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–65 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
-   - Navbar: “Pillars” dropdown works; items don’t wrap; hover-open works on desktop.
+   - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
+   - Navbar: Clicking Pillars navigates to `/pillars`.
    - Navbar: per-pillar colour highlight works in both light and dark mode.
-   - Navbar: still includes “Books”, “Archive”, “Briefings”, “Lounge”, “About”.
+   - Navbar: dropdown contains “Meet all the mascots →”.
+   - `/pillars`: page renders 4 pillar cards + 2 section cards.
    - `/briefings`: banner shows crimson motif + falcon mascot.
    - `/books`: banner shows bronze motif + tortoise mascot.
    - Home hero: inline email capture + social proof line.
@@ -735,6 +792,12 @@ If you report any issue, confirm whether it is on:
 - Briefings and Books now have mascots + their own colour palette + motifs.
 - `/briefings` and `/books` have pillar-style header banners.
 - Pillars dropdown now tints items per pillar in both light and dark mode.
+
+✅ Phase 65 targets met (PREVIEW)
+- Dedicated `/pillars` mascot hub exists and is crawlable.
+- Clicking “Pillars” navigates to `/pillars`.
+- Hover dropdown still works and includes “Meet all the mascots →”.
+- Sitemap includes `/pillars`.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

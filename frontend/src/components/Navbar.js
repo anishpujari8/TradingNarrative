@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { pillarAccent, PILLAR_TAGLINES } from "@/lib/pillars";
-import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark, Highlighter, Flame, ChevronDown, Columns3 } from "lucide-react";
+import { Moon, Sun, Menu, Crown, LayoutDashboard, User, LogOut, Archive, Bookmark, Highlighter, Flame, ChevronDown, Columns3, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { useTheme } from "@/context/ThemeContext";
@@ -37,7 +37,7 @@ export const Navbar = () => {
     closeTimer.current = setTimeout(() => setPillarsOpen(false), 150);
   };
 
-  const onPillarPage = location.pathname.startsWith("/category/");
+  const onPillarPage = location.pathname.startsWith("/category/") || location.pathname === "/pillars";
 
   const navLinkCls = ({ isActive }) =>
     `text-sm whitespace-nowrap transition-colors duration-150 ${isActive ? "text-accent font-medium" : "text-muted-foreground hover:text-foreground"}`;
@@ -58,9 +58,14 @@ export const Navbar = () => {
                 <span className="font-serif text-xl font-semibold">The Trading Narrative</span>
               </div>
               <nav className="flex flex-col gap-4">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1.5">
-                  <Columns3 className="h-3 w-3" /> Pillars
-                </span>
+                <Link
+                  to="/pillars"
+                  onClick={() => setOpen(false)}
+                  className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent inline-flex items-center gap-1.5 transition-colors duration-150"
+                  data-testid="nav-mobile-pillars-link"
+                >
+                  <Columns3 className="h-3 w-3" /> Pillars <ArrowRight className="h-3 w-3" />
+                </Link>
                 {CATEGORIES.map((c) => (
                   <Link
                     key={c.slug}
@@ -101,6 +106,8 @@ export const Navbar = () => {
                 type="button"
                 onMouseEnter={openPillars}
                 onMouseLeave={closePillarsSoon}
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => { setPillarsOpen(false); navigate("/pillars"); }}
                 className={`inline-flex items-center gap-1 text-sm whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm ${
                   onPillarPage ? "text-accent font-medium" : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -136,6 +143,16 @@ export const Navbar = () => {
                   </span>
                 </DropdownMenuItem>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="py-2 cursor-pointer justify-center"
+                onClick={() => { setPillarsOpen(false); navigate("/pillars"); }}
+                data-testid="nav-pillars-all-link"
+              >
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent">
+                  Meet all the mascots <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <NavLink to="/archive" className={navLinkCls} data-testid="nav-archive-link">
