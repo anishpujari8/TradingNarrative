@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ScrollText } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { PostCard } from "@/components/PostCard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CATEGORIES, SITE_URL, SITE_NAME } from "@/lib/api";
+import { api, CATEGORIES, SITE_URL, SITE_NAME } from "@/lib/api";
 import {
   pillarAccent,
   withAlpha,
@@ -19,7 +21,7 @@ const SECTIONS = [
   { slug: "lounge", label: "The Lounge", to: "/lounge" },
 ];
 
-// Extended lore shown in the "Lore" tooltip on each pillar card.
+// Extended lore shown in the "Lore" tooltip on each mascot card.
 const LORE_TOOLTIPS = {
   "tech-business":
     "The map of what's coming. How AI and emerging tech are rewiring trading systems, streamlining operations, and redrawing the competitive landscape — before most desks even realise it's happening.",
@@ -29,10 +31,59 @@ const LORE_TOOLTIPS = {
     "The person behind the desk. Daily habits, hard lessons, and the quiet discipline that separates good traders from great ones — because markets test character before they test skill.",
   delivery:
     "The unglamorous engine room of every trade. From system implementation battles to the quiet wins of a workflow that finally works — this is where the real change happens.",
+  briefings:
+    "The wire never sleeps. Every Wednesday the falcon lands with five signals pulled from the noise of markets, tech, and trade — read them before the rest of the desk does.",
+  books:
+    "The long game. A shelf built slowly and honestly — books on trading, risk, and systems that survive contact with real markets, each one feeding back into the essays.",
+  lounge:
+    "The inner pack. A private room where Premium readers trade live takes, early drafts, and honest desk talk — because the best signal rarely comes from the crowd.",
 };
 
-// Dedicated mascot showcase: the four pillars plus the two section identities.
+// Small hoverable "Lore" chip; click never triggers the parent card link.
+const LoreBadge = ({ slug, accent }) => (
+  <TooltipProvider delayDuration={150}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest cursor-help transition-colors duration-150 shrink-0"
+          style={{ color: accent, borderColor: withAlpha(accent, 0.45), backgroundColor: withAlpha(accent, 0.08) }}
+          data-testid={`pillars-lore-badge-${slug}`}
+          aria-label={`${slug} lore`}
+        >
+          <ScrollText className="h-3 w-3" /> Lore
+        </span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="bottom"
+        className="max-w-xs text-sm leading-relaxed"
+        style={{ borderColor: withAlpha(accent, 0.5) }}
+        data-testid={`pillars-lore-tooltip-${slug}`}
+      >
+        {LORE_TOOLTIPS[slug]}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+// Dedicated mascot showcase: pillars + lore first, then the essays under each pillar.
 export default function PillarsPage() {
+  const [pillarPosts, setPillarPosts] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all(
+      CATEGORIES.map((c) =>
+        api.get(`/posts?category=${c.slug}&limit=3`)
+          .then((r) => [c.slug, r.data.posts || []])
+          .catch(() => [c.slug, []])
+      )
+    ).then((pairs) => { if (alive) setPillarPosts(Object.fromEntries(pairs)); });
+    return () => { alive = false; };
+  }, []);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -99,31 +150,7 @@ export default function PillarsPage() {
                   </span>
                   <div className="flex items-center gap-2 mt-1">
                     <h2 className="font-serif text-2xl font-semibold">{lore?.name}</h2>
-                    <TooltipProvider delayDuration={150}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest cursor-help transition-colors duration-150"
-                            style={{ color: accent, borderColor: withAlpha(accent, 0.45), backgroundColor: withAlpha(accent, 0.08) }}
-                            data-testid={`pillars-lore-badge-${c.slug}`}
-                            aria-label={`${c.label} lore`}
-                          >
-                            <ScrollText className="h-3 w-3" /> Lore
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="bottom"
-                          className="max-w-xs text-sm leading-relaxed"
-                          style={{ borderColor: withAlpha(accent, 0.5) }}
-                          data-testid={`pillars-lore-tooltip-${c.slug}`}
-                        >
-                          {LORE_TOOLTIPS[c.slug]}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <LoreBadge slug={c.slug} accent={accent} />
                   </div>
                   <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{lore?.story}</p>
                   <p className="text-xs text-muted-foreground mt-2 italic">{PILLAR_TAGLINES[c.slug]}</p>
@@ -140,7 +167,42 @@ export default function PillarsPage() {
         })}
       </div>
 
-      <div className="mt-14" data-testid="pillars-sections">
+      {pillarPosts && (
+        <div className="mt-16" data-testid="pillars-essays">
+          <span className="section-label">The essays</span>
+          <h2 className="font-serif text-2xl sm:text-3xl font-semibold mt-3">Fresh from each pillar</h2>
+          {CATEGORIES.map((c) => {
+            const posts = pillarPosts[c.slug] || [];
+            if (!posts.length) return null;
+            const accent = pillarAccent(c.slug);
+            return (
+              <div key={c.slug} className="mt-10" data-testid={`pillars-essays-${c.slug}`}>
+                <div className="flex items-center justify-between gap-4 mb-5">
+                  <h3 className="font-serif text-xl font-semibold inline-flex items-center gap-2.5">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: accent }} aria-hidden />
+                    {c.label}
+                  </h3>
+                  <Link
+                    to={`/topics/${c.slug}`}
+                    className="text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-[gap] duration-150 whitespace-nowrap"
+                    style={{ color: accent }}
+                    data-testid={`pillars-viewall-${c.slug}`}
+                  >
+                    View all <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {posts.map((p) => (
+                    <PostCard key={p.slug} post={p} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-16" data-testid="pillars-sections">
         <span className="section-label">Also flying the flag</span>
         <h2 className="font-serif text-2xl sm:text-3xl font-semibold mt-3">Three more mascots on duty</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
@@ -171,7 +233,10 @@ export default function PillarsPage() {
                   <span className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: accent }}>
                     {s.label}
                   </span>
-                  <h3 className="font-serif text-lg font-semibold mt-0.5">{lore?.name}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <h3 className="font-serif text-lg font-semibold">{lore?.name}</h3>
+                    <LoreBadge slug={s.slug} accent={accent} />
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{lore?.story}</p>
                 </div>
               </Link>

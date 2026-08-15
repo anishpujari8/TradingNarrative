@@ -13,9 +13,10 @@
     - **Bookshelf** (`books`) ✅ *(Phase 64)*
     - **The Lounge** (`lounge`) ✅ *(Phase 66)*
   - **Mascot showcase hub**:
-    - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65; enhanced Phase 66)*
+    - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65; enhanced Phase 66–67)*
       - Presents the 4 pillars + section identities with mascots, motif branding, and lore.
-      - Each pillar includes an extended **“Lore” tooltip** (Phase 66).
+      - Each identity includes an extended **“Lore” tooltip** ✅ *(Phase 66–67)*.
+      - **Shows essays under each pillar after lore** ✅ *(Phase 67)*.
 
 - Provide subscriptions via:
   - **Stripe (international recurring payments)** ✅
@@ -88,6 +89,8 @@
 - **Email capture conversion improvements** ✅ *(Phase 60)*
   - Inline hero email capture already present
   - Added on-page social proof copy under key forms
+- **Lounge reply emails (Signal Wolf identity)** ✅ *(Phase 67)*
+  - Thread author receives a wolf-branded email when someone replies to their Lounge thread.
 
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
@@ -154,6 +157,8 @@
   - Copper concentrate TC/RC sign flip
 - **Lounge mascot + identity** ✅ *(Phase 66)*
   - Mascot added to locked and member views
+- **Signal Wolf Lounge reply emails** ✅ *(Phase 67)*
+  - Wolf-branded email notification on thread replies.
 
 ### Access model (METERED + PAYWALL, SEO-friendly)
 - Archive index fully public ✅
@@ -207,9 +212,11 @@
 - **Briefings + Books mascots + palettes (styled like pillars)** ✅ *(Phase 64)*
   - Dedicated mascots, accents, motifs
   - Pillar-style header banners on `/briefings` and `/books`
-- **Dedicated Pillars mascot page** ✅ *(Phase 65; enhanced Phase 66)*
+- **Dedicated Pillars mascot page** ✅ *(Phase 65; enhanced Phase 66–67)*
   - `/pillars` hub consolidating mascots + motif branding
-  - **Lore tooltips** on each pillar card ✅ *(Phase 66)*
+  - Lore tooltips on pillars ✅ *(Phase 66)*
+  - Lore tooltips on sections (Falcon/Tortoise/Wolf) ✅ *(Phase 67)*
+  - Essays listed under each pillar ✅ *(Phase 67)*
 
 ### Navigation + information architecture
 - Navbar includes primary site sections ✅
@@ -374,67 +381,12 @@
 - Pillar-coloured reading progress bar + pill dot
 
 ### Phase 57 — Production Category Sync + Sync Tool Fix + Pillar Mascots ✅ COMPLETED
-**57.1 PRODUCTION FIX (live, no redeploy needed):**
-- Root cause of repeated request: preview was fixed but production DB wasn’t synced.
-- Also fixed a cookie-auth regression: `sync.py` expected `token` in production login response.
-- Sync now uses `resp.json().get('token')` OR resp.cookies.get('ttn_session') in both `sync_push` and `sync_narrations`.
-- Ran sync push: **22 production posts updated** (category moves + Phase 53 intros + Phase 54 dash cleanup + ETRM excerpt).
-- Verified via production API: the 3 essays are now `category=lifestyle` (Personal Growth) live.
-
-**57.2 Pillar mascots (Gemini image gen):**
-- Generated via `gemini-3.1-flash-image-preview` using `EMERGENT_LLM_KEY`.
-- Mascots:
-  - Tech & AI: **violet circuit owl**
-  - Trading, Business & Finance: **teal sparkline bull**
-  - Personal Growth: **amber phoenix + sunrise rings**
-  - Delivery & Systems: **steel-blue albatross + waypoint route**
-- Center-cropped to 560×560, optimized to WebP (16–38KB) at `frontend/public/pillars/{slug}.webp`.
-
-**57.3 UI integration:**
-- `lib/pillars.js` exports `pillarMascot()` + alt text map.
-- Topic hubs show mascot medallion beside the title; homepage pillar banner shows smaller medallion.
-- Fixed HomePage edit anomaly (duplicated tail + dropped mascot img block) caught by `esbuild`.
-- Verified: all 4 hubs + homepage show mascots.
 
 ### Phase 58 — Navbar Pillar Dots + Mascot Share Cards ✅ COMPLETED (PREVIEW)
-**58.1 Navbar pillar dots:**
-- `Navbar.js`: desktop nav links + mobile sheet links show pillar-colour dots (`pillarAccent`) before each category label.
-
-**58.2 OG share cards (v4):**
-- `services/og_service.py`: `_OG_VERSION` bumped to `v4` (cache auto-invalidates).
-- Mascots copied to `backend/assets/mascots/*.webp`.
-- New `_mascot_medallion()` renders a circular mascot with an accent ring (2× supersampled mask).
-- Medallion is pasted top-right on every OG card.
-- Verified: all four pillar cards render beautifully with the correct mascot.
 
 ### Phase 59 — Glossary Hub + Mascot Branding + Pillar Rename ✅ COMPLETED (PREVIEW)
-**59.1 Pillar rename (finance):**
-- `'finance'` label changed to **“Trading, Business & Finance”** in:
-  - `backend/config.py` CATEGORIES
-  - `frontend/src/lib/api.js` CATEGORIES
-  - `frontend/src/pages/TopicPage.js` intro copy
-  - `frontend/src/lib/pillars.js` mascot alt
-- OG cards: `_OG_VERSION` bumped to **v5** so chips regenerate with new label (verified chip fits).
-- RSS/JSON-LD escaping already safe (`_xml_escape` exists in `routers/posts.py`).
-
-**59.2 Glossary Hub at `/glossary`:**
-- `frontend/src/pages/GlossaryPage.js`
-  - 9 term cards
-  - DefinedTermSet JSON-LD, SEO meta
-- Routed in `App.js` and linked in `Footer.js` (“Trading Glossary”).
-- Included in sitemap (`backend/routers/posts.py`).
-
-**59.3 About page “Pillar Branding” section:**
-- Added “The Pillars” section with:
-  - mascot medallions
-  - lore names + story blurbs + links to the pillar hubs
-  - motif backgrounds for continuity
-
-**59.4 Build stability note:**
-- `App.js` edit anomalies occurred (duplicate tail + missing route line). Fixed via deterministic patch. `esbuild` verified.
 
 ### Phase 60 — Conversion Feedback Batch ✅ COMPLETED (PREVIEW)
-User request: address external review feedback to reduce bounce + increase trust/conversions.
 
 ### Phase 61 — Instagram Link + Book Showcase ✅ COMPLETED (PREVIEW)
 
@@ -447,46 +399,53 @@ User request: address external review feedback to reduce bounce + increase trust
 ### Phase 65 — Dedicated `/pillars` Page + Pillars Trigger Click Navigation ✅ COMPLETED (PREVIEW)
 
 ### Phase 66 — Footer Mascot Link + Lore Tooltips + Lounge Mascot ✅ COMPLETED (PREVIEW)
-User request: strengthen discoverability of the mascot hub, add pillar “Lore” tooltips with provided copy, and create a Lounge mascot.
 
-**66.1 Footer “Meet the Mascots” link:**
-- `Footer.js`: added “Meet the Mascots” link → `/pillars` (`footer-mascots-link`) under **Site** after Trading Glossary.
+### Phase 67 — `/pillars` Essays + Section Lore Tooltips + Signal Wolf Lounge Emails ✅ COMPLETED (PREVIEW)
+User request: on the Pillars hub, show mascots/lore first, then essays; add lore tooltips to the section mascots; carry the Signal Wolf into inbox notifications.
 
-**66.2 Pillars page lore tooltips:**
-- `PillarsPage.js`: each of the 4 pillar cards includes a **Lore badge** (ScrollText icon) with accent-tinted chip.
-- Tooltip (shadcn Tooltip) on hover shows the exact extended lore copy provided by the user (em-dashes preserved verbatim).
-- Badge click uses `preventDefault()` + `stopPropagation()` so it never triggers the card navigation.
-- Test IDs:
+**67.1 Pillars page order + essays under mascots:**
+- `PillarsPage.js` rewritten so page order is:
+  1) Mascots + lore (pillar cards)
+  2) **The essays / Fresh from each pillar** ✅
+     - For each pillar: heading with accent dot, “View all →” linking to `/topics/{slug}`
+     - Grid of **3 recent essays** rendered via `PostCard`
+     - Data fetched via 4 parallel calls: `GET /posts?category={slug}&limit=3`
+  3) “Three more mascots on duty” strip
+
+**67.2 Lore tooltips for all identities:**
+- Extracted reusable `LoreBadge` component.
+- `LORE_TOOLTIPS` expanded beyond the 4 pillars to include `briefings`, `books`, `lounge`.
+- Result: **7 identities** now have hoverable lore tooltips:
+  - Pillars: Tech & AI, Trading/Business/Finance, Personal Growth, Delivery & Systems
+  - Sections: Wire Falcon (Briefings), Ledger Tortoise (Books), Signal Wolf (Lounge)
+- Test IDs preserved:
   - `pillars-lore-badge-{slug}`
   - `pillars-lore-tooltip-{slug}`
+- Badge click never triggers card navigation (preventDefault/stopPropagation).
 
-**66.3 Lounge mascot (“The Signal Wolf”):**
-- Generated via `gemini-3.1-flash-image-preview` style-matched to existing emblems.
-- Accent colour: plum magenta **#a04f86**.
-- Optimized to `frontend/public/pillars/lounge.webp` (560×560 WebP).
-- `lib/pillars.js`: added `lounge` to:
-  - `PILLAR_ACCENTS`, `PILLAR_TAGLINES`, `PILLAR_MASCOT_ALTS`, `PILLAR_LORE`
-  - `PillarMotif` (new howl-arc motif)
-- Restored missing `briefings` and `books` entries in `PILLAR_MASCOT_ALTS` (previous edit regression).
+**67.3 Signal Wolf Lounge reply emails:**
+- `backend/routers/community.py`:
+  - On new reply (when actor != thread author), continue to create bell notification.
+  - Additionally, send a **wolf-branded email** to the thread author (transactional):
+    - HTML template `_lounge_reply_html()`:
+      - Navy header + wolf medallion image (`{FRONTEND_URL}/pillars/lounge.webp`)
+      - Plum accent `#a04f86`
+      - Quote preview block + “Open in the Lounge” CTA to `/lounge?thread={tid}`
+      - Inputs HTML-escaped
+    - Sent via existing `services.emailer.log_email()` with `kind='lounge_reply'`
+    - Wrapped in try/except so reply flow never breaks
+  - Note: transactional kind is NOT in `MARKETING_KINDS` so no unsubscribe footer is appended.
 
-**66.4 Pillars page section strip expanded:**
-- “Also flying the flag” section changed to **3 cards** (Briefings, Books, Lounge) in a responsive grid.
+**67.4 Verification / QA:**
+- Verified `/pillars` renders 4 essay blocks and 7 lore badges; lounge tooltip shows correct copy.
+- End-to-end email test:
+  - Created temporary premium user (with subscription record)
+  - Created thread and replied as admin
+  - Confirmed email log status: **sent (gmail)**
+  - Test data cleaned up
+- Frontend build: `esbuild` clean; backend syntax parse clean.
 
-**66.5 Lounge UI updated to show mascot:**
-- `CommunityPage.js`:
-  - Locked view: replaces generic Crown/Lock icon box with centered wolf medallion (`lounge-locked-mascot`).
-  - Member lounge header: shows wolf medallion beside title (`lounge-mascot`).
-
-**66.6 Verification / QA:**
-- Playwright verified:
-  - 4 Lore badges render and tooltips show correct copy
-  - Badge click does not navigate away
-  - 3 section cards render (includes lounge)
-  - Footer link navigates to `/pillars`
-  - Lounge mascot visible in locked and member views (admin login)
-- `esbuild` clean.
-
-**Requires redeploy:** to ship Phase 66 UI changes to production.
+**Requires redeploy:** to ship Phase 67 UI + email changes to production.
 
 ---
 
@@ -503,18 +462,20 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–66 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–67 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
    - Navbar: Clicking Pillars navigates to `/pillars`.
    - Navbar: per-pillar colour highlight works in both light and dark mode.
    - Navbar: dropdown contains “Meet all the mascots →”.
-   - `/pillars`: page renders 4 pillar cards + 3 section cards (Briefings, Books, Lounge).
-   - `/pillars`: Lore tooltips open and show the correct extended lore copy.
+   - `/pillars`: lore section renders first; essays section appears under it.
+   - `/pillars`: Lore tooltips work for 4 pillars + 3 sections.
+   - `/pillars`: each pillar shows 2–3 PostCards and “View all →” works.
    - `/briefings`: banner shows crimson motif + falcon mascot.
    - `/books`: banner shows bronze motif + tortoise mascot.
    - `/lounge`: locked view shows wolf medallion; member view header shows wolf medallion.
+   - `/lounge`: replying to a thread triggers an email to the author (confirm in email logs/admin).
    - Home hero: inline email capture + social proof line.
    - Home: author strip under hero.
    - Home: “Start here, free” section shows 3 free essays.
@@ -524,9 +485,8 @@ If you report any issue, confirm whether it is on:
    - `/glossary` exists, is linked in footer, and is included in sitemap.
    - Footer under Site includes “Meet the Mascots”.
    - `/books`: each configured book shows “Reading Notes →” linking into the archive.
-   - Footer links: real LinkedIn profile + LinkedIn newsletter follow link + book mention + real Instagram profile.
-   - About page: book showcase section visible above The Pillars; “Get the book” goes to https://www.amazon.in/dp/B0HBR9THSX.
-   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the latest share cards (v5 chips + mascot medallion).
+   - About page: book showcase section visible above The Pillars.
+   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the latest share cards.
 3. Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
 
 ### C) Marketing copy accuracy
@@ -593,7 +553,7 @@ If you report any issue, confirm whether it is on:
 - Free reads prominently shown
 - Author credibility surfaced on cards + article pages + homepage
 - Scarcity copy avoids negative “50 of 50”
-- Footer links corrected (LinkedIn + LinkedIn newsletter) and book mentioned
+- Footer links corrected and book mentioned
 - Social proof added under signup
 
 ✅ Phase 61 content/links addressed (PREVIEW)
@@ -605,7 +565,7 @@ If you report any issue, confirm whether it is on:
 - Dedicated `/books` page (SEO + JSON-LD)
 - Admin-managed bookshelf (CRUD)
 - Navbar includes Books link
-- Seeded first book (B0HBR9THSX)
+- Seeded first book
 
 ✅ Phase 63 targets met (PREVIEW)
 - Desktop navbar: “Pillars” hover dropdown replaces the 4 pillar links; nav items remain single-line and centered.
@@ -627,6 +587,11 @@ If you report any issue, confirm whether it is on:
 - Footer includes “Meet the Mascots” link to `/pillars`.
 - Pillars cards show “Lore” tooltip badges with provided copy.
 - Lounge has a dedicated mascot (Signal Wolf) shown in locked + member views.
+
+✅ Phase 67 targets met (PREVIEW)
+- `/pillars` shows mascots/lore first, then essays under each pillar.
+- Lore tooltips exist for 4 pillars + 3 section identities.
+- Lounge reply notification emails are wolf-branded and sent via Gmail SMTP.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

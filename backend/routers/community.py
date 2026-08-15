@@ -1,18 +1,47 @@
 """Community Lounge routes (premium members only): announcements, threads, replies, profiles."""
 import uuid
 from datetime import datetime, timezone, timedelta
+from html import escape as _esc
 
 from fastapi import APIRouter, HTTPException, Depends
 
+from config import FRONTEND_URL, logger
 from db import db
 from utils import now_utc, iso, clean
 from security import get_admin_user, get_premium_user, is_entitled
 from schemas import AnnouncementIn, CommunityThreadIn, CommunityReplyIn, NarrativeTakeIn, NarrativeReactIn
+from services.emailer import log_email
 
 router = APIRouter(prefix='/api')
 
 NARRATIVE_TAGS = {'bullish', 'bearish', 'insight'}
 NARRATIVE_REACTIONS = ('📈', '📉', '💡')
+
+# The Lounge identity: Signal Wolf mascot + plum accent, kept in sync with lib/pillars.js
+LOUNGE_ACCENT = '#a04f86'
+
+
+def _lounge_reply_html(actor: str, title: str, preview: str, thread_url: str) -> str:
+    """Signal Wolf branded email for Lounge reply notifications."""
+    wolf_url = f'{FRONTEND_URL}/pillars/lounge.webp'
+    actor, title, preview = _esc(actor), _esc(title), _esc(preview)
+    return f'''
+<div style="max-width:560px;margin:0 auto;font-family:Georgia,serif;background:#faf7f9;border:1px solid #e7d3e0;border-radius:12px;overflow:hidden">
+  <div style="background:#161a2e;padding:26px 24px;text-align:center">
+    <img src="{wolf_url}" alt="The Signal Wolf" width="84" height="84" style="border-radius:50%;border:3px solid {LOUNGE_ACCENT}">
+    <p style="color:{LOUNGE_ACCENT};font-family:monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:14px 0 4px">The Lounge</p>
+    <p style="color:#f2ede7;font-size:18px;margin:0;font-weight:600">The pack has news for you</p>
+  </div>
+  <div style="padding:26px 28px">
+    <p style="font-size:15px;color:#2b2b2b;line-height:1.6;margin:0 0 14px"><strong>{actor}</strong> replied to your discussion:</p>
+    <p style="font-size:17px;font-weight:600;color:#161a2e;margin:0 0 14px">&ldquo;{title}&rdquo;</p>
+    <blockquote style="margin:0 0 22px;padding:12px 16px;border-left:3px solid {LOUNGE_ACCENT};background:#f4e9f0;color:#4a3a44;font-size:14px;line-height:1.6">{preview}</blockquote>
+    <a href="{thread_url}" style="display:inline-block;background:{LOUNGE_ACCENT};color:#ffffff;text-decoration:none;font-family:sans-serif;font-size:14px;font-weight:600;padding:12px 22px;border-radius:8px">Open in the Lounge</a>
+  </div>
+  <div style="padding:14px 28px;border-top:1px solid #e7d3e0">
+    <p style="font-size:12px;color:#8a7a84;font-family:sans-serif;margin:0">The Signal Wolf howls only when it matters &mdash; you are getting this because a fellow member replied to you.</p>
+  </div>
+</div>'''
 
 
 def community_author(user):
@@ -252,6 +281,22 @@ async def community_reply(tid: str, body: CommunityReplyIn, user=Depends(get_pre
             'actor_name': reply['author']['name'], 'thread_id': tid, 'thread_title': thread['title'],
             'preview': text[:140], 'read': False, 'created_at': iso(now_utc()),
         })
+        # Signal Wolf email so the pack identity carries into the inbox (never blocks the reply)
+        try:
+            author_doc = await db.users.find_one({'id': thread['author']['id']})
+            if author_doc and author_doc.get('email'):
+                thread_url = f'{FRONTEND_URL}/lounge?thread={tid}'
+                actor = reply['author']['name']
+                await log_email(
+                    author_doc['email'],
+                    f'{actor} replied in the Lounge: {thread["title"][:60]}',
+                    (f'{actor} replied to your discussion "{thread["title"]}":\n\n'
+                     f'{text[:300]}\n\nOpen it in the Lounge: {thread_url}'),
+                    'lounge_reply',
+                    html=_lounge_reply_html(actor, thread['title'], text[:300], thread_url),
+                )
+        except Exception as e:
+            logger.warning(f'Lounge reply email failed (non-blocking): {str(e)[:150]}')
     return clean(reply)
 
 
