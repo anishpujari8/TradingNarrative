@@ -377,6 +377,18 @@ async def get_series(series_slug: str):
 
 # ---------------------- social share (OG unfurl) ----------------------
 
+@router.get('/og/page/{section}.png')
+async def og_section_card(section: str):
+    """Branded share card for section pages: briefings (falcon), books (tortoise),
+    lounge (wolf). Used as og:image so those links unfurl with their own mascot."""
+    from services.og_service import SECTION_CARDS, get_or_render_section_card
+    if section not in SECTION_CARDS:
+        raise HTTPException(status_code=404, detail='Unknown section')
+    data = await get_or_render_section_card(section)
+    return Response(content=data, media_type='image/png',
+                    headers={'Cache-Control': 'public, max-age=86400'})
+
+
 @router.get('/og/{slug}.png')
 async def og_card(slug: str):
     """Branded 1200x630 Open Graph share card for an essay (Pillow, disk-cached).
@@ -389,6 +401,46 @@ async def og_card(slug: str):
     data = await get_or_render_card(post)
     return Response(content=data, media_type='image/png',
                     headers={'Cache-Control': 'public, max-age=86400'})
+
+
+@router.get('/share/page/{section}')
+async def share_section_page(section: str):
+    """Crawler-readable HTML for section links (briefings / books / lounge) so shares
+    unfurl with their mascot card; humans are redirected to the section page."""
+    from services.og_service import SECTION_CARDS
+    if section not in SECTION_CARDS:
+        raise HTTPException(status_code=404, detail='Unknown section')
+    cfg = SECTION_CARDS[section]
+    paths = {'home': '/', 'briefings': '/briefings', 'books': '/books', 'lounge': '/lounge'}
+    dest = paths.get(section, '/')
+    title = f"{cfg['title']} · The Trading Narrative" if section != 'home' else cfg['title']
+    desc = cfg['subtitle']
+    image = f'{FRONTEND_URL}/api/og/page/{section}.png'
+    canonical = f'{FRONTEND_URL}{dest}'
+    html = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<title>{title}</title>
+<meta property="og:site_name" content="The Trading Narrative">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{desc}">
+<meta property="og:image" content="{image}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:url" content="{canonical}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc}">
+<meta name="twitter:image" content="{image}">
+<meta name="description" content="{desc}">
+<link rel="canonical" href="{canonical}">
+<meta http-equiv="refresh" content="0;url={dest}">
+<script>window.location.replace('{dest}');</script>
+</head><body>
+<p>Redirecting to <a href="{dest}">{title}</a>&hellip;</p>
+</body></html>"""
+    return HTMLResponse(content=html)
 
 
 @router.get('/share/{slug}')

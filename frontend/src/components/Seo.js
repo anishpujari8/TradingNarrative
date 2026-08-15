@@ -43,9 +43,7 @@ export const Seo = ({ title, description, image, path = "", type = "website", ke
   const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} | ${DEFAULT_TAGLINE}`;
   const desc = description || DEFAULT_DESC;
   const url = `${SITE_URL}${path}`;
-  const img =
-    image ||
-    "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&q=80&auto=format&fit=crop";
+  const img = image || `${SITE_URL}/api/og/page/home.png`;
   return (
     <Helmet>
       <title>{fullTitle}</title>

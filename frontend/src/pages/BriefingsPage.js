@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lock, Clock, ArrowRight, Newspaper, Sparkles } from "lucide-react";
 import { Seo } from "@/components/Seo";
-import { api, formatDate } from "@/lib/api";
+import { api, formatDate, SITE_URL } from "@/lib/api";
 import { pillarAccent, withAlpha, PillarMotif, pillarMascot, PILLAR_MASCOT_ALTS } from "@/lib/pillars";
 
 const ACCENT = pillarAccent("briefings");
@@ -24,6 +24,7 @@ export default function BriefingsPage() {
         description="The Weekly Briefing is a free trading newsletter: commodity desks, freight and shipping markets, energy and metals, risk and regulation, in five minutes every Wednesday."
         keywords="weekly briefing, newsletter, trading, freight, commodity trading, shipping, markets, risk, regulation"
         path="/briefings"
+        image={`${SITE_URL}/api/og/page/briefings.png`}
       />
       <div
         className="relative overflow-hidden rounded-2xl border px-6 sm:px-10 py-8 sm:py-10"
@@ -46,7 +47,7 @@ export default function BriefingsPage() {
           <img
             src={pillarMascot("briefings")}
             alt={PILLAR_MASCOT_ALTS.briefings}
-            className="hidden sm:block h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
+            className="h-20 w-20 sm:h-32 sm:w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
             style={{ border: `3px solid ${withAlpha(ACCENT, 0.55)}` }}
             loading="lazy"
             data-testid="briefings-mascot"

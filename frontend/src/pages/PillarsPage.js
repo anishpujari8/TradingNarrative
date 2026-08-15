@@ -136,7 +136,7 @@ export default function PillarsPage() {
               <div className="absolute inset-y-0 right-0 w-2/3 pointer-events-none" style={{ color: accent, opacity: 0.1 }}>
                 <PillarMotif category={c.slug} className="h-full w-full" />
               </div>
-              <div className="relative flex items-start gap-6">
+              <div className="relative flex flex-col items-center text-center gap-5 sm:flex-row sm:items-start sm:text-left sm:gap-6">
                 <img
                   src={pillarMascot(c.slug)}
                   alt={PILLAR_MASCOT_ALTS[c.slug]}
@@ -148,7 +148,7 @@ export default function PillarsPage() {
                   <span className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: accent }}>
                     {c.label}
                   </span>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                     <h2 className="font-serif text-2xl font-semibold">{lore?.name}</h2>
                     <LoreBadge slug={c.slug} accent={accent} />
                   </div>

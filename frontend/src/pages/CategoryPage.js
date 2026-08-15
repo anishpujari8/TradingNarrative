@@ -54,7 +54,7 @@ export default function CategoryPage() {
           <img
             src={pillarMascot(slug)}
             alt={PILLAR_MASCOT_ALTS[slug]}
-            className="hidden sm:block h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
+            className="h-20 w-20 sm:h-32 sm:w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
             style={{ border: `3px solid ${withAlpha(accent, 0.55)}` }}
             loading="lazy"
             data-testid="category-mascot"

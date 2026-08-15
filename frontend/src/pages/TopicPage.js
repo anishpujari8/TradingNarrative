@@ -112,7 +112,7 @@ export default function TopicPage() {
           <img
             src={pillarMascot(slug)}
             alt={PILLAR_MASCOT_ALTS[slug]}
-            className="hidden sm:block h-32 w-32 lg:h-44 lg:w-44 rounded-full object-cover shrink-0 shadow-lg"
+            className="h-20 w-20 sm:h-32 sm:w-32 lg:h-44 lg:w-44 rounded-full object-cover shrink-0 shadow-lg"
             style={{ border: `3px solid ${withAlpha(pillarAccent(slug), 0.55)}` }}
             loading="lazy"
             data-testid={`pillar-mascot-${slug}`}

@@ -394,7 +394,7 @@ export default function HomePage() {
                 <img
                   src={pillarMascot(filter)}
                   alt={PILLAR_MASCOT_ALTS[filter]}
-                  className="hidden sm:block h-24 w-24 lg:h-28 lg:w-28 rounded-full object-cover shrink-0 shadow-md"
+                  className="h-16 w-16 sm:h-24 sm:w-24 lg:h-28 lg:w-28 rounded-full object-cover shrink-0 shadow-md"
                   style={{ border: `3px solid ${withAlpha(accent, 0.55)}` }}
                   loading="lazy"
                   data-testid={`pillar-mascot-home-${filter}`}

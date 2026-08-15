@@ -11,9 +11,9 @@
   - **Three section identities** (non-category destinations, styled like pillars):
     - **The Weekly Briefing** (`briefings`) ✅ *(Phase 64)*
     - **Bookshelf** (`books`) ✅ *(Phase 64)*
-    - **The Lounge** (`lounge`) ✅ *(Phase 66; banner upgraded Phase 68)*
+    - **The Lounge** (`lounge`) ✅ *(Phase 66; banner parity Phase 68)*
   - **Mascot showcase hub**:
-    - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65; enhanced Phase 66–67)*
+    - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65; enhanced Phase 66–67; mobile refined Phase 69)*
       - Presents the 4 pillars + section identities with mascots, motif branding, and lore.
       - Each identity includes an extended **“Lore” tooltip** ✅ *(Phase 66–67)*.
       - **Shows essays under each pillar after lore** ✅ *(Phase 67)*.
@@ -197,6 +197,13 @@
 - **Navbar pillar dots** ✅ *(Phase 58)*
 - **OG share cards carry pillar mascot medallion** ✅ *(Phase 58, v4+)*
 - **OG cards updated for pillar rename** ✅ *(Phase 59, v5)*
+- **Section mascot OG cards** ✅ *(Phase 69)*
+  - 1200×630 cards for: `home`, `briefings`, `books`, `lounge`
+  - Endpoints:
+    - `GET /api/og/page/{section}.png`
+    - Crawler HTML: `GET /api/share/page/{section}` (meta + human redirect)
+  - Pages wire og:image to the correct card.
+  - Static fallback meta fixed so there is exactly one correct `og:image` in the head.
 
 ### Branding + content readiness
 - Official logo + favicon ✅
@@ -216,7 +223,7 @@
   - Pillar-style header banners on `/briefings` and `/books`
 - **Category pages now have pillar-style mascot banners** ✅ *(Phase 68)*
   - `/category/{slug}` (dropdown destinations) show the mascot + motif banner like Briefings/Books.
-- **Dedicated Pillars mascot page** ✅ *(Phase 65; enhanced Phase 66–67)*
+- **Dedicated Pillars mascot page** ✅ *(Phase 65; enhanced Phase 66–67; mobile refined Phase 69)*
   - `/pillars` hub consolidating mascots + motif branding
   - Lore tooltips on pillars ✅ *(Phase 66)*
   - Lore tooltips on sections (Falcon/Tortoise/Wolf) ✅ *(Phase 67)*
@@ -243,16 +250,19 @@
 - **Footer discoverability for mascot hub** ✅ *(Phase 66)*
   - Added “Meet the Mascots” link in footer (under Site).
 
-### Stability
-- Modular backend ✅
-- Regression testing discipline ✅
-
-### Security hardening
-- **Cookie auth upgrade (httpOnly session cookies)** ✅ *(Phase 50)*
-  - JWT in httpOnly cookie `ttn_session`
-  - Migration via `/api/auth/cookie-sync`
-  - Logout `/api/auth/logout`
-  - CORS compatible with credentials ✅
+### Mobile responsiveness ✅ *(Phase 69)*
+- **Mobile audit (≤768px)** completed across:
+  - `/`, `/archive`, `/briefings`, `/books`, `/pillars`, `/glossary`, `/lounge`, `/pricing`, `/about`, `/category/*`, `/topics/*`, `/post/*`
+- Success criteria confirmed:
+  - Navigation collapses into hamburger everywhere
+  - No horizontal overflow (images do not spill)
+  - Pillar cards stack vertically on small screens
+  - Text readable without zooming
+  - Books and Lounge fully usable on mobile
+- Mobile fixes applied:
+  - Pillars cards reflow to vertical/centered on `<640px`
+  - Banner mascots now render on mobile (h-20) on Briefings/Books/Category/Lounge/Topic banners
+  - HomePage author strip medallion visible on mobile (h-16)
 
 ---
 
@@ -405,83 +415,49 @@
 ### Phase 66 — Footer Mascot Link + Lore Tooltips + Lounge Mascot ✅ COMPLETED (PREVIEW)
 
 ### Phase 67 — `/pillars` Essays + Section Lore Tooltips + Signal Wolf Lounge Emails ✅ COMPLETED (PREVIEW)
-User request: on the Pillars hub, show mascots/lore first, then essays; add lore tooltips to the section mascots; carry the Signal Wolf into inbox notifications.
-
-**67.1 Pillars page order + essays under mascots:**
-- `PillarsPage.js` rewritten so page order is:
-  1) Mascots + lore (pillar cards)
-  2) **The essays / Fresh from each pillar** ✅
-     - For each pillar: heading with accent dot, “View all →” linking to `/topics/{slug}`
-     - Grid of **3 recent essays** rendered via `PostCard`
-     - Data fetched via 4 parallel calls: `GET /posts?category={slug}&limit=3`
-  3) “Three more mascots on duty” strip
-
-**67.2 Lore tooltips for all identities:**
-- Extracted reusable `LoreBadge` component.
-- `LORE_TOOLTIPS` expanded beyond the 4 pillars to include `briefings`, `books`, `lounge`.
-- Result: **7 identities** now have hoverable lore tooltips:
-  - Pillars: Tech & AI, Trading/Business/Finance, Personal Growth, Delivery & Systems
-  - Sections: Wire Falcon (Briefings), Ledger Tortoise (Books), Signal Wolf (Lounge)
-- Test IDs preserved:
-  - `pillars-lore-badge-{slug}`
-  - `pillars-lore-tooltip-{slug}`
-- Badge click never triggers card navigation (preventDefault/stopPropagation).
-
-**67.3 Signal Wolf Lounge reply emails:**
-- `backend/routers/community.py`:
-  - On new reply (when actor != thread author), continue to create bell notification.
-  - Additionally, send a **wolf-branded email** to the thread author (transactional):
-    - HTML template `_lounge_reply_html()`:
-      - Navy header + wolf medallion image (`{FRONTEND_URL}/pillars/lounge.webp`)
-      - Plum accent `#a04f86`
-      - Quote preview block + “Open in the Lounge” CTA to `/lounge?thread={tid}`
-      - Inputs HTML-escaped
-    - Sent via existing `services.emailer.log_email()` with `kind='lounge_reply'`
-    - Wrapped in try/except so reply flow never breaks
-  - Note: transactional kind is NOT in `MARKETING_KINDS` so no unsubscribe footer is appended.
-
-**67.4 Verification / QA:**
-- Verified `/pillars` renders 4 essay blocks and 7 lore badges; lounge tooltip shows correct copy.
-- End-to-end email test:
-  - Created temporary premium user (with subscription record)
-  - Created thread and replied as admin
-  - Confirmed email log status: **sent (gmail)**
-  - Test data cleaned up
-- Frontend build: `esbuild` clean; backend syntax parse clean.
-
-**Requires redeploy:** to ship Phase 67 UI + email changes to production.
 
 ### Phase 68 — Category page mascot banners + full-size Lounge mascot ✅ COMPLETED (PREVIEW)
-User request: when selecting a pillar from the nav dropdown, show the mascot beside the pillar summary (like Briefings/Books). Also make the Lounge mascot the same size as Briefings/Books.
 
-**68.1 Category page pillar-style banner (dropdown destinations):**
-- `CategoryPage.js` (`/category/{slug}`) now renders a pillar-style header banner:
-  - Accent-tinted border/background using pillar accent
-  - Motif backdrop (`PillarMotif`)
-  - Label: `Pillar · {lore.name}`
-  - Title + description + accent underline bar
-  - Mascot medallion at `h-32 lg:h-40` (hidden on mobile)
-- Test IDs: `category-header-banner`, `category-mascot`.
+### Phase 69 — Mascot share cards + full mobile audit ✅ COMPLETED (PREVIEW)
+User request: give briefings/books/lounge their own mascot OG cards; audit the entire site under 768px and fix mobile issues.
 
-**68.2 Lounge header banner parity + mascot size:**
-- `CommunityPage.js` member Lounge header upgraded from small inline medallion to full banner:
-  - Plum-tinted background, howl-arc motif, label “Members only · The Signal Wolf”, accent underline
-  - Wolf mascot at `h-32 lg:h-40` (≈160px), matching Briefings/Books
-  - Admin + discussion CTAs moved into the banner; existing button test IDs preserved
-- Test ID: `lounge-header-banner`.
+**69.1 Section OG cards (falcon/tortoise/wolf + home):**
+- `backend/services/og_service.py`:
+  - Added motif renderers for `briefings`, `books`, `lounge`.
+  - Added `SECTION_CARDS` config including `home`.
+  - Added `render_section_card()` + `get_or_render_section_card()` disk cache (keyed by `_OG_VERSION`).
+  - Copied mascots to `backend/assets/mascots/` (briefings/books/lounge).
+- `backend/routers/posts.py`:
+  - `GET /api/og/page/{section}.png` (registered before `/og/{slug}.png`).
+  - `GET /api/share/page/{section}` crawler HTML (meta) + human redirect.
+- Frontend pages:
+  - `BriefingsPage.js`, `BooksPage.js`, `CommunityPage.js` pass `image={SITE_URL}/api/og/page/{section}.png`.
 
-**68.3 Locked Lounge mascot size:**
-- Locked view mascot bumped from `h-24` to `h-32 lg:h-40`.
+**69.2 OG meta bug found + fixed:**
+- Root cause: `public/index.html` static `og:image` lacked `data-rh`, so runtime cleanup removed other tags but not the stale Unsplash `og:image`.
+- Fixes:
+  - `public/index.html`: `og:image`, `og:type`, `twitter:card` now `data-rh` and point to `https://thetradingnarrative.com/api/og/page/home.png`.
+  - `components/Seo.js` default fallback now `${SITE_URL}/api/og/page/home.png`.
+- Verified: exactly **one** `meta[property="og:image"]` in head on `/`, `/briefings`, `/books`, `/lounge`, each correct.
 
-**68.4 Verification / QA:**
-- Playwright verified:
-  - Nav dropdown → `/category/tech-business` shows banner + owl mascot
-  - `/category/lifestyle` shows banner mascot
-  - Locked lounge mascot is 160px
-  - Admin member lounge shows banner + 160px wolf + working buttons
-- Frontend build: `esbuild` clean; 5 services running.
+**69.3 Mobile responsiveness audit + fixes (≤768px):**
+- Comprehensive Playwright audit at 390×844:
+  - `/`, `/archive`, `/briefings`, `/books`, `/pillars`, `/glossary`, `/lounge`, `/pricing`, `/about`, `/category/*`, `/topics/*`, `/post/*`
+  - No horizontal overflow detected site-wide.
+  - Hamburger menu visible and functional across pages.
+- Fixes applied:
+  - PillarsPage pillar cards now stack vertically and center-align on small screens (prevents lore name wrap collisions).
+  - Banner mascots now render on mobile (h-20) on Briefings/Books/Category/Lounge/Topic banners.
+  - HomePage author strip medallion now renders on mobile (h-16, sm:h-24).
 
-**Requires redeploy:** to ship Phase 68 UI changes to production.
+**69.4 QA / testing:**
+- Testing agent iteration_37:
+  - Backend OG endpoints passed.
+  - Mobile audit passed across tested pages.
+  - Desktop navbar regressions passed.
+  - Single real bug (OG meta) fixed and re-verified.
+
+**Requires redeploy:** to ship Phase 69 UI + OG + sitemap/share changes to production.
 
 ---
 
@@ -498,7 +474,7 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–68 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–69 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
@@ -515,18 +491,13 @@ If you report any issue, confirm whether it is on:
      - member view shows pillar-style lounge banner + large wolf medallion
    - `/lounge`: replying to a thread triggers a wolf-branded email to the author (confirm in email logs/admin).
    - `/category/{slug}` (pillar dropdown destinations): header banner shows motif + mascot.
-   - Home hero: inline email capture + social proof line.
-   - Home: author strip under hero.
-   - Home: “Start here, free” section shows 3 free essays.
    - `/topics/{pillar}` shows mascot + motif header.
-   - Article pages show pillar-tinted badge + progress bar and improved author byline.
-   - Post cards show author byline + photo.
-   - `/glossary` exists, is linked in footer, and is included in sitemap.
+   - Mobile (≤768px): hamburger menu works site-wide; no horizontal overflow; pillar cards stack.
    - Footer under Site includes “Meet the Mascots”.
    - `/books`: each configured book shows “Reading Notes →” linking into the archive.
-   - About page: book showcase section visible above The Pillars.
-   - `https://thetradingnarrative.com/api/og/{slug}.png` shows the latest share cards.
-3. Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
+   - `https://thetradingnarrative.com/api/og/page/briefings.png` (and `/books`, `/lounge`, `/home`) render correct mascot cards.
+   - `https://thetradingnarrative.com/api/share/page/briefings` returns crawler meta and redirects humans.
+   - Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
 
 ### C) Marketing copy accuracy
 - Replace “Join 500+ commodity trading professionals” with a true number as soon as you have it.
@@ -635,6 +606,11 @@ If you report any issue, confirm whether it is on:
 ✅ Phase 68 targets met (PREVIEW)
 - Pillar dropdown destinations (`/category/{slug}`) show the mascot + motif banner like Briefings/Books.
 - Lounge page now has a pillar-style banner with full-size wolf mascot; locked view mascot size matches.
+
+✅ Phase 69 targets met (PREVIEW)
+- Briefings/Books/Lounge/Home have dedicated mascot share cards + crawler share pages.
+- Runtime meta `og:image` is correct on those pages (no stale fallback).
+- Site passes a full mobile responsiveness audit (≤768px): hamburger nav, stacked pillar cards, readable text, no overflow.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

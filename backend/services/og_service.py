@@ -222,6 +222,165 @@ _MOTIFS = {
 }
 
 
+def _motif_briefings(d: ImageDraw.ImageDraw, s: int, a: tuple) -> None:
+    """Telegraph wire pulses: the weekly signal arriving on the desk."""
+    lines = [
+        [(70, 470), (430, 470), (480, 414), (580, 414), (630, 470), (1140, 470)],
+        [(70, 540), (520, 540), (570, 486), (680, 486), (740, 592), (800, 540), (1140, 540)],
+    ]
+    for pts in lines:
+        d.line([(x * s, y * s) for x, y in pts], fill=a + (78,), width=3 * s)
+    for (x, y) in [(480, 414), (680, 486), (740, 592)]:
+        d.ellipse([(x - 6) * s, (y - 6) * s, (x + 6) * s, (y + 6) * s], fill=a + (140,))
+
+
+def _motif_books(d: ImageDraw.ImageDraw, s: int, a: tuple) -> None:
+    """A shelf of book spines with one leaning volume."""
+    x0 = 720
+    for i, x in enumerate(range(x0, x0 + 4 * 62, 62)):
+        y = 330 + (i % 2) * 18
+        d.rounded_rectangle([x * s, y * s, (x + 44) * s, 560 * s], radius=6 * s,
+                            outline=a + (95,), width=3 * s)
+        d.line([(x + 12) * s, (y + 34) * s, (x + 32) * s, (y + 34) * s], fill=a + (80,), width=2 * s)
+    d.line([(x0 - 30) * s, 574 * s, 1150 * s, 574 * s], fill=a + (110,), width=3 * s)
+
+
+def _motif_lounge(d: ImageDraw.ImageDraw, s: int, a: tuple) -> None:
+    """Howl arcs: a signal broadcast to the pack."""
+    cx, cy = 860, 520
+    for i, r in enumerate((110, 180, 250)):
+        alpha = 100 - i * 26
+        d.arc([(cx - r) * s, (cy - r) * s, (cx + r) * s, (cy + r) * s],
+              start=245, end=340, fill=a + (alpha,), width=3 * s)
+    d.ellipse([(cx - 6) * s, (cy - 6) * s, (cx + 6) * s, (cy + 6) * s], fill=a + (150,))
+
+
+# Section identity cards: Weekly Briefing (falcon), Bookshelf (tortoise), Lounge (wolf).
+SECTION_CARDS = {
+    'home': {
+        'accent': (28, 133, 112),
+        'label': 'TRADING · TECH · GROWTH · SYSTEMS',
+        'title': 'The Trading Narrative',
+        'subtitle': 'Sharp essays and a weekly briefing, written the way a desk reads them.',
+        'mascot': 'finance',
+        'motif': _motif_finance,
+    },
+    'briefings': {
+        'accent': (193, 73, 83),
+        'label': 'THE SERIES',
+        'title': 'The Weekly Briefing',
+        'subtitle': 'Five things that change how trading desks work, every single week.',
+        'mascot': 'briefings',
+        'motif': _motif_briefings,
+    },
+    'books': {
+        'accent': (154, 107, 63),
+        'label': 'BOOKSHELF',
+        'title': "Books Worth a Trader's Time",
+        'subtitle': 'A short, honest shelf on trading, risk, and systems that hold up.',
+        'mascot': 'books',
+        'motif': _motif_books,
+    },
+    'lounge': {
+        'accent': (160, 79, 134),
+        'label': 'MEMBERS ONLY',
+        'title': 'The Lounge',
+        'subtitle': 'Live takes and desk talk with the Premium pack.',
+        'mascot': 'lounge',
+        'motif': _motif_lounge,
+    },
+}
+
+
+def render_section_card(section: str) -> bytes:
+    """1200x630 share card for a section identity (falcon / tortoise / wolf)."""
+    cfg = SECTION_CARDS[section]
+    accent = cfg['accent']
+    img = Image.new('RGB', (W, H), BG)
+    _vertical_vignette(img)
+    _accent_glow(img, accent)
+
+    draw = ImageDraw.Draw(img, 'RGBA')
+    _dot_grid(draw, PAD, 210, W - PAD, H - 150)
+
+    # section motif, supersampled like the pillar motifs
+    s = 2
+    layer = Image.new('RGBA', (W * s, H * s), (0, 0, 0, 0))
+    cfg['motif'](ImageDraw.Draw(layer), s, accent)
+    layer = layer.resize((W, H), Image.LANCZOS)
+    img.paste(layer, (0, 0), layer)
+    draw = ImageDraw.Draw(img, 'RGBA')
+
+    mono = _font('IBMPlexMono-SemiBold.ttf', 24)
+    mono_sm = _font('IBMPlexMono-SemiBold.ttf', 21)
+    sans = _font('Figtree.ttf', 30, weight=500)
+
+    # wordmark eyebrow
+    y = 74
+    draw.rectangle([PAD, y + 3, PAD + 16, y + 19], fill=accent)
+    draw.text((PAD + 32, y), 'THE TRADING NARRATIVE', font=mono, fill=MUTED)
+
+    # section chip
+    chip_y = y + 58
+    tw = draw.textlength(cfg['label'], font=mono_sm)
+    draw.rounded_rectangle([PAD, chip_y, PAD + tw + 44, chip_y + 44], radius=22, fill=accent)
+    draw.text((PAD + 22, chip_y + 10), cfg['label'], font=mono_sm, fill=BG_DEEP)
+
+    # title + subtitle (leave room for the large mascot on the right)
+    max_w = W - PAD * 2 - 300
+    size, lines = 76, []
+    while size >= 44:
+        serif = _font('EBGaramond-SemiBold.ttf', size, weight=600)
+        lines = _wrap(draw, cfg['title'], serif, max_w)
+        if len(lines) <= 2:
+            break
+        size -= 6
+    serif = _font('EBGaramond-SemiBold.ttf', size, weight=600)
+    ty = chip_y + 96
+    for line in lines[:2]:
+        draw.text((PAD, ty), line, font=serif, fill=CREAM)
+        ty += int(size * 1.2)
+    for sub_line in _wrap(draw, cfg['subtitle'], sans, max_w):
+        draw.text((PAD, ty + 14), sub_line, font=sans, fill=MUTED)
+        ty += 42
+
+    # large mascot medallion, right side
+    medallion = _mascot_medallion(cfg['mascot'], accent, size=250)
+    if medallion:
+        img.paste(medallion, (W - PAD - medallion.width, (H - medallion.height) // 2 - 30), medallion)
+
+    # footer byline
+    fy = H - 104
+    draw.rectangle([PAD, fy + 8, PAD + 40, fy + 12], fill=accent)
+    draw.text((PAD + 56, fy - 8), 'thetradingnarrative.com', font=sans, fill=MUTED)
+
+    # bottom accent strip
+    strip_h = 10
+    strip = Image.new('L', (W, 1), 0)
+    for x in range(W):
+        t = 1 - max(0, (x - W * 0.45)) / (W * 0.55)
+        strip.putpixel((x, 0), int(255 * min(1, t) ** 1.4))
+    strip = strip.resize((W, strip_h))
+    img.paste(Image.new('RGB', (W, strip_h), accent), (0, H - strip_h), strip)
+
+    buf = io.BytesIO()
+    img.save(buf, format='PNG', optimize=True)
+    return buf.getvalue()
+
+
+async def get_or_render_section_card(section: str) -> bytes:
+    """Disk-cached section card; keyed by design version."""
+    path = os.path.join(CACHE_DIR, f'section-{section}-{_OG_VERSION}.png')
+    if os.path.exists(path):
+        with open(path, 'rb') as f:
+            return f.read()
+    from starlette.concurrency import run_in_threadpool
+    data = await run_in_threadpool(render_section_card, section)
+    with open(path, 'wb') as f:
+        f.write(data)
+    return data
+
+
 def _pillar_motif(img: Image.Image, category: str, accent: tuple) -> None:
     """Composite the pillar's signature illustration over the full canvas."""
     motif = _MOTIFS.get(category)

@@ -19,7 +19,7 @@ import { Crown, Megaphone, MessagesSquare, Plus, Send, Trash2, ArrowLeft, Lock, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
-import { api, formatDate } from "@/lib/api";
+import { api, formatDate, SITE_URL } from "@/lib/api";
 import { pillarAccent, withAlpha, PillarMotif, pillarMascot, PILLAR_MASCOT_ALTS } from "@/lib/pillars";
 import { useAuth } from "@/context/AuthContext";
 
@@ -295,7 +295,7 @@ export default function CommunityPage() {
   if (!user || locked) {
     return (
       <div className="container-editorial py-16 sm:py-24" data-testid="community-locked">
-        <Seo title="The Lounge" path="/lounge" />
+        <Seo title="The Lounge" path="/lounge" image={`${SITE_URL}/api/og/page/lounge.png`} />
         <div className="max-w-xl mx-auto text-center">
           <img
             src={pillarMascot("lounge")}
@@ -424,7 +424,7 @@ export default function CommunityPage() {
   // ------- lounge home -------
   return (
     <div className="container-editorial py-10 sm:py-14" data-testid="community-page">
-      <Seo title="The Lounge" path="/lounge" />
+      <Seo title="The Lounge" path="/lounge" image={`${SITE_URL}/api/og/page/lounge.png`} />
       <div
         className="relative overflow-hidden rounded-2xl border px-6 sm:px-10 py-8 sm:py-10 mb-8"
         style={{ borderColor: withAlpha(pillarAccent("lounge"), 0.35), backgroundColor: withAlpha(pillarAccent("lounge"), 0.07) }}
@@ -457,7 +457,7 @@ export default function CommunityPage() {
           <img
             src={pillarMascot("lounge")}
             alt={PILLAR_MASCOT_ALTS.lounge}
-            className="hidden sm:block h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
+            className="h-20 w-20 sm:h-32 sm:w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
             style={{ border: `3px solid ${withAlpha(pillarAccent("lounge"), 0.55)}` }}
             loading="lazy"
             data-testid="lounge-mascot"

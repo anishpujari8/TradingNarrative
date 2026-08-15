@@ -17,7 +17,7 @@ class TestRunner:
         self.tests_run = 0
         self.tests_passed = 0
         self.tests_failed = 0
-        self.token = None
+        self.session = requests.Session()  # Use session to maintain cookies
         self.user_id = None
         self.test_email = None
         self.failures = []
@@ -47,25 +47,26 @@ class TestRunner:
             self.log(f"❌ ERROR: {name} - {str(e)}", "ERROR")
             return False
 
-    def api_call(self, method, endpoint, data=None, expected_status=None, auth=True):
+    def api_call(self, method, endpoint, data=None, expected_status=None, auth=True, use_session=True):
         """Make an API call"""
         url = f"{BASE_URL}/api/{endpoint}"
         headers = {'Content-Type': 'application/json'}
-        if auth and self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
 
         self.log(f"{method} {endpoint}")
         if data:
             self.log(f"Request body: {data}")
 
+        # Use session for cookie-based auth, or plain requests for anonymous calls
+        client = self.session if use_session else requests
+
         if method == 'GET':
-            response = requests.get(url, headers=headers)
+            response = client.get(url, headers=headers)
         elif method == 'POST':
-            response = requests.post(url, json=data, headers=headers)
+            response = client.post(url, json=data, headers=headers)
         elif method == 'PUT':
-            response = requests.put(url, json=data, headers=headers)
+            response = client.put(url, json=data, headers=headers)
         elif method == 'DELETE':
-            response = requests.delete(url, headers=headers)
+            response = client.delete(url, headers=headers)
         else:
             raise ValueError(f"Unsupported method: {method}")
 
@@ -98,7 +99,7 @@ class TestRunner:
             auth=False
         )
         
-        self.token = data['token']
+        # Session cookie is automatically stored in self.session
         self.user_id = data['user']['id']
         self.log(f"User created with ID: {self.user_id}")
         return data['user']
@@ -131,17 +132,15 @@ class TestRunner:
 
     def test_streak_without_auth(self):
         """Test POST /api/users/streak/read without auth returns 401"""
-        old_token = self.token
-        self.token = None
-        
-        response, data = self.api_call(
-            'POST', 'users/streak/read',
-            data={'tz_offset_minutes': -330, 'slug': 'test-article'},
-            expected_status=401,
-            auth=False
+        # Create a new session without auth
+        response = requests.post(
+            f"{BASE_URL}/api/users/streak/read",
+            json={'tz_offset_minutes': -330, 'slug': 'test-article'},
+            headers={'Content-Type': 'application/json'}
         )
         
-        self.token = old_token
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 401, f"Expected 401, got {response.status_code}"
 
     def test_auth_me_includes_streak_fields(self):
         """Test GET /api/auth/me includes current_streak, longest_streak, last_read_date"""
@@ -237,22 +236,23 @@ class TestRunner:
     
     def test_audio_access_anonymous_gated(self):
         """Test anonymous access to gated essay audio -> requires_signin=true, unlockable=true, scope='clip'"""
-        old_token = self.token
-        self.token = None
-        
-        response, data = self.api_call(
-            'GET', f'posts/{GATED_ESSAY}/audio/access',
-            expected_status=200,
-            auth=False
+        # Use plain requests without session
+        response = requests.get(
+            f"{BASE_URL}/api/posts/{GATED_ESSAY}/audio/access",
+            headers={'Content-Type': 'application/json'}
         )
+        
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        
+        data = response.json()
+        self.log(f"Response body: {data}")
         
         assert data['requires_signin'] == True, f"Should require signin, got {data.get('requires_signin')}"
         assert data['unlockable'] == True, f"Should be unlockable, got {data.get('unlockable')}"
         assert data['scope'] == 'clip', f"Should be clip scope, got {data.get('scope')}"
         assert data['price_inr'] == 45.0, f"Price INR should be 45.0, got {data.get('price_inr')}"
         assert data['price_usd'] == 0.5, f"Price USD should be 0.5, got {data.get('price_usd')}"
-        
-        self.token = old_token
 
     def test_audio_access_newsletter_edition(self):
         """Test newsletter edition audio access -> free_audio=true, scope='full', unlockable=false"""
@@ -277,24 +277,20 @@ class TestRunner:
 
     def test_audio_stream_anonymous_401(self):
         """Test anonymous GET /api/posts/{slug}/audio -> 401"""
-        old_token = self.token
-        self.token = None
-        
-        response, data = self.api_call(
-            'GET', f'posts/{GATED_ESSAY}/audio?voice=male',
-            expected_status=401,
-            auth=False
+        response = requests.get(
+            f"{BASE_URL}/api/posts/{GATED_ESSAY}/audio?voice=male",
+            headers={'Content-Type': 'application/json'}
         )
         
-        self.token = old_token
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 401, f"Expected 401, got {response.status_code}"
 
     def test_audio_stream_free_user_clip(self):
         """Test free user gets clip scope on gated essay"""
         url = f"{BASE_URL}/api/posts/{GATED_ESSAY}/audio?voice=male"
-        headers = {'Authorization': f'Bearer {self.token}'}
         
         self.log(f"GET {url}")
-        response = requests.get(url, headers=headers)
+        response = self.session.get(url)
         
         self.log(f"Response status: {response.status_code}")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
@@ -311,10 +307,9 @@ class TestRunner:
     def test_audio_stream_free_user_full_shipping(self):
         """Test free user gets full scope on shipping essay"""
         url = f"{BASE_URL}/api/posts/{SHIPPING_ESSAY}/audio?voice=male"
-        headers = {'Authorization': f'Bearer {self.token}'}
         
         self.log(f"GET {url}")
-        response = requests.get(url, headers=headers, timeout=60)
+        response = self.session.get(url, timeout=60)
         
         self.log(f"Response status: {response.status_code}")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
@@ -384,57 +379,61 @@ class TestRunner:
         fresh_email = f"test_audio_fulfill_{uuid.uuid4().hex[:8]}@test.com"
         self.log(f"Creating fresh user for fulfillment test: {fresh_email}")
         
-        response, data = self.api_call(
-            'POST', 'auth/register',
-            data={'email': fresh_email, 'password': 'Test123!', 'name': 'Audio Test'},
-            expected_status=200,
-            auth=False
+        # Create new session for fresh user
+        fresh_session = requests.Session()
+        response = fresh_session.post(
+            f"{BASE_URL}/api/auth/register",
+            json={'email': fresh_email, 'password': 'Test123!', 'name': 'Audio Test'},
+            headers={'Content-Type': 'application/json'}
         )
         
-        fresh_token = data['token']
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        data = response.json()
         fresh_user_id = data['user']['id']
         
         # Create Razorpay order
-        old_token = self.token
-        self.token = fresh_token
-        
-        response, order_data = self.api_call(
-            'POST', 'billing/audio/razorpay/checkout',
-            data={'slug': GATED_ESSAY},
-            expected_status=200
+        response = fresh_session.post(
+            f"{BASE_URL}/api/billing/audio/razorpay/checkout",
+            json={'slug': GATED_ESSAY},
+            headers={'Content-Type': 'application/json'}
         )
         
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        order_data = response.json()
         order_id = order_data.get('order_id') or order_data.get('ref_id')
         self.log(f"Order created: {order_id}")
         
         # Simulate payment verification (mock mode will grant access immediately)
-        response, verify_data = self.api_call(
-            'POST', 'billing/razorpay/verify',
-            data={
+        response = fresh_session.post(
+            f"{BASE_URL}/api/billing/razorpay/verify",
+            json={
                 'order_id': order_id,
                 'payment_id': f'pay_mock_{uuid.uuid4().hex[:14]}',
                 'signature': 'mock_signature'
             },
-            expected_status=200
+            headers={'Content-Type': 'application/json'}
         )
         
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        verify_data = response.json()
         assert verify_data['ok'] == True, "Verification should succeed"
         self.log("Payment verified successfully")
         
         # Check access endpoint now shows purchased=true, scope='full'
-        response, access_data = self.api_call(
-            'GET', f'posts/{GATED_ESSAY}/audio/access',
-            expected_status=200
+        response = fresh_session.get(
+            f"{BASE_URL}/api/posts/{GATED_ESSAY}/audio/access",
+            headers={'Content-Type': 'application/json'}
         )
         
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        access_data = response.json()
         assert access_data['purchased'] == True, f"Should show purchased=true, got {access_data.get('purchased')}"
         assert access_data['scope'] == 'full', f"Should show full scope, got {access_data.get('scope')}"
         self.log("✅ Access endpoint confirms purchase")
         
         # Check audio stream now returns full scope
         url = f"{BASE_URL}/api/posts/{GATED_ESSAY}/audio?voice=male"
-        headers = {'Authorization': f'Bearer {fresh_token}'}
-        audio_response = requests.get(url, headers=headers, timeout=60)
+        audio_response = fresh_session.get(url, timeout=60)
         
         assert audio_response.status_code == 200, f"Audio stream should work, got {audio_response.status_code}"
         scope = audio_response.headers.get('X-Audio-Scope')
@@ -442,42 +441,146 @@ class TestRunner:
         self.log("✅ Audio stream returns full scope")
         
         # Try to buy again -> should return 400 "already own"
-        response, rebuy_data = self.api_call(
-            'POST', 'billing/audio/razorpay/checkout',
-            data={'slug': GATED_ESSAY},
-            expected_status=400
+        response = fresh_session.post(
+            f"{BASE_URL}/api/billing/audio/razorpay/checkout",
+            json={'slug': GATED_ESSAY},
+            headers={'Content-Type': 'application/json'}
         )
-        self.log(f"✅ Re-buying returns 400: {rebuy_data.get('detail')}")
         
-        self.token = old_token
+        assert response.status_code == 400, f"Expected 400, got {response.status_code}"
+        rebuy_data = response.json()
+        self.log(f"✅ Re-buying returns 400: {rebuy_data.get('detail')}")
 
     def test_regression_subscription_checkout(self):
         """Test subscription checkout still works -> POST /api/billing/razorpay/checkout {plan:'monthly'}"""
         # Create a fresh user for subscription test
         sub_email = f"test_sub_{uuid.uuid4().hex[:8]}@test.com"
-        response, data = self.api_call(
-            'POST', 'auth/register',
-            data={'email': sub_email, 'password': 'Test123!', 'name': 'Sub Test'},
-            expected_status=200,
-            auth=False
+        
+        # Create new session for sub user
+        sub_session = requests.Session()
+        response = sub_session.post(
+            f"{BASE_URL}/api/auth/register",
+            json={'email': sub_email, 'password': 'Test123!', 'name': 'Sub Test'},
+            headers={'Content-Type': 'application/json'}
         )
         
-        sub_token = data['token']
-        old_token = self.token
-        self.token = sub_token
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         
-        response, checkout_data = self.api_call(
-            'POST', 'billing/razorpay/checkout',
-            data={'plan': 'monthly'},
-            expected_status=200
+        response = sub_session.post(
+            f"{BASE_URL}/api/billing/razorpay/checkout",
+            json={'plan': 'monthly'},
+            headers={'Content-Type': 'application/json'}
         )
+        
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        checkout_data = response.json()
         
         assert checkout_data['ok'] == True, "Checkout should succeed"
         assert checkout_data['amount'] == 9900, f"Monthly plan should be 9900 paise, got {checkout_data.get('amount')}"
         assert checkout_data['currency'] == 'INR', f"Currency should be INR, got {checkout_data.get('currency')}"
         self.log("✅ Subscription checkout still works")
+
+    # ==================== OG PAGE CARDS TESTS ====================
+    
+    def test_og_page_briefings(self):
+        """Test GET /api/og/page/briefings.png returns 200 image/png ~1200x630"""
+        url = f"{BASE_URL}/api/og/page/briefings.png"
+        self.log(f"GET {url}")
+        response = requests.get(url)
         
-        self.token = old_token
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        
+        content_type = response.headers.get('Content-Type')
+        self.log(f"Content-Type: {content_type}")
+        assert content_type == 'image/png', f"Expected image/png, got {content_type}"
+        
+        content_length = len(response.content)
+        self.log(f"Image size: {content_length} bytes (~{content_length/1024:.1f} KB)")
+        # OG cards should be reasonable size (not too small, not too large)
+        assert content_length > 10000, f"Image too small: {content_length} bytes"
+        assert content_length < 2000000, f"Image too large: {content_length} bytes"
+
+    def test_og_page_books(self):
+        """Test GET /api/og/page/books.png returns 200 image/png"""
+        url = f"{BASE_URL}/api/og/page/books.png"
+        self.log(f"GET {url}")
+        response = requests.get(url)
+        
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        
+        content_type = response.headers.get('Content-Type')
+        assert content_type == 'image/png', f"Expected image/png, got {content_type}"
+        
+        content_length = len(response.content)
+        self.log(f"Image size: {content_length} bytes (~{content_length/1024:.1f} KB)")
+        assert content_length > 10000, f"Image too small: {content_length} bytes"
+
+    def test_og_page_lounge(self):
+        """Test GET /api/og/page/lounge.png returns 200 image/png"""
+        url = f"{BASE_URL}/api/og/page/lounge.png"
+        self.log(f"GET {url}")
+        response = requests.get(url)
+        
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        
+        content_type = response.headers.get('Content-Type')
+        assert content_type == 'image/png', f"Expected image/png, got {content_type}"
+        
+        content_length = len(response.content)
+        self.log(f"Image size: {content_length} bytes (~{content_length/1024:.1f} KB)")
+        assert content_length > 10000, f"Image too small: {content_length} bytes"
+
+    def test_og_page_unknown_404(self):
+        """Test GET /api/og/page/unknown.png returns 404"""
+        url = f"{BASE_URL}/api/og/page/unknown.png"
+        self.log(f"GET {url}")
+        response = requests.get(url)
+        
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 404, f"Expected 404, got {response.status_code}"
+
+    def test_og_post_card_regression(self):
+        """Test existing post OG cards still work: GET /api/og/insight-hub-484.png returns 200 png"""
+        url = f"{BASE_URL}/api/og/insight-hub-484.png"
+        self.log(f"GET {url}")
+        response = requests.get(url)
+        
+        self.log(f"Response status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        
+        content_type = response.headers.get('Content-Type')
+        assert content_type == 'image/png', f"Expected image/png, got {content_type}"
+        
+        content_length = len(response.content)
+        self.log(f"Image size: {content_length} bytes (~{content_length/1024:.1f} KB)")
+        assert content_length > 10000, f"Image too small: {content_length} bytes"
+
+    def test_backend_smoke_posts(self):
+        """Test GET /api/posts?limit=3 works"""
+        response, data = self.api_call(
+            'GET', 'posts?limit=3',
+            expected_status=200,
+            auth=False
+        )
+        
+        assert 'posts' in data, "Should return posts array"
+        assert isinstance(data['posts'], list), "posts should be a list"
+        self.log(f"Returned {len(data['posts'])} posts")
+
+    def test_backend_smoke_books(self):
+        """Test GET /api/books works"""
+        response, data = self.api_call(
+            'GET', 'books',
+            expected_status=200,
+            auth=False
+        )
+        
+        assert 'books' in data, "Should return books array"
+        assert isinstance(data['books'], list), "books should be a list"
+        self.log(f"Returned {len(data['books'])} books")
 
     def summary(self):
         """Print test summary"""
@@ -524,6 +627,25 @@ def main():
         runner.test("Audio negative - invalid slug returns 404", runner.test_audio_negative_invalid_slug)
         runner.test("Audio fulfillment flow (purchase -> unlock)", runner.test_audio_fulfillment_flow)
         runner.test("Regression - subscription checkout works", runner.test_regression_subscription_checkout)
+        
+        # ==================== OG PAGE CARDS TESTS ====================
+        runner.log("\n" + "="*60)
+        runner.log("OG PAGE CARDS TESTS")
+        runner.log("="*60)
+        
+        runner.test("OG page card - briefings.png returns 200 image/png", runner.test_og_page_briefings)
+        runner.test("OG page card - books.png returns 200 image/png", runner.test_og_page_books)
+        runner.test("OG page card - lounge.png returns 200 image/png", runner.test_og_page_lounge)
+        runner.test("OG page card - unknown.png returns 404", runner.test_og_page_unknown_404)
+        runner.test("OG post card regression - insight-hub-484.png works", runner.test_og_post_card_regression)
+        
+        # Backend smoke tests
+        runner.log("\n" + "="*60)
+        runner.log("BACKEND SMOKE TESTS")
+        runner.log("="*60)
+        
+        runner.test("Backend smoke - GET /api/posts?limit=3", runner.test_backend_smoke_posts)
+        runner.test("Backend smoke - GET /api/books", runner.test_backend_smoke_books)
         
         # Reading streak tests
         runner.log("\n" + "="*60)

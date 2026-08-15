@@ -37,6 +37,7 @@ export default function BooksPage() {
         title="Books: Trading & Systems Reading List"
         description="Books worth a trader's time, recommended by Anish Pujari: trading, risk, market mechanics, and building better systems. Starting with How Trading Can Make You Money."
         path="/books"
+        image={`${SITE_URL}/api/og/page/books.png`}
         keywords="trading books, commodity trading reading list, How Trading Can Make You Money, Anish Pujari book"
         jsonLd={jsonLd}
       />
@@ -63,7 +64,7 @@ export default function BooksPage() {
           <img
             src={pillarMascot("books")}
             alt={PILLAR_MASCOT_ALTS.books}
-            className="hidden sm:block h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
+            className="h-20 w-20 sm:h-32 sm:w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
             style={{ border: `3px solid ${withAlpha(ACCENT, 0.55)}` }}
             loading="lazy"
             data-testid="books-mascot"
