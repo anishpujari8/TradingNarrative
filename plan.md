@@ -11,7 +11,7 @@
   - **Three section identities** (non-category destinations, styled like pillars):
     - **The Weekly Briefing** (`briefings`) ✅ *(Phase 64)*
     - **Bookshelf** (`books`) ✅ *(Phase 64)*
-    - **The Lounge** (`lounge`) ✅ *(Phase 66)*
+    - **The Lounge** (`lounge`) ✅ *(Phase 66; banner upgraded Phase 68)*
   - **Mascot showcase hub**:
     - **Dedicated Pillars page** (`/pillars`) ✅ *(Phase 65; enhanced Phase 66–67)*
       - Presents the 4 pillars + section identities with mascots, motif branding, and lore.
@@ -159,6 +159,8 @@
   - Mascot added to locked and member views
 - **Signal Wolf Lounge reply emails** ✅ *(Phase 67)*
   - Wolf-branded email notification on thread replies.
+- **Lounge header banner parity** ✅ *(Phase 68)*
+  - Member Lounge header upgraded to a pillar-style banner like Briefings/Books (full-size mascot and motif).
 
 ### Access model (METERED + PAYWALL, SEO-friendly)
 - Archive index fully public ✅
@@ -212,6 +214,8 @@
 - **Briefings + Books mascots + palettes (styled like pillars)** ✅ *(Phase 64)*
   - Dedicated mascots, accents, motifs
   - Pillar-style header banners on `/briefings` and `/books`
+- **Category pages now have pillar-style mascot banners** ✅ *(Phase 68)*
+  - `/category/{slug}` (dropdown destinations) show the mascot + motif banner like Briefings/Books.
 - **Dedicated Pillars mascot page** ✅ *(Phase 65; enhanced Phase 66–67)*
   - `/pillars` hub consolidating mascots + motif branding
   - Lore tooltips on pillars ✅ *(Phase 66)*
@@ -447,6 +451,38 @@ User request: on the Pillars hub, show mascots/lore first, then essays; add lore
 
 **Requires redeploy:** to ship Phase 67 UI + email changes to production.
 
+### Phase 68 — Category page mascot banners + full-size Lounge mascot ✅ COMPLETED (PREVIEW)
+User request: when selecting a pillar from the nav dropdown, show the mascot beside the pillar summary (like Briefings/Books). Also make the Lounge mascot the same size as Briefings/Books.
+
+**68.1 Category page pillar-style banner (dropdown destinations):**
+- `CategoryPage.js` (`/category/{slug}`) now renders a pillar-style header banner:
+  - Accent-tinted border/background using pillar accent
+  - Motif backdrop (`PillarMotif`)
+  - Label: `Pillar · {lore.name}`
+  - Title + description + accent underline bar
+  - Mascot medallion at `h-32 lg:h-40` (hidden on mobile)
+- Test IDs: `category-header-banner`, `category-mascot`.
+
+**68.2 Lounge header banner parity + mascot size:**
+- `CommunityPage.js` member Lounge header upgraded from small inline medallion to full banner:
+  - Plum-tinted background, howl-arc motif, label “Members only · The Signal Wolf”, accent underline
+  - Wolf mascot at `h-32 lg:h-40` (≈160px), matching Briefings/Books
+  - Admin + discussion CTAs moved into the banner; existing button test IDs preserved
+- Test ID: `lounge-header-banner`.
+
+**68.3 Locked Lounge mascot size:**
+- Locked view mascot bumped from `h-24` to `h-32 lg:h-40`.
+
+**68.4 Verification / QA:**
+- Playwright verified:
+  - Nav dropdown → `/category/tech-business` shows banner + owl mascot
+  - `/category/lifestyle` shows banner mascot
+  - Locked lounge mascot is 160px
+  - Admin member lounge shows banner + 160px wolf + working buttons
+- Frontend build: `esbuild` clean; 5 services running.
+
+**Requires redeploy:** to ship Phase 68 UI changes to production.
+
 ---
 
 ## 3) Next Actions
@@ -462,7 +498,7 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–67 + Phase 56):**
+**Requires redeploy to ship UI/share/conversion changes (Phases 55–68 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
@@ -474,8 +510,11 @@ If you report any issue, confirm whether it is on:
    - `/pillars`: each pillar shows 2–3 PostCards and “View all →” works.
    - `/briefings`: banner shows crimson motif + falcon mascot.
    - `/books`: banner shows bronze motif + tortoise mascot.
-   - `/lounge`: locked view shows wolf medallion; member view header shows wolf medallion.
-   - `/lounge`: replying to a thread triggers an email to the author (confirm in email logs/admin).
+   - `/lounge`:
+     - locked view shows large wolf medallion
+     - member view shows pillar-style lounge banner + large wolf medallion
+   - `/lounge`: replying to a thread triggers a wolf-branded email to the author (confirm in email logs/admin).
+   - `/category/{slug}` (pillar dropdown destinations): header banner shows motif + mascot.
    - Home hero: inline email capture + social proof line.
    - Home: author strip under hero.
    - Home: “Start here, free” section shows 3 free essays.
@@ -592,6 +631,10 @@ If you report any issue, confirm whether it is on:
 - `/pillars` shows mascots/lore first, then essays under each pillar.
 - Lore tooltips exist for 4 pillars + 3 section identities.
 - Lounge reply notification emails are wolf-branded and sent via Gmail SMTP.
+
+✅ Phase 68 targets met (PREVIEW)
+- Pillar dropdown destinations (`/category/{slug}`) show the mascot + motif banner like Briefings/Books.
+- Lounge page now has a pillar-style banner with full-size wolf mascot; locked view mascot size matches.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

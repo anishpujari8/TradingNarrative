@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { api, formatDate } from "@/lib/api";
-import { pillarAccent, withAlpha, pillarMascot, PILLAR_MASCOT_ALTS } from "@/lib/pillars";
+import { pillarAccent, withAlpha, PillarMotif, pillarMascot, PILLAR_MASCOT_ALTS } from "@/lib/pillars";
 import { useAuth } from "@/context/AuthContext";
 
 const initials = (name) => (name || "M").slice(0, 2).toUpperCase();
@@ -300,7 +300,7 @@ export default function CommunityPage() {
           <img
             src={pillarMascot("lounge")}
             alt={PILLAR_MASCOT_ALTS.lounge}
-            className="h-24 w-24 rounded-full object-cover mx-auto mb-6 shadow-lg"
+            className="h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover mx-auto mb-6 shadow-lg"
             style={{ border: `3px solid ${withAlpha(pillarAccent("lounge"), 0.55)}` }}
             loading="lazy"
             data-testid="lounge-locked-mascot"
@@ -425,33 +425,43 @@ export default function CommunityPage() {
   return (
     <div className="container-editorial py-10 sm:py-14" data-testid="community-page">
       <Seo title="The Lounge" path="/lounge" />
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-5">
+      <div
+        className="relative overflow-hidden rounded-2xl border px-6 sm:px-10 py-8 sm:py-10 mb-8"
+        style={{ borderColor: withAlpha(pillarAccent("lounge"), 0.35), backgroundColor: withAlpha(pillarAccent("lounge"), 0.07) }}
+        data-testid="lounge-header-banner"
+      >
+        <div className="absolute inset-y-0 right-0 w-3/4 sm:w-1/2 pointer-events-none" style={{ color: pillarAccent("lounge"), opacity: 0.16 }}>
+          <PillarMotif category="lounge" className="h-full w-full" />
+        </div>
+        <div className="relative flex items-center gap-6 sm:gap-10">
+          <div className="min-w-0 flex-1">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: pillarAccent("lounge") }}>
+              Members only · The Signal Wolf
+            </span>
+            <h1 className="font-serif text-3xl sm:text-4xl font-semibold mt-3 flex items-center gap-3">
+              The Lounge <Crown className="h-6 w-6 text-accent" />
+            </h1>
+            <p className="text-sm text-muted-foreground mt-3 max-w-2xl leading-relaxed">Live market takes, early-access drafts, announcements, and discussions between Premium readers.</p>
+            <div className="h-1 w-16 rounded-full mt-4" style={{ backgroundColor: pillarAccent("lounge") }} aria-hidden />
+            <div className="flex flex-wrap gap-2 mt-5">
+              {isAdmin && (
+                <Button variant="outline" onClick={() => openAnnEditor()} data-testid="community-new-announcement-button">
+                  <Megaphone className="h-4 w-4 mr-2" /> New announcement
+                </Button>
+              )}
+              <Button onClick={() => setNewThreadOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="community-new-thread-button">
+                <Plus className="h-4 w-4 mr-2" /> Start a discussion
+              </Button>
+            </div>
+          </div>
           <img
             src={pillarMascot("lounge")}
             alt={PILLAR_MASCOT_ALTS.lounge}
-            className="hidden sm:block h-16 w-16 rounded-full object-cover shrink-0 shadow-md"
+            className="hidden sm:block h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
             style={{ border: `3px solid ${withAlpha(pillarAccent("lounge"), 0.55)}` }}
             loading="lazy"
             data-testid="lounge-mascot"
           />
-          <div>
-            <span className="section-label">Members only</span>
-            <h1 className="font-serif text-3xl sm:text-4xl font-semibold mt-2 flex items-center gap-3">
-              The Lounge <Crown className="h-6 w-6 text-accent" />
-            </h1>
-            <p className="text-sm text-muted-foreground mt-2">Live market takes, early-access drafts, announcements, and discussions between Premium readers.</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <Button variant="outline" onClick={() => openAnnEditor()} data-testid="community-new-announcement-button">
-              <Megaphone className="h-4 w-4 mr-2" /> New announcement
-            </Button>
-          )}
-          <Button onClick={() => setNewThreadOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="community-new-thread-button">
-            <Plus className="h-4 w-4 mr-2" /> Start a discussion
-          </Button>
         </div>
       </div>
 

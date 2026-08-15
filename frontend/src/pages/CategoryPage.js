@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Seo } from "@/components/Seo";
 import { PostCard } from "@/components/PostCard";
 import { api, CATEGORIES } from "@/lib/api";
+import { pillarAccent, withAlpha, PillarMotif, pillarMascot, PILLAR_MASCOT_ALTS, PILLAR_LORE } from "@/lib/pillars";
 
 export default function CategoryPage() {
   const { slug } = useParams();
@@ -27,12 +28,39 @@ export default function CategoryPage() {
     );
   }
 
+  const accent = pillarAccent(slug);
+  const lore = PILLAR_LORE[slug];
+
   return (
     <div className="container-editorial py-12 sm:py-16" data-testid="category-page">
       <Seo title={category.label} description={category.description} path={`/category/${slug}`} />
-      <span className="section-label">Pillar</span>
-      <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3" data-testid="category-title">{category.label}</h1>
-      <p className="text-muted-foreground text-lg mt-3 max-w-2xl">{category.description}</p>
+      <div
+        className="relative overflow-hidden rounded-2xl border px-6 sm:px-10 py-8 sm:py-10"
+        style={{ borderColor: withAlpha(accent, 0.35), backgroundColor: withAlpha(accent, 0.07) }}
+        data-testid="category-header-banner"
+      >
+        <div className="absolute inset-y-0 right-0 w-3/4 sm:w-1/2 pointer-events-none" style={{ color: accent, opacity: 0.16 }}>
+          <PillarMotif category={slug} className="h-full w-full" />
+        </div>
+        <div className="relative flex items-center gap-6 sm:gap-10">
+          <div className="min-w-0 flex-1">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: accent }}>
+              Pillar{lore?.name ? ` · ${lore.name}` : ""}
+            </span>
+            <h1 className="font-serif text-4xl sm:text-5xl font-semibold mt-3 leading-tight" data-testid="category-title">{category.label}</h1>
+            <p className="text-muted-foreground text-lg mt-4 max-w-2xl leading-relaxed">{category.description}</p>
+            <div className="h-1 w-16 rounded-full mt-5" style={{ backgroundColor: accent }} aria-hidden />
+          </div>
+          <img
+            src={pillarMascot(slug)}
+            alt={PILLAR_MASCOT_ALTS[slug]}
+            className="hidden sm:block h-32 w-32 lg:h-40 lg:w-40 rounded-full object-cover shrink-0 shadow-lg"
+            style={{ border: `3px solid ${withAlpha(accent, 0.55)}` }}
+            loading="lazy"
+            data-testid="category-mascot"
+          />
+        </div>
+      </div>
       <Separator className="my-10" />
       {posts === null ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 rounded-xl" />)}</div>
