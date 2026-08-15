@@ -97,6 +97,14 @@
 - **Resend** ⛔ *(planned; blocked pending user decisions + API key + sender domain verification)*
 - **Admin Alerts (Email Notifications)** ✅ *(Phase 37)*
 
+### Account security & recovery ✅ (Phase 70)
+- **Password reset flow** ✅ *(Phase 70, PREVIEW)*
+  - `/api/auth/password-reset/request` generates a token and sends email via Gmail SMTP.
+  - `/api/auth/password-reset/confirm` validates token, updates password, signs user in (httpOnly cookie).
+  - **Security hardened**: reset links are **never leaked** in API responses.
+  - Branded HTML reset email reduces spam likelihood.
+  - Expiry extended to 30 minutes.
+
 ### Audio narration (ElevenLabs)
 - **Essay Audio Narration (ElevenLabs)** ✅ (cached)
 - Listen analytics ✅
@@ -251,7 +259,7 @@
   - Added “Meet the Mascots” link in footer (under Site).
 
 ### Mobile responsiveness ✅ *(Phase 69)*
-- **Mobile audit (≤768px)** completed across:
+- **Mobile audit (≤768px)** completed across:
   - `/`, `/archive`, `/briefings`, `/books`, `/pillars`, `/glossary`, `/lounge`, `/pricing`, `/about`, `/category/*`, `/topics/*`, `/post/*`
 - Success criteria confirmed:
   - Navigation collapses into hamburger everywhere
@@ -261,7 +269,7 @@
   - Books and Lounge fully usable on mobile
 - Mobile fixes applied:
   - Pillars cards reflow to vertical/centered on `<640px`
-  - Banner mascots now render on mobile (h-20) on Briefings/Books/Category/Lounge/Topic banners
+  - Banner mascots render on mobile (h-20) on Briefings/Books/Category/Lounge/Topic banners
   - HomePage author strip medallion visible on mobile (h-16)
 
 ---
@@ -446,9 +454,9 @@ User request: give briefings/books/lounge their own mascot OG cards; audit the e
   - No horizontal overflow detected site-wide.
   - Hamburger menu visible and functional across pages.
 - Fixes applied:
-  - PillarsPage pillar cards now stack vertically and center-align on small screens (prevents lore name wrap collisions).
-  - Banner mascots now render on mobile (h-20) on Briefings/Books/Category/Lounge/Topic banners.
-  - HomePage author strip medallion now renders on mobile (h-16, sm:h-24).
+  - PillarsPage pillar cards stack vertically and center-align on small screens.
+  - Banner mascots render on mobile (h-20) on Briefings/Books/Category/Lounge/Topic banners.
+  - HomePage author strip medallion renders on mobile (h-16, sm:h-24).
 
 **69.4 QA / testing:**
 - Testing agent iteration_37:
@@ -458,6 +466,37 @@ User request: give briefings/books/lounge their own mascot OG cards; audit the e
   - Single real bug (OG meta) fixed and re-verified.
 
 **Requires redeploy:** to ship Phase 69 UI + OG + sitemap/share changes to production.
+
+### Phase 70 — Password reset flow fix + email deliverability hardening ✅ COMPLETED (PREVIEW)
+User report: “Forgot password flow is broken for existing users”.
+
+**Diagnosis (root cause):**
+- Core token mechanics worked, but the flow had 3 real defects due to dev-mode leftovers:
+  1) **Security hole**: `/api/auth/password-reset/request` returned `reset_link` in JSON for any caller (account takeover vector) and the frontend displayed it (“Email sending is mocked”) even though Gmail SMTP is live.
+  2) Reset email content was bare plain-text (spam-prone/unbranded).
+  3) Token expiry too short (15 minutes).
+
+**Fixes:**
+- `backend/routers/auth.py`:
+  - `/auth/password-reset/request` now returns a **generic** message for both existing/unknown emails and **never leaks** the reset link.
+  - Added branded teal HTML email `_reset_email_html()` with CTA button + fallback link.
+  - Improved plain-text body.
+  - Expiry extended **15 → 30 minutes**.
+  - Rate limit kept (**5 requests per email per hour**).
+- `frontend/src/pages/AuthPage.js`:
+  - Dev-mode link alert removed.
+  - New “Check your inbox” alert (`reset-sent-alert`) with spam-folder note.
+- `frontend/src/pages/ResetPasswordPage.js`: unchanged (already correct).
+
+**Email service status (deliverability / blocking):**
+- Gmail SMTP is configured and verified live (multipart, From name, Reply-To). Recent `password_reset` email logs show **sent (gmail)**.
+- Resend remains not configured (still blocked pending API key/domain), unchanged.
+
+**Verification:**
+- End-to-end API verification (9 checks): no link leak, email logged as sent (gmail) with HTML CTA, 30-minute expiry, confirm signs in via httpOnly cookie, old password fails, new password succeeds, token reuse rejected, expired token rejected, unknown email returns generic response.
+- Browser UI verification: forgot form → inbox alert, reset link works, password update signs in + redirects, fresh login with new password succeeds.
+
+**Requires redeploy:** to ship Phase 70 to production.
 
 ---
 
@@ -474,7 +513,7 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/conversion changes (Phases 55–69 + Phase 56):**
+**Requires redeploy to ship UI/share/security changes (Phases 55–70 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
@@ -484,20 +523,25 @@ If you report any issue, confirm whether it is on:
    - `/pillars`: lore section renders first; essays section appears under it.
    - `/pillars`: Lore tooltips work for 4 pillars + 3 sections.
    - `/pillars`: each pillar shows 2–3 PostCards and “View all →” works.
-   - `/briefings`: banner shows crimson motif + falcon mascot.
-   - `/books`: banner shows bronze motif + tortoise mascot.
+   - `/briefings`: banner shows crimson motif + falcon mascot; OG card renders.
+   - `/books`: banner shows bronze motif + tortoise mascot; OG card renders.
    - `/lounge`:
      - locked view shows large wolf medallion
-     - member view shows pillar-style lounge banner + large wolf medallion
+     - member view shows pillar-style lounge banner + full-size wolf mascot
    - `/lounge`: replying to a thread triggers a wolf-branded email to the author (confirm in email logs/admin).
    - `/category/{slug}` (pillar dropdown destinations): header banner shows motif + mascot.
    - `/topics/{pillar}` shows mascot + motif header.
    - Mobile (≤768px): hamburger menu works site-wide; no horizontal overflow; pillar cards stack.
    - Footer under Site includes “Meet the Mascots”.
    - `/books`: each configured book shows “Reading Notes →” linking into the archive.
-   - `https://thetradingnarrative.com/api/og/page/briefings.png` (and `/books`, `/lounge`, `/home`) render correct mascot cards.
-   - `https://thetradingnarrative.com/api/share/page/briefings` returns crawler meta and redirects humans.
-   - Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
+   - Section OG cards:
+     - `https://thetradingnarrative.com/api/og/page/briefings.png` (and `/books`, `/lounge`, `/home`) render correct mascot cards.
+     - `https://thetradingnarrative.com/api/share/page/briefings` returns crawler meta and redirects humans.
+     - Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
+   - Password reset:
+     - Forgot password flow shows “Check your inbox” (no reset link leak).
+     - Reset email is received and link works within 30 minutes.
+     - User can reset password and log back in.
 
 ### C) Marketing copy accuracy
 - Replace “Join 500+ commodity trading professionals” with a true number as soon as you have it.
@@ -605,12 +649,18 @@ If you report any issue, confirm whether it is on:
 
 ✅ Phase 68 targets met (PREVIEW)
 - Pillar dropdown destinations (`/category/{slug}`) show the mascot + motif banner like Briefings/Books.
-- Lounge page now has a pillar-style banner with full-size wolf mascot; locked view mascot size matches.
+- Lounge page has a pillar-style banner with full-size wolf mascot; locked view mascot size matches.
 
 ✅ Phase 69 targets met (PREVIEW)
 - Briefings/Books/Lounge/Home have dedicated mascot share cards + crawler share pages.
 - Runtime meta `og:image` is correct on those pages (no stale fallback).
 - Site passes a full mobile responsiveness audit (≤768px): hamburger nav, stacked pillar cards, readable text, no overflow.
+
+✅ Phase 70 targets met (PREVIEW)
+- Password reset request does not leak reset links.
+- Password reset emails are branded HTML + plain text and are being sent via Gmail SMTP.
+- Reset tokens expire in 30 minutes; reuse/expiry are rejected.
+- User can reset password and log back in successfully.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

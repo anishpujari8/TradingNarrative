@@ -25,22 +25,17 @@ export default function AuthPage() {
   const [magicLink, setMagicLink] = useState(null);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
-  const [resetLink, setResetLink] = useState(null);
+  const [resetSent, setResetSent] = useState(false);
 
   const doForgot = async (e) => {
     e.preventDefault();
     setBusy(true);
-    setResetLink(null);
     try {
       const res = await api.post("/auth/password-reset/request", { email: forgotEmail });
-      if (res.data.reset_link) {
-        setResetLink(res.data.reset_link);
-        toast.success("Reset link generated.");
-      } else {
-        toast.info(res.data.message);
-      }
+      setResetSent(true);
+      toast.success(res.data.message || "Reset email sent, check your inbox.");
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Could not create reset link.");
+      toast.error(err?.response?.data?.detail || "Could not send the reset email. Try again in a bit.");
     } finally {
       setBusy(false);
     }
@@ -139,15 +134,13 @@ export default function AuthPage() {
                           Send
                         </Button>
                       </div>
-                      {resetLink && (
-                        <Alert className="border-accent/40" data-testid="reset-link-alert">
+                      {resetSent && (
+                        <Alert className="border-accent/40" data-testid="reset-sent-alert">
                           <Info className="h-4 w-4" />
-                          <AlertTitle>Email sending is mocked (dev mode)</AlertTitle>
-                          <AlertDescription className="break-all">
-                            In production this arrives by email. For now:{" "}
-                            <Link to={resetLink.replace(/^https?:\/\/[^/]+/, "")} className="editorial-link text-accent font-medium" data-testid="reset-link-anchor">
-                              Open password reset link
-                            </Link>
+                          <AlertTitle>Check your inbox</AlertTitle>
+                          <AlertDescription>
+                            If an account exists for that email, a reset link is on its way.
+                            It expires in 30 minutes, and if you don't see it, check the spam folder.
                           </AlertDescription>
                         </Alert>
                       )}

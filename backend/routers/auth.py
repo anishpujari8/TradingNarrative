@@ -181,9 +181,39 @@ async def record_streak_read(body: StreakReadIn, user=Depends(get_current_user))
             'last_read_date': today.isoformat()}
 
 
+def _reset_email_html(link: str) -> str:
+    """Branded password reset email (teal identity, multipart-friendly)."""
+    return f'''
+<div style="max-width:560px;margin:0 auto;font-family:Georgia,serif;background:#faf8f3;border:1px solid #e2ddd2;border-radius:12px;overflow:hidden">
+  <div style="background:#161a2e;padding:24px;text-align:center">
+    <p style="color:#1c8570;font-family:monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 6px">The Trading Narrative</p>
+    <p style="color:#f2ede7;font-size:19px;margin:0;font-weight:600">Reset your password</p>
+  </div>
+  <div style="padding:26px 28px">
+    <p style="font-size:15px;color:#2b2b2b;line-height:1.65;margin:0 0 18px">
+      Someone (hopefully you) asked to reset the password for this account.
+      Click the button below to choose a new password. This link expires in <strong>30 minutes</strong>.
+    </p>
+    <a href="{link}" style="display:inline-block;background:#1c8570;color:#ffffff;text-decoration:none;font-family:sans-serif;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px">Choose a new password</a>
+    <p style="font-size:13px;color:#6b6b6b;line-height:1.6;margin:20px 0 0">
+      If the button does not work, copy this link into your browser:<br>
+      <a href="{link}" style="color:#1c8570;word-break:break-all">{link}</a>
+    </p>
+  </div>
+  <div style="padding:14px 28px;border-top:1px solid #e2ddd2">
+    <p style="font-size:12px;color:#8a8578;font-family:sans-serif;margin:0">
+      If you did not request this, you can safely ignore this email, your password will not change.
+    </p>
+  </div>
+</div>'''
+
+
 @router.post('/auth/password-reset/request')
 async def password_reset_request(body: PasswordResetRequestIn):
     email = body.email.lower()
+    generic = {'ok': True,
+               'message': 'If an account exists for that email, a reset link is on its way. '
+                          'Check your inbox (and the spam folder), it expires in 30 minutes.'}
     # rate limit: max 5 requests per email per hour
     hour_ago = iso(now_utc() - timedelta(hours=1))
     count = await db.password_reset_tokens.count_documents({'email': email, 'created_at': {'$gte': hour_ago}})
@@ -192,20 +222,21 @@ async def password_reset_request(body: PasswordResetRequestIn):
     user = await db.users.find_one({'email': email})
     if not user:
         # do not reveal whether an account exists
-        return {'ok': True, 'dev_mode': True, 'reset_link': None,
-                'message': 'If an account exists for that email, a reset link has been generated.'}
+        return generic
     token = str(uuid.uuid4())
     await db.password_reset_tokens.insert_one({
         'id': str(uuid.uuid4()), 'email': email, 'token': token, 'used': False,
-        'expires_at': iso(now_utc() + timedelta(minutes=15)), 'created_at': iso(now_utc()),
+        'expires_at': iso(now_utc() + timedelta(minutes=30)), 'created_at': iso(now_utc()),
     })
     link = f'{FRONTEND_URL}/auth/reset?token={token}'
     await log_email(email, 'Reset your password · The Trading Narrative',
-                    f'Reset your password here: {link} (expires in 15 minutes)', 'password_reset')
-    logger.info(f'[PASSWORD RESET - MOCKED EMAIL] {email} -> {link}')
-    # MOCKED: no email provider configured, return the link so the UI can display it (dev mode)
-    return {'ok': True, 'dev_mode': True, 'reset_link': link,
-            'message': 'Email sending is mocked, use the link below to reset your password.'}
+                    (f'Someone (hopefully you) asked to reset your password on The Trading Narrative.\n\n'
+                     f'Choose a new password here (expires in 30 minutes):\n{link}\n\n'
+                     f'If you did not request this, ignore this email and your password will not change.'),
+                    'password_reset', html=_reset_email_html(link))
+    logger.info(f'[PASSWORD RESET] email sent to {email}')
+    # SECURITY: never return the reset link in the API response, email delivery only.
+    return generic
 
 
 @router.post('/auth/password-reset/confirm')
