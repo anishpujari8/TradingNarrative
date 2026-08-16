@@ -11,6 +11,7 @@ export const GLOSSARY_PILLARS = ["tech-business", "finance", "delivery"];
 export const GLOSSARY_TERMS = [
   {
     key: "demurrage",
+    category: "finance",
     term: "Demurrage",
     patterns: [/\bdemurrages?\b/i],
     definition:
@@ -18,6 +19,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "etrm",
+    category: "tech-business",
     term: "ETRM",
     patterns: [/\bETRM\b/i],
     definition:
@@ -25,6 +27,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "ctrm",
+    category: "tech-business",
     term: "CTRM",
     patterns: [/\bCTRM\b/i],
     definition:
@@ -32,6 +35,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "mark-to-market",
+    category: "finance",
     term: "Mark-to-Market",
     patterns: [/\bmark(?:ed|ing)?[- ]to[- ]market\b/i, /\bMtM\b/],
     definition:
@@ -39,6 +43,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "commodity-risk",
+    category: "finance",
     term: "Commodity Risk",
     patterns: [/\bcommodity (?:price )?risks?\b/i],
     definition:
@@ -46,6 +51,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "position-limit",
+    category: "finance",
     term: "Position Limit",
     patterns: [/\bposition limits?\b/i],
     definition:
@@ -53,6 +59,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "counterparty-risk",
+    category: "finance",
     term: "Counterparty Risk",
     patterns: [/\bcounterparty risks?\b/i],
     definition:
@@ -60,6 +67,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "nomination",
+    category: "delivery",
     term: "Nomination",
     patterns: [/\bnominations?\b/i],
     definition:
@@ -67,6 +75,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "scheduling",
+    category: "delivery",
     term: "Scheduling",
     patterns: [/\bscheduling\b/i],
     definition:
@@ -74,6 +83,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "isda",
+    category: "finance",
     term: "ISDA",
     patterns: [/\bISDA\b/],
     definition:
@@ -81,6 +91,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "crack-spread",
+    category: "finance",
     term: "Crack Spread",
     patterns: [/\bcrack spreads?\b/i],
     definition:
@@ -88,6 +99,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "contango",
+    category: "finance",
     term: "Contango",
     patterns: [/\bcontango\b/i],
     definition:
@@ -95,6 +107,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "backwardation",
+    category: "finance",
     term: "Backwardation",
     patterns: [/\bbackwardation\b/i],
     definition:
@@ -102,6 +115,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "api-gravity",
+    category: "finance",
     term: "API (crude grade)",
     patterns: [/\bAPI gravity\b/, /\b°API\b/],
     definition:
@@ -109,6 +123,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "fpso",
+    category: "delivery",
     term: "FPSO",
     patterns: [/\bFPSO\b/],
     definition:
@@ -116,6 +131,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "freight-differential",
+    category: "finance",
     term: "Freight Differential",
     patterns: [/\bfreight differentials?\b/i],
     definition:
@@ -123,6 +139,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "pnl",
+    category: "finance",
     term: "P&L",
     patterns: [/\bP&L\b/, /\bprofit and loss\b/i],
     definition:
@@ -130,6 +147,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "var",
+    category: "finance",
     term: "VaR",
     patterns: [/\bVaR\b/, /\bvalue at risk\b/i],
     definition:
@@ -137,6 +155,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "algo-trading",
+    category: "tech-business",
     term: "Algo Trading",
     patterns: [/\balgo(?:rithmic)? trading\b/i],
     definition:
@@ -144,6 +163,7 @@ export const GLOSSARY_TERMS = [
   },
   {
     key: "ml-trading",
+    category: "tech-business",
     term: "Machine Learning in Trading",
     patterns: [/\bmachine[- ]learning\b/i],
     definition:

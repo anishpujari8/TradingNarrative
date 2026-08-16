@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { SITE_URL, SITE_NAME } from "@/lib/api";
 import { pillarAccent, withAlpha, PillarMotif } from "@/lib/pillars";
+import { GLOSSARY_TERMS } from "@/lib/glossary";
 
 // Trading term glossary hub: every explainer essay collected on one crawlable page
 // for topical authority. Each term answers the query in one breath, then links to
@@ -83,17 +84,31 @@ const TERMS = [
 ];
 
 export default function GlossaryPage() {
+  // Quick definitions come from the same source as the in-essay tooltips (lib/glossary.js)
+  // so the hub and the tooltips always stay in step. Terms that already have a full
+  // essay card above are not repeated here.
+  const coveredByEssays = new Set(["demurrage", "etrm", "ctrm"]);
+  const quickTerms = GLOSSARY_TERMS.filter((t) => !coveredByEssays.has(t.key));
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
     name: `${SITE_NAME} Trading Glossary`,
     url: `${SITE_URL}/glossary`,
-    hasDefinedTerm: TERMS.map((t) => ({
-      "@type": "DefinedTerm",
-      name: t.term,
-      description: t.definition,
-      url: `${SITE_URL}/post/${t.slug}`,
-    })),
+    hasDefinedTerm: [
+      ...TERMS.map((t) => ({
+        "@type": "DefinedTerm",
+        name: t.term,
+        description: t.definition,
+        url: `${SITE_URL}/post/${t.slug}`,
+      })),
+      ...quickTerms.map((t) => ({
+        "@type": "DefinedTerm",
+        name: t.term,
+        description: t.definition,
+        url: `${SITE_URL}/glossary`,
+      })),
+    ],
   };
 
   return (
@@ -147,6 +162,36 @@ export default function GlossaryPage() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-14" data-testid="glossary-quick-definitions">
+        <span className="section-label">Quick definitions</span>
+        <h2 className="font-serif text-2xl sm:text-3xl font-semibold mt-3">
+          The terms you'll meet inside the essays
+        </h2>
+        <p className="text-muted-foreground mt-3 max-w-2xl leading-relaxed text-sm">
+          These are the same definitions that pop up when you hover a dotted term inside an essay,
+          collected here in one place.
+        </p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+          {quickTerms.map((t) => {
+            const accent = pillarAccent(t.category);
+            return (
+              <dl
+                key={t.key}
+                className="bg-card border rounded-xl p-5"
+                style={{ borderColor: withAlpha(accent, 0.28) }}
+                data-testid={`glossary-quick-${t.key}`}
+              >
+                <dt className="font-serif text-lg font-semibold flex items-start gap-2">
+                  <span className="mt-2 inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: accent }} aria-hidden />
+                  {t.term}
+                </dt>
+                <dd className="text-sm text-muted-foreground mt-2 leading-relaxed">{t.definition}</dd>
+              </dl>
+            );
+          })}
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground mt-10">

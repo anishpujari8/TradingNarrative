@@ -656,6 +656,7 @@ async def sitemap():
                (f'{FRONTEND_URL}/glossary', today),
                (f'{FRONTEND_URL}/books', None),
                (f'{FRONTEND_URL}/pillars', None),
+               (f'{FRONTEND_URL}/work-with-me', None),
                (f'{FRONTEND_URL}/briefings', today)]
     entries += [(f'{FRONTEND_URL}/topics/{slug}', today) for slug in CATEGORIES]
     entries += [(f'{FRONTEND_URL}/category/{slug}', None) for slug in CATEGORIES]

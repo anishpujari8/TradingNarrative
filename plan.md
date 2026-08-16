@@ -71,9 +71,15 @@
   - Homepage “Start here, free” strip shows 2–3 strong free essays prominently
 - **Bookshelf → Archive linking (“Reading Notes”)** ✅ *(Phase 63)*
   - Each book can optionally link to a related essay in the archive.
-- **Contextual glossary tooltips in essays** ✅ *(Phase 71, PREVIEW)*
+
+#### Contextual glossary system ✅ (Phases 71–72, PREVIEW)
+- **Contextual glossary tooltips in essays** ✅ *(Phase 71)*
   - Hover (desktop) / tap (mobile) tooltips for recognised industry terms, without affecting reading flow.
   - Applied only to pillars: Tech & AI, Trading Business & Finance, Delivery & Systems.
+  - Each term wraps only once per essay; highlights remain unaffected.
+- **Glossary hub synced to tooltips** ✅ *(Phase 72)*
+  - `/glossary` now includes a “Quick definitions” section sourced from the same `GLOSSARY_TERMS` list used by in-essay tooltips.
+  - DefinedTermSet JSON-LD extended to include these quick definitions.
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -189,7 +195,7 @@
 - Topic hubs ✅
 - Keyword targeting ✅
 - Dynamic essay meta descriptions ✅
-- **Glossary hub page** ✅ *(Phase 59)*
+- **Glossary hub page** ✅ *(Phase 59; synced Phase 72)*
   - `/glossary` (crawlable) + **DefinedTermSet JSON-LD**
   - Linked in footer ✅
   - Included in sitemap ✅
@@ -198,6 +204,9 @@
   - Included in sitemap ✅
 - **Pillars showcase page** ✅ *(Phase 65)*
   - `/pillars` (crawlable) + CollectionPage JSON-LD
+  - Included in sitemap ✅
+- **Work with me page** ✅ *(Phase 72, PREVIEW)*
+  - `/work-with-me` (crawlable) + Service/Offer JSON-LD
   - Included in sitemap ✅
 
 ### Social sharing (unfurls + branded assets)
@@ -260,6 +269,8 @@
   - Mobile nav includes a “Pillars →” link to `/pillars`.
 - **Footer discoverability for mascot hub** ✅ *(Phase 66)*
   - Added “Meet the Mascots” link in footer (under Site).
+- **Work with me discoverability** ✅ *(Phase 72, PREVIEW)*
+  - “Work with me” added to desktop nav and mobile sheet; route `/work-with-me`.
 
 ### Mobile responsiveness ✅ *(Phase 69)*
 - **Mobile audit (≤768px)** completed across:
@@ -539,6 +550,46 @@ User request: “Add contextual glossary tooltips to essays in the Tech & AI, Tr
 
 **Requires redeploy:** to ship Phase 71 to production.
 
+### Phase 72 — Glossary hub sync + Work with me page ✅ COMPLETED (PREVIEW)
+User requests: sync glossary hub to tooltip definitions; add a “Work with me” page and nav item.
+
+**72.1 Glossary hub sync (single source of truth):**
+- `frontend/src/lib/glossary.js`:
+  - Added `category` field to all 20 `GLOSSARY_TERMS` for pillar-accent styling.
+- `frontend/src/pages/GlossaryPage.js`:
+  - Added “Quick definitions” section (`glossary-quick-definitions`) sourced directly from `GLOSSARY_TERMS`.
+  - Excludes `demurrage`, `etrm`, `ctrm` (already represented by essay-linked cards above).
+  - Added compact cards with pillar-dot accent and `data-testid="glossary-quick-{key}"`.
+  - DefinedTermSet JSON-LD extended to include all quick terms as DefinedTerm entries.
+
+**72.2 Work with me:**
+- New page: `frontend/src/pages/WorkWithMePage.js` at `/work-with-me`:
+  - Bio: 12+ years ETRM/CTRM delivery
+  - “Who this is for” (3 cards): vendors scoping a new market; professionals entering commodity trading; teams stuck on a delivery problem
+  - “What you get” (3 bullets): honest outside perspective; clear next step; no sales pitch
+  - Pricing: ₹2,999 for 30 minutes + Calendly booking button → `https://calendly.com/anishpujari8/30min` (new tab)
+  - SEO meta + Service/Offer JSON-LD
+- Routing:
+  - `frontend/src/App.js`: route added.
+- Navigation:
+  - `frontend/src/components/Navbar.js`: desktop link `nav-work-link`; mobile sheet link `nav-mobile-work-link`.
+- Sitemap:
+  - `backend/routers/posts.py`: `/work-with-me` added.
+
+**72.3 Subscriber count clarification:**
+- **Preview DB is not production.** During debugging, 5 `test_*@test.com` users created for automated tests were removed.
+- Current **preview** counts (after cleanup):
+  - Users: 1 (admin)
+  - Premium users: 0
+  - Newsletter subscribers: 1 (owner email)
+- Real production subscriber counts must be read from the **Production admin dashboard**.
+
+**Verification:**
+- Playwright: quick definition section renders; nav click opens `/work-with-me`; 3 audience cards + 3 outcomes; correct Calendly URL; mobile usable without overflow.
+- `esbuild` clean.
+
+**Requires redeploy:** to ship Phase 72 to production.
+
 ---
 
 ## 3) Next Actions
@@ -554,13 +605,15 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/security changes (Phases 55–71 + Phase 56):**
+**Requires redeploy to ship UI/share/security changes (Phases 55–72 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
    - Navbar: Clicking Pillars navigates to `/pillars`.
    - Navbar: per-pillar colour highlight works in both light and dark mode.
    - Navbar: dropdown contains “Meet all the mascots →”.
+   - Navbar: “Work with me” appears and routes to `/work-with-me`.
+   - `/work-with-me`: Calendly button opens the booking page.
    - `/pillars`: lore section renders first; essays section appears under it.
    - `/pillars`: Lore tooltips work for 4 pillars + 3 sections.
    - `/pillars`: each pillar shows 2–3 PostCards and “View all →” works.
@@ -575,6 +628,9 @@ If you report any issue, confirm whether it is on:
    - Mobile (≤768px): hamburger menu works site-wide; no horizontal overflow; pillar cards stack.
    - Footer under Site includes “Meet the Mascots”.
    - `/books`: each configured book shows “Reading Notes →” linking into the archive.
+   - `/glossary`:
+     - Main essay-linked glossary cards still work.
+     - “Quick definitions” section renders (synced to tooltips).
    - Section OG cards:
      - `https://thetradingnarrative.com/api/og/page/briefings.png` (and `/books`, `/lounge`, `/home`) render correct mascot cards.
      - `https://thetradingnarrative.com/api/share/page/briefings` returns crawler meta and redirects humans.
@@ -599,7 +655,7 @@ If you report any issue, confirm whether it is on:
 - Resend: needs API key + verified sender domain
 
 ### F) Pending decision (pricing tier request)
-A new request was received to change Premium pricing to **₹499/month** or **₹4,999/year** with a clearer tiered paywall and a “Subscribe” button.
+A request was received to change Premium pricing to **₹499/month** or **₹4,999/year** with a clearer tiered paywall and a “Subscribe” button.
 - Most of the paywall + pricing + Razorpay INR infrastructure already exists.
 - Current configured INR amounts in `backend/config.py` are **₹99/month** and **₹999/year**.
 - **Action needed:** confirm before changing amounts (to avoid breaking live plan mappings / user expectations).
@@ -716,6 +772,11 @@ A new request was received to change Premium pricing to **₹499/month** or **�
 - Glossary terms are detected and underlined only in the specified pillars.
 - Tooltips open on hover (desktop) and tap (mobile), with no reading-flow disruption.
 - Each term wraps only once per essay; highlights remain unaffected.
+
+✅ Phase 72 targets met (PREVIEW)
+- `/glossary` includes a synced “Quick definitions” section sourced from tooltip definitions.
+- `/work-with-me` exists, is SEO-ready, includes pricing + Calendly booking link, is linked in nav and sitemap.
+- Preview DB test users used during validation were cleaned up.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

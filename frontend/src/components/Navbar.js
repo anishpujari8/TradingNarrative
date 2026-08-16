@@ -87,6 +87,7 @@ export const Navbar = () => {
                 <Link to="/lounge" onClick={() => setOpen(false)} className="text-base hover:text-accent" data-testid="nav-mobile-lounge-link">Lounge</Link>
                 <Link to="/pricing" onClick={() => setOpen(false)} className="text-base hover:text-accent">Pricing</Link>
                 <Link to="/about" onClick={() => setOpen(false)} className="text-base hover:text-accent">About</Link>
+                <Link to="/work-with-me" onClick={() => setOpen(false)} className="text-base hover:text-accent" data-testid="nav-mobile-work-link">Work with me</Link>
               </nav>
             </SheetContent>
           </Sheet>
@@ -169,6 +170,9 @@ export const Navbar = () => {
           </NavLink>
           <NavLink to="/about" className={navLinkCls} data-testid="nav-about-link">
             About
+          </NavLink>
+          <NavLink to="/work-with-me" className={navLinkCls} data-testid="nav-work-link">
+            Work with me
           </NavLink>
         </nav>
 
