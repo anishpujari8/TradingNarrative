@@ -71,6 +71,9 @@
   - Homepage “Start here, free” strip shows 2–3 strong free essays prominently
 - **Bookshelf → Archive linking (“Reading Notes”)** ✅ *(Phase 63)*
   - Each book can optionally link to a related essay in the archive.
+- **Contextual glossary tooltips in essays** ✅ *(Phase 71, PREVIEW)*
+  - Hover (desktop) / tap (mobile) tooltips for recognised industry terms, without affecting reading flow.
+  - Applied only to pillars: Tech & AI, Trading Business & Finance, Delivery & Systems.
 
 ### Newsletter & retention
 - Weekly digest preview + send ✅
@@ -493,10 +496,48 @@ User report: “Forgot password flow is broken for existing users”.
 - Resend remains not configured (still blocked pending API key/domain), unchanged.
 
 **Verification:**
-- End-to-end API verification (9 checks): no link leak, email logged as sent (gmail) with HTML CTA, 30-minute expiry, confirm signs in via httpOnly cookie, old password fails, new password succeeds, token reuse rejected, expired token rejected, unknown email returns generic response.
+- End-to-end API verification: no link leak, email logged as sent (gmail) with HTML CTA, 30-minute expiry, confirm signs in via httpOnly cookie, old password fails, new password succeeds, token reuse rejected, expired token rejected, unknown email returns generic response.
 - Browser UI verification: forgot form → inbox alert, reset link works, password update signs in + redirects, fresh login with new password succeeds.
 
 **Requires redeploy:** to ship Phase 70 to production.
+
+### Phase 71 — Contextual glossary tooltips in essays ✅ COMPLETED (PREVIEW)
+User request: “Add contextual glossary tooltips to essays in the Tech & AI, Trading Business & Finance, and Delivery & Systems pillars.”
+
+**Implementation:**
+- New `frontend/src/lib/glossary.js`:
+  - `GLOSSARY_PILLARS = ['tech-business','finance','delivery']`
+  - `GLOSSARY_TERMS`: all 20 requested terms with plain-English definitions and robust matcher regexes
+    - Includes safe aliases (`MtM`, “value at risk”, “algorithmic trading”, “profit and loss”) and case-sensitive matches where collisions exist (ISDA/VaR/API gravity/FPSO/P&L).
+  - `GlossaryTerm` component:
+    - Controlled shadcn Popover
+    - Hover open on desktop with 140ms close grace
+    - Tap open on mobile (click always opens; fixes synthetic mouseenter+click toggle-close on touch)
+    - Tap-away/Esc closes (Radix)
+    - Tooltip card includes mono label + definition + “Full glossary →” link
+    - Test IDs: `glossary-term-{key}` / `glossary-tooltip-{key}`
+  - `wrapGlossaryTerms(nodes, seen, {skipDropCap})`:
+    - Wraps only the FIRST occurrence of each term per essay
+    - Works over arrays of strings + React elements; non-string segments pass through
+    - `skipDropCap` avoids wrapping a match at char 0 of block 0 so the CSS drop cap isn’t visually split
+- `frontend/src/index.css`:
+  - `.glossary-term` dotted underline in accent tint, subtle hover accent colour; no layout shift
+- `frontend/src/pages/ArticlePage.js`:
+  - Imports `GLOSSARY_PILLARS`, `wrapGlossaryTerms`
+  - Uses a per-render `Set()` (`glossarySeen`) only for glossary pillars
+  - Wraps both highlighted and non-highlighted paths without touching existing personal/popular highlight `<mark>` rendering
+
+**Verification:**
+- Playwright:
+  - Finance/Tech essays wrap expected terms (unique)
+  - Drop cap intact (first paragraph not split)
+  - Personal Growth essays show 0 glossary terms
+  - Desktop hover open/close OK
+  - Mobile (has_touch) tap open + tap-away close OK
+  - No horizontal overflow
+- `esbuild` clean.
+
+**Requires redeploy:** to ship Phase 71 to production.
 
 ---
 
@@ -513,7 +554,7 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/security changes (Phases 55–70 + Phase 56):**
+**Requires redeploy to ship UI/share/security changes (Phases 55–71 + Phase 56):**
 1. Redeploy preview → production.
 2. After deploy, spot-check:
    - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
@@ -542,6 +583,9 @@ If you report any issue, confirm whether it is on:
      - Forgot password flow shows “Check your inbox” (no reset link leak).
      - Reset email is received and link works within 30 minutes.
      - User can reset password and log back in.
+   - Contextual glossary tooltips:
+     - In `tech-business`, `finance`, `delivery` essays: dotted-underlined terms show tooltips on hover/tap.
+     - In `lifestyle` essays: no glossary terms present.
 
 ### C) Marketing copy accuracy
 - Replace “Join 500+ commodity trading professionals” with a true number as soon as you have it.
@@ -553,6 +597,12 @@ If you report any issue, confirm whether it is on:
 ### E) Still blocked
 - PayPal recurring subscriptions: needs credentials + final decision
 - Resend: needs API key + verified sender domain
+
+### F) Pending decision (pricing tier request)
+A new request was received to change Premium pricing to **₹499/month** or **₹4,999/year** with a clearer tiered paywall and a “Subscribe” button.
+- Most of the paywall + pricing + Razorpay INR infrastructure already exists.
+- Current configured INR amounts in `backend/config.py` are **₹99/month** and **₹999/year**.
+- **Action needed:** confirm before changing amounts (to avoid breaking live plan mappings / user expectations).
 
 ---
 
@@ -661,6 +711,11 @@ If you report any issue, confirm whether it is on:
 - Password reset emails are branded HTML + plain text and are being sent via Gmail SMTP.
 - Reset tokens expire in 30 minutes; reuse/expiry are rejected.
 - User can reset password and log back in successfully.
+
+✅ Phase 71 targets met (PREVIEW)
+- Glossary terms are detected and underlined only in the specified pillars.
+- Tooltips open on hover (desktop) and tap (mobile), with no reading-flow disruption.
+- Each term wraps only once per essay; highlights remain unaffected.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

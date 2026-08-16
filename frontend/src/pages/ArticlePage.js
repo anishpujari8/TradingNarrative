@@ -22,6 +22,7 @@ import { AskEssayWidget } from "@/components/AskEssayWidget";
 import { toast } from "sonner";
 import { api, formatDate, trackEvent, CATEGORIES, SITE_URL } from "@/lib/api";
 import { pillarAccent, withAlpha } from "@/lib/pillars";
+import { GLOSSARY_PILLARS, wrapGlossaryTerms } from "@/lib/glossary";
 import { useAuth } from "@/context/AuthContext";
 
 const Paywall = ({ post }) => {
@@ -208,7 +209,9 @@ export default function ArticlePage() {
   const renderWithHighlights = (text, blockIndex) => {
     const personal = highlights.filter((h) => h.block_index === blockIndex).map((h) => h.text);
     const pops = popular.filter((p) => p.block_index === blockIndex);
-    if (!personal.length && !pops.length) return text;
+    if (!personal.length && !pops.length) {
+      return glossarySeen ? wrapGlossaryTerms([text], glossarySeen, { skipDropCap: blockIndex === 0 }) : text;
+    }
     let parts = [text];
     const splitWrap = (m, make) => {
       parts = parts.flatMap((seg) => {
@@ -221,7 +224,9 @@ export default function ArticlePage() {
     // personal marks take precedence; popular applies to remaining plain segments
     personal.forEach((m) => splitWrap(m, () => ({ mark: m, type: "personal" })));
     pops.forEach((p) => splitWrap(p.text, () => ({ mark: p.text, type: "popular", count: p.count })));
-    return parts.map((seg, j) => {
+    // contextual glossary: wrap the first occurrence of each known industry term
+    // (plain string segments only, saved highlights always take precedence)
+    const out = parts.map((seg, j) => {
       if (typeof seg === "string") return seg;
       if (seg.type === "personal") return <mark key={j} className="reader-highlight">{seg.mark}</mark>;
       return (
@@ -231,6 +236,7 @@ export default function ArticlePage() {
         </mark>
       );
     });
+    return glossarySeen ? wrapGlossaryTerms(out, glossarySeen, { skipDropCap: blockIndex === 0 }) : out;
   };
 
   useEffect(() => {
@@ -325,6 +331,9 @@ export default function ArticlePage() {
   }
 
   const visibleBlocks = post.is_locked ? post.content_blocks.slice(0, -1) : post.content_blocks;
+  // contextual glossary tooltips only on Tech & AI, Trading Business & Finance, Delivery & Systems;
+  // fresh per-render Set so each term gets exactly one tooltip per essay
+  const glossarySeen = GLOSSARY_PILLARS.includes(post.category) ? new Set() : null;
   const blurredBlock = post.is_locked ? post.content_blocks[post.content_blocks.length - 1] : null;
 
   // Paywall structured data (schema.org NewsArticle) — Google-compliant paywall signalling,

@@ -302,3 +302,16 @@ mark.popular-highlight .popular-count {
 .dark .pillar-dd-title {
   filter: brightness(1.3) saturate(0.92);
 }
+
+/* Contextual glossary terms inside essays: subtle dotted underline, never disrupting flow. */
+.glossary-term {
+  border-bottom: 1px dotted hsl(var(--accent) / 0.55);
+  cursor: help;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+.glossary-term:hover,
+.glossary-term:focus-visible {
+  color: hsl(var(--accent));
+  border-bottom-color: hsl(var(--accent));
+  outline: none;
+}
