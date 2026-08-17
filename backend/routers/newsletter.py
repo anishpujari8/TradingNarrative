@@ -8,7 +8,7 @@ from db import db
 from utils import now_utc, iso, clean
 from security import get_current_user, get_admin_user
 from schemas import NewsletterIn, NewsletterPrefsIn, DigestSendIn, AutosendIn
-from services.emailer import log_email, unsubscribe_token
+from services.emailer import log_email, unsubscribe_token, notify_admin_new_subscriber
 from services.digest_service import build_digest_html, get_digest_posts, do_send_digest, get_week_top_highlights, get_week_top_listened
 
 router = APIRouter(prefix='/api')
@@ -29,15 +29,8 @@ async def newsletter_subscribe(body: NewsletterIn):
     await db.analytics.insert_one({'id': str(uuid.uuid4()), 'event': 'newsletter_subscribe',
                                    'path': body.source, 'meta': {}, 'user_id': None,
                                    'created_at': iso(now_utc())})
-    # Admin alert: new newsletter subscriber
-    await log_email(
-        ADMIN_NOTIFY_EMAIL, 'tradingnarrative email subscriber',
-        f"New newsletter subscriber on The Trading Narrative.\n\n"
-        f"Email: {email}\n"
-        f"Type: Newsletter (free)\n"
-        f"Source: {body.source or 'unknown'}\n"
-        f"Time (UTC): {iso(now_utc())}",
-        'admin_subscriber_alert')
+    # Admin alert: new newsletter subscriber (branded)
+    await notify_admin_new_subscriber('', email, f"Free (newsletter, via {body.source or 'site'})")
     return {'ok': True, 'message': "You're in! Check your inbox for a welcome note.", 'already': False}
 
 

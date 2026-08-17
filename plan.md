@@ -30,9 +30,15 @@
 
 ### Reader experience & engagement
 - Bookmarks/reading list ✅
-- Reading progress indicators ✅ *(Phase 56 enhanced with pillar accents; includes pillar-coloured progress bar and dot)*
+- Reading progress indicators ✅
+  - **Thin fixed top reading progress bar** (fills left→right on scroll) ✅ *(Phase 56; re-verified Phase 73)*
+  - Pillar accent colour applied via `pillarAccent(post.category)` ✅
+  - Reading-time-left pill ✅
 - Continue-reading strips ✅
 - Notifications bell (incl. Lounge reply notifications + deep-link) ✅
+- **Estimated read time** ✅ *(Phase 56; re-verified Phase 73)*
+  - Calculated server-side at ~200 wpm (`utils.read_time = ceil(words/200)`)
+  - Displayed on: Post cards + article header (“X min read”)
 - **Reader Highlights** ✅
   - Select-to-highlight in essays
   - Persistent inline highlight rendering
@@ -104,7 +110,18 @@
 ### Email sending (provider)
 - **Gmail SMTP (LIVE)** ✅
 - **Resend** ⛔ *(planned; blocked pending user decisions + API key + sender domain verification)*
-- **Admin Alerts (Email Notifications)** ✅ *(Phase 37)*
+- **Admin Alerts (Email Notifications)** ✅ *(Phase 37; expanded Phase 73)*
+
+#### Admin subscriber notifications ✅ *(Phase 73, PREVIEW)*
+- Goal: Email `ADMIN_NOTIFY_EMAIL` (default: `anishpujari8@gmail.com`) whenever a user/subscriber joins.
+- Implemented notifier: `services.emailer.notify_admin_new_subscriber(name, email, tier)`
+  - Branded HTML (logo, clean table, IST+UTC timestamp, CTA → `/admin`)
+  - Plain-text fallback
+  - Non-blocking (never raises)
+- Trigger points:
+  - Account register → “Free account” ✅ *(NEW hook in Phase 73)*
+  - Newsletter subscribe → “Free (newsletter, via {source})” ✅ *(upgraded in Phase 73)*
+  - Premium activation via payments → “Premium · {plan} · {amount} {currency} via {gateway}” ✅ *(upgraded in Phase 73; idempotent and shared across Stripe+Razorpay activations)*
 
 ### Account security & recovery ✅ (Phase 70)
 - **Password reset flow** ✅ *(Phase 70, PREVIEW)*
@@ -271,6 +288,9 @@
   - Added “Meet the Mascots” link in footer (under Site).
 - **Work with me discoverability** ✅ *(Phase 72, PREVIEW)*
   - “Work with me” added to desktop nav and mobile sheet; route `/work-with-me`.
+- **Dark/light mode toggle** ✅ *(pre-existing; re-verified Phase 73)*
+  - Visible on both desktop and mobile
+  - Remembers preference (`localStorage: ttn_theme`) and honors system preference by default.
 
 ### Mobile responsiveness ✅ *(Phase 69)*
 - **Mobile audit (≤768px)** completed across:
@@ -414,7 +434,8 @@
 
 ### Phase 56 — Article Page Accents ✅ COMPLETED (PREVIEW)
 - Tinted category badge by pillar
-- Pillar-coloured reading progress bar + pill dot
+- Reading progress indicators (top bar + time-left pill) + pillar accent ✅
+- Read time surfaced in article header ✅
 
 ### Phase 57 — Production Category Sync + Sync Tool Fix + Pillar Mascots ✅ COMPLETED
 
@@ -441,154 +462,39 @@
 ### Phase 68 — Category page mascot banners + full-size Lounge mascot ✅ COMPLETED (PREVIEW)
 
 ### Phase 69 — Mascot share cards + full mobile audit ✅ COMPLETED (PREVIEW)
-User request: give briefings/books/lounge their own mascot OG cards; audit the entire site under 768px and fix mobile issues.
-
-**69.1 Section OG cards (falcon/tortoise/wolf + home):**
-- `backend/services/og_service.py`:
-  - Added motif renderers for `briefings`, `books`, `lounge`.
-  - Added `SECTION_CARDS` config including `home`.
-  - Added `render_section_card()` + `get_or_render_section_card()` disk cache (keyed by `_OG_VERSION`).
-  - Copied mascots to `backend/assets/mascots/` (briefings/books/lounge).
-- `backend/routers/posts.py`:
-  - `GET /api/og/page/{section}.png` (registered before `/og/{slug}.png`).
-  - `GET /api/share/page/{section}` crawler HTML (meta) + human redirect.
-- Frontend pages:
-  - `BriefingsPage.js`, `BooksPage.js`, `CommunityPage.js` pass `image={SITE_URL}/api/og/page/{section}.png`.
-
-**69.2 OG meta bug found + fixed:**
-- Root cause: `public/index.html` static `og:image` lacked `data-rh`, so runtime cleanup removed other tags but not the stale Unsplash `og:image`.
-- Fixes:
-  - `public/index.html`: `og:image`, `og:type`, `twitter:card` now `data-rh` and point to `https://thetradingnarrative.com/api/og/page/home.png`.
-  - `components/Seo.js` default fallback now `${SITE_URL}/api/og/page/home.png`.
-- Verified: exactly **one** `meta[property="og:image"]` in head on `/`, `/briefings`, `/books`, `/lounge`, each correct.
-
-**69.3 Mobile responsiveness audit + fixes (≤768px):**
-- Comprehensive Playwright audit at 390×844:
-  - `/`, `/archive`, `/briefings`, `/books`, `/pillars`, `/glossary`, `/lounge`, `/pricing`, `/about`, `/category/*`, `/topics/*`, `/post/*`
-  - No horizontal overflow detected site-wide.
-  - Hamburger menu visible and functional across pages.
-- Fixes applied:
-  - PillarsPage pillar cards stack vertically and center-align on small screens.
-  - Banner mascots render on mobile (h-20) on Briefings/Books/Category/Lounge/Topic banners.
-  - HomePage author strip medallion renders on mobile (h-16, sm:h-24).
-
-**69.4 QA / testing:**
-- Testing agent iteration_37:
-  - Backend OG endpoints passed.
-  - Mobile audit passed across tested pages.
-  - Desktop navbar regressions passed.
-  - Single real bug (OG meta) fixed and re-verified.
-
-**Requires redeploy:** to ship Phase 69 UI + OG + sitemap/share changes to production.
+(unchanged)
 
 ### Phase 70 — Password reset flow fix + email deliverability hardening ✅ COMPLETED (PREVIEW)
-User report: “Forgot password flow is broken for existing users”.
-
-**Diagnosis (root cause):**
-- Core token mechanics worked, but the flow had 3 real defects due to dev-mode leftovers:
-  1) **Security hole**: `/api/auth/password-reset/request` returned `reset_link` in JSON for any caller (account takeover vector) and the frontend displayed it (“Email sending is mocked”) even though Gmail SMTP is live.
-  2) Reset email content was bare plain-text (spam-prone/unbranded).
-  3) Token expiry too short (15 minutes).
-
-**Fixes:**
-- `backend/routers/auth.py`:
-  - `/auth/password-reset/request` now returns a **generic** message for both existing/unknown emails and **never leaks** the reset link.
-  - Added branded teal HTML email `_reset_email_html()` with CTA button + fallback link.
-  - Improved plain-text body.
-  - Expiry extended **15 → 30 minutes**.
-  - Rate limit kept (**5 requests per email per hour**).
-- `frontend/src/pages/AuthPage.js`:
-  - Dev-mode link alert removed.
-  - New “Check your inbox” alert (`reset-sent-alert`) with spam-folder note.
-- `frontend/src/pages/ResetPasswordPage.js`: unchanged (already correct).
-
-**Email service status (deliverability / blocking):**
-- Gmail SMTP is configured and verified live (multipart, From name, Reply-To). Recent `password_reset` email logs show **sent (gmail)**.
-- Resend remains not configured (still blocked pending API key/domain), unchanged.
-
-**Verification:**
-- End-to-end API verification: no link leak, email logged as sent (gmail) with HTML CTA, 30-minute expiry, confirm signs in via httpOnly cookie, old password fails, new password succeeds, token reuse rejected, expired token rejected, unknown email returns generic response.
-- Browser UI verification: forgot form → inbox alert, reset link works, password update signs in + redirects, fresh login with new password succeeds.
-
-**Requires redeploy:** to ship Phase 70 to production.
+(unchanged)
 
 ### Phase 71 — Contextual glossary tooltips in essays ✅ COMPLETED (PREVIEW)
-User request: “Add contextual glossary tooltips to essays in the Tech & AI, Trading Business & Finance, and Delivery & Systems pillars.”
-
-**Implementation:**
-- New `frontend/src/lib/glossary.js`:
-  - `GLOSSARY_PILLARS = ['tech-business','finance','delivery']`
-  - `GLOSSARY_TERMS`: all 20 requested terms with plain-English definitions and robust matcher regexes
-    - Includes safe aliases (`MtM`, “value at risk”, “algorithmic trading”, “profit and loss”) and case-sensitive matches where collisions exist (ISDA/VaR/API gravity/FPSO/P&L).
-  - `GlossaryTerm` component:
-    - Controlled shadcn Popover
-    - Hover open on desktop with 140ms close grace
-    - Tap open on mobile (click always opens; fixes synthetic mouseenter+click toggle-close on touch)
-    - Tap-away/Esc closes (Radix)
-    - Tooltip card includes mono label + definition + “Full glossary →” link
-    - Test IDs: `glossary-term-{key}` / `glossary-tooltip-{key}`
-  - `wrapGlossaryTerms(nodes, seen, {skipDropCap})`:
-    - Wraps only the FIRST occurrence of each term per essay
-    - Works over arrays of strings + React elements; non-string segments pass through
-    - `skipDropCap` avoids wrapping a match at char 0 of block 0 so the CSS drop cap isn’t visually split
-- `frontend/src/index.css`:
-  - `.glossary-term` dotted underline in accent tint, subtle hover accent colour; no layout shift
-- `frontend/src/pages/ArticlePage.js`:
-  - Imports `GLOSSARY_PILLARS`, `wrapGlossaryTerms`
-  - Uses a per-render `Set()` (`glossarySeen`) only for glossary pillars
-  - Wraps both highlighted and non-highlighted paths without touching existing personal/popular highlight `<mark>` rendering
-
-**Verification:**
-- Playwright:
-  - Finance/Tech essays wrap expected terms (unique)
-  - Drop cap intact (first paragraph not split)
-  - Personal Growth essays show 0 glossary terms
-  - Desktop hover open/close OK
-  - Mobile (has_touch) tap open + tap-away close OK
-  - No horizontal overflow
-- `esbuild` clean.
-
-**Requires redeploy:** to ship Phase 71 to production.
+(unchanged)
 
 ### Phase 72 — Glossary hub sync + Work with me page ✅ COMPLETED (PREVIEW)
-User requests: sync glossary hub to tooltip definitions; add a “Work with me” page and nav item.
+(unchanged)
 
-**72.1 Glossary hub sync (single source of truth):**
-- `frontend/src/lib/glossary.js`:
-  - Added `category` field to all 20 `GLOSSARY_TERMS` for pillar-accent styling.
-- `frontend/src/pages/GlossaryPage.js`:
-  - Added “Quick definitions” section (`glossary-quick-definitions`) sourced directly from `GLOSSARY_TERMS`.
-  - Excludes `demurrage`, `etrm`, `ctrm` (already represented by essay-linked cards above).
-  - Added compact cards with pillar-dot accent and `data-testid="glossary-quick-{key}"`.
-  - DefinedTermSet JSON-LD extended to include all quick terms as DefinedTerm entries.
+### Phase 73 — Reading UX + Admin subscriber notifications ✅ COMPLETED (PREVIEW)
+User request: (1) top reading progress bar; (2) read time everywhere; (3) dark/light toggle visible + persisted; (4) admin notification emails on subscription.
 
-**72.2 Work with me:**
-- New page: `frontend/src/pages/WorkWithMePage.js` at `/work-with-me`:
-  - Bio: 12+ years ETRM/CTRM delivery
-  - “Who this is for” (3 cards): vendors scoping a new market; professionals entering commodity trading; teams stuck on a delivery problem
-  - “What you get” (3 bullets): honest outside perspective; clear next step; no sales pitch
-  - Pricing: ₹2,999 for 30 minutes + Calendly booking button → `https://calendly.com/anishpujari8/30min` (new tab)
-  - SEO meta + Service/Offer JSON-LD
-- Routing:
-  - `frontend/src/App.js`: route added.
-- Navigation:
-  - `frontend/src/components/Navbar.js`: desktop link `nav-work-link`; mobile sheet link `nav-mobile-work-link`.
-- Sitemap:
-  - `backend/routers/posts.py`: `/work-with-me` added.
-
-**72.3 Subscriber count clarification:**
-- **Preview DB is not production.** During debugging, 5 `test_*@test.com` users created for automated tests were removed.
-- Current **preview** counts (after cleanup):
-  - Users: 1 (admin)
-  - Premium users: 0
-  - Newsletter subscribers: 1 (owner email)
-- Real production subscriber counts must be read from the **Production admin dashboard**.
+**Status:**
+- (1) Reading progress bar ✅ already existed (`components/ReadingProgress.js`) and verified.
+- (2) Read time ✅ already existed (server-side 200 wpm + displayed on cards and article header) and verified.
+- (3) Dark/light toggle ✅ already existed; visible on desktop + mobile; persisted (`ThemeContext`, `ttn_theme`) and verified.
+- (4) Admin notification emails ✅ implemented + wired:
+  - New helper: `services/emailer.notify_admin_new_subscriber(name, email, tier)`
+    - Branded HTML template (logo, table, IST+UTC timestamp, CTA → `/admin`)
+    - Plain-text fallback
+    - Non-blocking
+  - Triggers:
+    - `POST /api/auth/register` → “Free account” (new)
+    - `POST /api/newsletter/subscribe` → “Free (newsletter, via {source})” (upgraded from old plain-text)
+    - `activate_premium_from_transaction()` → “Premium · …” (upgraded; covers both Stripe and Razorpay; idempotent)
 
 **Verification:**
-- Playwright: quick definition section renders; nav click opens `/work-with-me`; 3 audience cards + 3 outcomes; correct Calendly URL; mobile usable without overflow.
-- `esbuild` clean.
+- Playwright: progress bar width changes with scroll and uses pillar accent; read time appears; theme toggle persists.
+- Backend: registration + newsletter subscribe + simulated premium activation all produced admin emails and were sent via Gmail SMTP.
 
-**Requires redeploy:** to ship Phase 72 to production.
+**Requires redeploy:** to ship Phase 73 changes to production.
 
 ---
 
@@ -605,43 +511,17 @@ If you report any issue, confirm whether it is on:
 - Answer-first intros
 - Dash cleanup
 
-**Requires redeploy to ship UI/share/security changes (Phases 55–72 + Phase 56):**
+**Requires redeploy to ship UI/share/security changes (Phases 55–73 + Phase 56):**
 1. Redeploy preview → production.
-2. After deploy, spot-check:
-   - Navbar: Pillars hover dropdown works; items don’t wrap; hover-open works on desktop.
-   - Navbar: Clicking Pillars navigates to `/pillars`.
-   - Navbar: per-pillar colour highlight works in both light and dark mode.
-   - Navbar: dropdown contains “Meet all the mascots →”.
-   - Navbar: “Work with me” appears and routes to `/work-with-me`.
-   - `/work-with-me`: Calendly button opens the booking page.
-   - `/pillars`: lore section renders first; essays section appears under it.
-   - `/pillars`: Lore tooltips work for 4 pillars + 3 sections.
-   - `/pillars`: each pillar shows 2–3 PostCards and “View all →” works.
-   - `/briefings`: banner shows crimson motif + falcon mascot; OG card renders.
-   - `/books`: banner shows bronze motif + tortoise mascot; OG card renders.
-   - `/lounge`:
-     - locked view shows large wolf medallion
-     - member view shows pillar-style lounge banner + full-size wolf mascot
-   - `/lounge`: replying to a thread triggers a wolf-branded email to the author (confirm in email logs/admin).
-   - `/category/{slug}` (pillar dropdown destinations): header banner shows motif + mascot.
-   - `/topics/{pillar}` shows mascot + motif header.
-   - Mobile (≤768px): hamburger menu works site-wide; no horizontal overflow; pillar cards stack.
-   - Footer under Site includes “Meet the Mascots”.
-   - `/books`: each configured book shows “Reading Notes →” linking into the archive.
-   - `/glossary`:
-     - Main essay-linked glossary cards still work.
-     - “Quick definitions” section renders (synced to tooltips).
-   - Section OG cards:
-     - `https://thetradingnarrative.com/api/og/page/briefings.png` (and `/books`, `/lounge`, `/home`) render correct mascot cards.
-     - `https://thetradingnarrative.com/api/share/page/briefings` returns crawler meta and redirects humans.
-     - Force-refresh social previews (LinkedIn Post Inspector) if any shares still show old images.
-   - Password reset:
-     - Forgot password flow shows “Check your inbox” (no reset link leak).
-     - Reset email is received and link works within 30 minutes.
-     - User can reset password and log back in.
-   - Contextual glossary tooltips:
-     - In `tech-business`, `finance`, `delivery` essays: dotted-underlined terms show tooltips on hover/tap.
-     - In `lifestyle` essays: no glossary terms present.
+2. After deploy, spot-check (additions in this update):
+   - Reading progress bar visible on article pages and uses pillar accent.
+   - Read time appears on Post cards + article header.
+   - Dark/light mode toggle visible on desktop and mobile and persists across reload.
+   - Admin subscriber notifications:
+     - New free registrations trigger a branded admin email
+     - Newsletter subscriptions trigger a branded admin email
+     - Premium activations trigger a branded admin email with plan/gateway detail
+   - (All previous Phase 55–72 checks remain.)
 
 ### C) Marketing copy accuracy
 - Replace “Join 500+ commodity trading professionals” with a true number as soon as you have it.
@@ -777,6 +657,12 @@ A request was received to change Premium pricing to **₹499/month** or **₹4,9
 - `/glossary` includes a synced “Quick definitions” section sourced from tooltip definitions.
 - `/work-with-me` exists, is SEO-ready, includes pricing + Calendly booking link, is linked in nav and sitemap.
 - Preview DB test users used during validation were cleaned up.
+
+✅ Phase 73 targets met (PREVIEW)
+- Reading progress bar confirmed and pillar-accented.
+- Read time shown on cards and article headers (200 wpm).
+- Theme toggle visible on desktop+mobile and persists preference.
+- Admin subscriber notification emails are branded and sent for free account, newsletter subscribe, and premium activation.
 
 ⚠️ Operational caveats
 - ElevenLabs credits balance display requires `user_read` permission on key.

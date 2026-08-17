@@ -11,7 +11,7 @@ from security import (hash_password, verify_password, make_token, get_current_us
                       is_entitled, public_user, set_session_cookie, clear_session_cookie)
 from schemas import (RegisterIn, LoginIn, MagicRequestIn, MagicVerifyIn,
                      PasswordResetRequestIn, PasswordResetConfirmIn, StreakReadIn)
-from services.emailer import log_email
+from services.emailer import log_email, notify_admin_new_subscriber
 
 router = APIRouter(prefix='/api')
 
@@ -36,6 +36,8 @@ async def register(body: RegisterIn, response: Response):
     await db.users.insert_one(dict(user))
     # session travels in an httpOnly cookie only — never exposed to page scripts
     set_session_cookie(response, make_token(user['id']))
+    # Admin alert: new free account (branded, non-blocking)
+    await notify_admin_new_subscriber(body.name, user['email'], 'Free account')
     return {'user': public_user(user, False)}
 
 

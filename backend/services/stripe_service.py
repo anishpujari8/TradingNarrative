@@ -10,7 +10,7 @@ from emergentintegrations.payments.stripe.checkout import StripeCheckout
 from config import STRIPE_API_KEY, IS_SHARED_STRIPE_KEY, FRONTEND_URL, PLANS, AUDIO_UNLOCK_SKU, ADMIN_NOTIFY_EMAIL, logger
 from db import db
 from utils import now_utc, iso
-from services.emailer import log_email
+from services.emailer import log_email, notify_admin_new_subscriber
 
 
 def configure_stripe_sdk():
@@ -117,14 +117,7 @@ async def activate_premium_from_transaction(txn):
     amount = txn.get('amount', plan.get('amount'))
     currency = (txn.get('currency') or plan.get('currency') or '').upper()
     gateway = txn.get('provider', 'stripe')
-    await log_email(
-        ADMIN_NOTIFY_EMAIL, 'tradingnarrative email subscriber',
-        f"New paid subscriber on The Trading Narrative.\n\n"
-        f"Email: {user['email']}\n"
-        f"Name: {user.get('name', '')}\n"
-        f"Plan: {plan['label']} ({plan_id})\n"
-        f"Amount: {amount} {currency}\n"
-        f"Provider: {gateway}{' (MOCK payment)' if txn.get('mock') else ''}\n"
-        f"Transaction: {txn['session_id']}\n"
-        f"Time (UTC): {iso(now_utc())}",
-        'admin_subscriber_alert')
+    mock_note = ' · MOCK payment' if txn.get('mock') else ''
+    await notify_admin_new_subscriber(
+        user.get('name', ''), user['email'],
+        f"Premium · {plan['label']} · {amount} {currency} via {gateway}{mock_note}")
